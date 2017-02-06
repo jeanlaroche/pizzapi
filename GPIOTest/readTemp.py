@@ -10,64 +10,57 @@ GPIO.setmode(GPIO.BCM)
 clockGPIO = 24
 dataGPIO = 25
 
-numBitToRead = 24
 dataLength = 1000
 
-bitCount = 10000
-clock = [0]*dataLength
-data = [0]*dataLength
 
 def noRead(channel): pass
 
-def printList(A):
-	for val in A: print "{} ".format(val),
-	print " "
+def printList(A,f=0):
+	if not f:
+		for val in A: print "{} ".format(val),
+		print " "
+	else:
+		for val in A: f.write("{} ".format(val))
+		f.write('\n')
 
-def waitForClockLow():
-	minReadForClockLow = 0
-	while 1:
-		for ii in range(minReadForClockLow):
-			a = GPIO.input(clockGPIO)
-			if a == 1: break
-		else:
-			# N null data read, we're good.
-			break
+# def waitForClockLow():
+	# minReadForClockLow = 0
+	# while 1:
+		# for ii in range(minReadForClockLow):
+			# a = GPIO.input(clockGPIO)
+			# if a == 1: break
+		# else:
+			# # N null data read, we're good.
+			# break
 
-def readDataBit(channel):
-	global bitCount
-	if bitCount >= dataLength: return
-	# time.sleep(.1/40000)
-	data[bitCount] = GPIO.input(dataGPIO)
-	# print "{} -- {}".format(bitCount,data[bitCount])
-	bitCount += 1
-
-def readClockAndData():
-	while GPIO.input(clockGPIO) == 0: pass
+def readData():
 	startRead = 0
-	ii = 0
+	ii = 1
+	clock = [0]*dataLength
+	data = [0]*dataLength
+	while (1):
+		# Make sure you have at least 1000 zero clocks.
+		head = 0;
+		while GPIO.input(clockGPIO) == 0: head += 1
+		if head > 1000: break
+	# Make sure you have NOTHING here that might take any time, or you'll miss
+	# reading the clock and data. Here, I'm reading the first data since the clock
+	# has gone high already.
+	data[ii] = GPIO.input(dataGPIO)
+	clock[ii] = 1
+	ii = 1
+	# Also: don't put a for with a range() here, because that takes too much time!
 	while 1:
 		clock[ii] = GPIO.input(clockGPIO)
-		# Wait for the clock to go high before you start recording.
-		if startRead == 0 and clock[ii] == 0: continue;
-		startRead = 1
 		data[ii] = GPIO.input(dataGPIO)
 		ii = ii+1
 		if ii>= dataLength: break
-	
-def readData():
-	global bitCount
-	bitCount = 1000
-	# Wait for clock low
-	# print "Wait for clock"
-	# waitForClockLow()
-	# Reset the bit counter:
-	bitCount = 0
-	# Wait for bitCount to be numBitToRead
-	# while bitCount < numBitToRead: time.sleep(0.00001)
-	readClockAndData()
+	return clock,data,head
 	# printList(clock)
 	# printList(data)
-	
+
+digitsToNum = {(1,1,1,1,1,1,0):0,(0,1,1,0,0,0,0):1,(1,1,0,1,1,0,1):2,(1,1,1,1,0,0,1):3,(0,1,1,0,0,1,1):4,(1,0,1,1,0,1,1):5,(1,0,1,1,1,1,1):6,(1,1,1,0,0,0,0):7,(1,1,1,1,1,1,1):8,(1,1,1,1,0,1,1):9}
+int2str={0:'0',1:'1'}
 def decodeThis(clock,data):
 	decodedData = []
 	ic = 0
@@ -80,9 +73,25 @@ def decodeThis(clock,data):
 		while ic < N and clock[ic] == 1:
 			if data[ic] == 1: dataVal = 1
 			ic += 1
+			lastClockUp = ic
 		if not ic < N: break
 		decodedData.append(dataVal)
-	return decodedData
+	print "Average samples per clock period: {:.2f}".format(1.0*lastClockUp/len(decodedData))
+	decVal = 0
+	if len(decodedData) == 21:
+		try:
+			# decodedData[4] is probably the heating LED.
+			decodedData[4] = 0
+			D1 = digitsToNum[tuple(decodedData[0:7])]
+			D2 = digitsToNum[tuple(decodedData[7:14])]
+			D3 = digitsToNum[tuple(decodedData[14:])]
+			decVal = 100*D1+10*D2+D3
+		except: pass
+	
+	# pdb.set_trace()
+	# print "{} trailing zero clocks".format(ic-lastClockUp)
+	
+	return decodedData,decVal
 	
 if __name__ == "__main__":
     
@@ -92,17 +101,20 @@ if __name__ == "__main__":
 	t1 = time.time()
 	while 1:
 		try:
-			readData()
-			for val in clock: f.write("{} ".format(val))
-			f.write('\n')
-			for val in data: f.write("{} ".format(val))
-			f.write('\n')
-			decodedData = decodeThis(clock,data)
+			clock,data,head = readData()
+			# print "{} zero at head".format(head)
+			# for val in clock: f.write("{} ".format(val))
+			# f.write('\n')
+			# for val in data: f.write("{} ".format(val))
+			# f.write('\n')
+			decodedData,decData = decodeThis(clock,data)
 			printList(decodedData)
+			printList(decodedData,f)
+			print "Data {:}".format(decData)
 			t2 = time.time()
 			# print "Elapsed {:.3f}s".format(t2-t1)
 			t1=t2
-			time.sleep(.1)
+			time.sleep(1)
 		except KeyboardInterrupt: break
 		
 	GPIO.cleanup(clockGPIO)
