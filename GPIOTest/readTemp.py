@@ -4,21 +4,46 @@ import sys
 import pdb
 # https://sourceforge.net/p/raspberry-gpio-python/wiki/BasicUsage/
 
+import multiprocessing.pool
+import functools
+
+def timeout(max_timeout):
+    """Timeout decorator, parameter in seconds."""
+    def timeout_decorator(item):
+        """Wrap the original function."""
+        @functools.wraps(item)
+        def func_wrapper(*args, **kwargs):
+            """Closure for function."""
+            pool = multiprocessing.pool.ThreadPool(processes=1)
+            async_result = pool.apply_async(item, args, kwargs)
+            # raises a TimeoutError if execution exceeds max_timeout
+            return async_result.get(max_timeout)
+        return func_wrapper
+    return timeout_decorator
+	
 '''
 '''
 GPIO.setmode(GPIO.BCM)
-clockGPIO = 24
-dataGPIO = 25
+clockGPIO 		= 24	# GPIO used to read the clock line
+dataGPIO 		= 25	# GPIO used to read the data line
+buttonGPIO		= 4		# GPIO used to control the temperature button.
+buttonOn 		= 1		# GPIO Value to simulate a button press
+buttonOff 		= 0		# GPIO value to simulate a button release. 
 
-dataLength = 1000
+minTemp 		= 80	# Minimum settable temperature
+maxTemp 		= 104 	# Maximum settable temperature
+
+dataLength 	= 1000		# How many samples we're reading each time we want to read the temp.
 
 def setup():
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 	GPIO.setup(dataGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+	GPIO.setup(buttonGPIO, GPIO.OUT)
 	
 def tearDown():
 	GPIO.cleanup(clockGPIO)
 	GPIO.cleanup(dataGPIO)
+	GPIO.cleanup(buttonGPIO)
 
 def printList(A,f=0):
 	if not f:
@@ -29,6 +54,8 @@ def printList(A,f=0):
 		f.write('\n')
 
 def readBinaryData():
+# Function to read the bit stream coming from the motherboard. Samples the clock and data lines, and
+# returns two array of 1/0 values. 
 	startRead = 0
 	ii = 1
 	clock = [0]*dataLength
@@ -39,11 +66,10 @@ def readBinaryData():
 		while GPIO.input(clockGPIO) == 0: head += 1
 		if head > 1000: break
 	# Make sure you have NOTHING here that might take any time, or you'll miss
-	# reading the clock and data. Here, I'm reading the first data since the clock
+	# reading the first clock and data samples. Here, I'm reading the first data since the clock
 	# has gone high already.
-	data[ii] = GPIO.input(dataGPIO)
-	clock[ii] = 1
-	ii = 1
+	data[0] = GPIO.input(dataGPIO)
+	clock[0] = 1
 	# Also: don't put a for with a range() here, because that takes too much time!
 	while 1:
 		clock[ii] = GPIO.input(clockGPIO)
@@ -67,7 +93,7 @@ def decodeBinaryData(clock,data):
 	while 1:
 		# Go go the next clock rise
 		while ic < N and clock[ic]==0: ic += 1
-		# Then go to the next clock fall while checking data. If data is high during the high clock bit=1.
+		# Then go to the next clock fall while checking data. If any data is high during the high clock bit=1.
 		dataVal = 0
 		while ic < N and clock[ic] == 1:
 			if data[ic] == 1: dataVal = 1
@@ -94,37 +120,48 @@ def decodeBinaryData(clock,data):
 		except: 
 			# Exceptions occur when we don't read the bits quite correctly, once in a while.
 			print "Wrong binary format"
-			pass
 	else: print "Not enough binary data"
 	
 	return binaryData,tempValue,heater,avSamplePerClock
-
-def readTemperature(readNonZero = 0):
-# Reads the temperature. If readNonZero is 1, does not return until a non-zero temp is read (i.e.,
+	
+	
+@timeout(1.0)  # if execution takes longer than expected raise a TimeoutError
+def readTemperature(waitForNonZeroTemp = 0):
+# Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
 # the display was actually showing some temperature)
 	while 1:
 		clock,data,head = readBinaryData()
 		binaryData,tempValue,heater,avSampPerClock = decodeBinaryData(clock,data)
-		if not tempValue == -1 and (tempValue > 0 or readNonZero): break
+		if not tempValue == -1 and (tempValue > 0 or waitForNonZeroTemp == 0): break
 	return binaryData,tempValue,heater,avSampPerClock
 
+@timeout(1.5)  # if execution takes longer than expected raise a TimeoutError
 def isDisplayBlinking():
 	# Read the temperature for about 1 seconds and verify that we see some 0 values there.
-	# Also returns the read temperature
+	# Also returns the read temperature. If the return is 0, the display was blank the whole time.
 	noDisp = 0
+	tempValue = 0
 	for ii in range(10):
-		binaryData,tVal,heater,avSampPerClock = readTemperature()
+		# Read the temp, count how many 0 values we're getting.
+		tVal = readTemperature()[1]
 		if tVal == 0: noDisp += 1
 		else: tempValue = tVal
 		time.sleep(.1)
 	return noDisp > 3,tempValue
 
 def pressTempAdjust():
+# Simulate pressing the temp adjust button by temporarily toggling a GPIO output.
 	print "PRESSING BUTTON"
+	GPIO.output(buttonGPIO,buttonOn)
+	time.sleep(.1)
+	GPIO.output(buttonGPIO,buttonOff)
+	time.sleep(.1)
+
 	
 def readSetTemperature():
 # This reads the temperature the tub is set at, by pressing the set button
 # and reading the temp.
+	# See if you're already blinking, just in case.
 	isBlinking,tempValue = isDisplayBlinking()
 	if isBlinking: return tempValue
 	# Press the temp adjust button
@@ -136,16 +173,20 @@ def readSetTemperature():
 	return tempValue
 	
 def setTemperature(targetTemp):
+# Set the hot tub temperature, by pressing the button repeatedly while reading the set temp.
+	if targetTemp > maxTemp or targetTemp < minTemp:
+		print "Temp {} outside of range 80 -- 104".format(targetTemp)
+		return
 	# First of, get into blinking mode
 	setTemp = readSetTemperature()
-	# if setTemp == -1: return
 	# Now press the temp adjust button repeatedly until the temp reaches the desired value
-	for i in range(50):
+	for i in range(60):
 		if setTemp == targetTemp: break
 		# Press button
 		pressTempAdjust()
-		# Read the temp, setting readNonZero to 1 to avoid reading while the display is off
-		q,setTemp,q,q = readTemperature(readNonZero = 1)
+		# Read the temp, setting waitForNonZeroTemp to 1 to avoid reading while the display is off
+		setTemp = readTemperature(waitForNonZeroTemp = 1)[1]
+		print "Setting temp, i = {}, target = {}, read = {}".format(i,targetTemp,setTemp)
 		time.sleep(.2)
 	else:
 		# This didn't work for some reason.
@@ -153,9 +194,11 @@ def setTemperature(targetTemp):
 		return
 	print "Success"
 	
+
+	
 if __name__ == "__main__":
 	setup()
-	f = open('scope.txt','w')
+	# f = open('scope.txt','w')
 	t1 = time.time()
 	while 1:
 		try:
@@ -168,6 +211,9 @@ if __name__ == "__main__":
 			t1=t2
 			time.sleep(.5)
 		except KeyboardInterrupt: break
+		except multiprocessing.TimeoutError:
+			print "Time out error!"
+			break
 	tearDown()
 	
     # # Get recording
