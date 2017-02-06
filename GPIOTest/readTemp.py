@@ -22,6 +22,7 @@ def timeout(max_timeout):
     return timeout_decorator
 	
 def mprint(thisSting):
+# My special print function to log things.
 	global lastPrint
 	lastPring = thisSting
 	print(thisSting)
