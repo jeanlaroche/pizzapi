@@ -1,0 +1,41 @@
+REFERENCE.
+http://www.thelearningpit.com/lp/doc/7seg/7seg.html For 7 segment displays and multiplexing.
+http://forums.shoryuken.com/discussion/47814/help-from-some-of-you-electronics-gurus-hot-tub-hardware-hacking for a guy hacking a spa
+
+According to this, the wire could be like this:
+1 - Ground (Black; Vss - pin 14 on the Motorola Chip)
+2 - Spa Lamp on/off switch (Brown)
+3 - Bubbler on/off switch (Red)
+4 - Jets on/off switch (Orange)
+5 - 5V DC (Yellow; VDD - pin 3 on the Motorola Chip)
+6 - Motorola Chip "Data In", Pin 12 (.5K Resistance) AND Temperature Control Switch (5K Resistor - probably handles the delay) (Green)
+7 - Motorola Chip "Clock", Pin 11 (Blue; .5K Resistance)
+8 - Motorola Chip "Enable", Pin 10 (White; .5K Resistance)
+The guy has this chip http://www.nxp.com/assets/documents/data/en/data-sheets/MC14489B.pdf MC14489B in his top controller. 
+Is uses a synchronous serial interface SPI.
+Nice tutorial on SPI: https://learn.sparkfun.com/tutorials/serial-peripheral-interface-spi
+And this for the pi: https://learn.sparkfun.com/tutorials/raspberry-pi-spi-and-i2c-tutorial
+
+REVERSE ENGINEERING THE CONNECTOR:
+With Dave's scope, I was able to get this amazing info:
+The J45 Tag has the following colors:
+W, Bk, R, Y, G, Bu
+
+W:	Clock line. +5.5V roughly 40kHz
+Bk:	Data line. +5.5V
+R:	Ground
+Y:	Temp button when connected to +5V
+G:	Jets button when connected to +5V
+Bu:	DC 5V.
+
+
+SPI:
+Do lsmod to see if SPI is available
+
+
+GPIO reading
+Reading 8 GPIOs simultanously, I'm getting about 60kHz sampling.
+I checked that a AA batter triggers the input.
+Recommended R for driving a LED from a GPIO: 330Ohm. 
+Max V for 0 input is 0.8V
+Min V for 1 input is 1.3V.
