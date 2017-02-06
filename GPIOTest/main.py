@@ -9,8 +9,27 @@ def myDisp(thisString):
 	back = "\b"*(len(thisString)+1)
 	print thisString + back,
 
+# import curses
+# def main(win):
+    # win.nodelay(True)
+    # key=""
+    # win.clear()                
+    # win.addstr("Detected key:")
+    # while 1:          
+        # try:                 
+           # key = win.getkey()         
+           # win.clear()                
+           # win.addstr("Detected key:")
+           # win.addstr(str(key)) 
+           # if key == os.linesep:
+              # break           
+        # except Exception as e:
+           # # No input   
+           # pass         
+# curses.wrapper(main)
+
 def heardEnter():
-	# Function to detect a keepress
+	# Function to detect a keepress. Apparently I could also use import curses, a standard packing in linux.
     i,o,e = select.select([sys.stdin],[],[],0.0001)
     for s in i:
         if s == sys.stdin:
