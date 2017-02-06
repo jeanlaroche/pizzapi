@@ -130,8 +130,8 @@ def decodeBinaryData(clock,data):
 	else: mprint("Not enough binary data")
 	
 	return binaryData,tempValue,heater,avSamplePerClock
-	
-	
+
+
 @timeout(1.0)  # if execution takes longer than expected raise a TimeoutError
 def readTemperature(waitForNonZeroTemp = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
@@ -200,8 +200,6 @@ def setTemperature(targetTemp):
 		mprint ("Could not set the temp! Last read temp: {}".format(setTemp))
 		return
 	mprint ("Success")
-	
-
 	
 if __name__ == "__main__":
 	setup()
