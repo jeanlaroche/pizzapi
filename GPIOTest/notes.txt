@@ -18,14 +18,15 @@ And this for the pi: https://learn.sparkfun.com/tutorials/raspberry-pi-spi-and-i
 
 REVERSE ENGINEERING THE CONNECTOR:
 With Dave's scope, I was able to get this amazing info:
-The J45 Tag has the following colors:
+The RJ12 connector has the following colors:
 W, Bk, R, Y, G, Bu
+It's OK to plug a RJ12 into a RJ45 (8 pins) but of course, the colors will differ.
 
 W:	Clock line. +5.5V roughly 40kHz
 Bk:	Data line. +5.5V
 R:	Ground
-Y:	Temp button when connected to +5V
-G:	Jets button when connected to +5V
+Y:	Temp button when connected to +5V with 500 O resistor
+G:	Jets button when connected to +5V with 500 O resistor
 Bu:	DC 5V.
 
 
@@ -36,6 +37,6 @@ Do lsmod to see if SPI is available
 GPIO reading
 Reading 8 GPIOs simultanously, I'm getting about 60kHz sampling.
 I checked that a AA batter triggers the input.
-Recommended R for driving a LED from a GPIO: 330Ohm. 
+Recommended R for driving a LED from a GPIO: 330 Ohm. 
 Max V for 0 input is 0.8V
 Min V for 1 input is 1.3V.

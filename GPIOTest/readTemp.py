@@ -21,6 +21,11 @@ def timeout(max_timeout):
         return func_wrapper
     return timeout_decorator
 	
+def mprint(thisSting):
+	global lastPrint
+	lastPring = thisSting
+	print(thisSting)
+	
 '''
 '''
 GPIO.setmode(GPIO.BCM)
@@ -33,7 +38,8 @@ buttonOff 		= 0		# GPIO value to simulate a button release.
 minTemp 		= 80	# Minimum settable temperature
 maxTemp 		= 104 	# Maximum settable temperature
 
-dataLength 	= 1000		# How many samples we're reading each time we want to read the temp.
+dataLength 		= 1000	# How many samples we're reading each time we want to read the temp.
+lastPrint 		= ""	# Last printed output. Useful for logging or debugging.
 
 def setup():
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -47,8 +53,8 @@ def tearDown():
 
 def printList(A,f=0):
 	if not f:
-		for val in A: print "{} ".format(val),
-		print " "
+		for val in A: print("{} ".format(val)),
+		print(" ")
 	else:
 		for val in A: f.write("{} ".format(val))
 		f.write('\n')
@@ -119,8 +125,8 @@ def decodeBinaryData(clock,data):
 			tempValue = 100*D1+10*D2+D3
 		except: 
 			# Exceptions occur when we don't read the bits quite correctly, once in a while.
-			print "Wrong binary format"
-	else: print "Not enough binary data"
+			mprint("Wrong binary format")
+	else: mprint("Not enough binary data")
 	
 	return binaryData,tempValue,heater,avSamplePerClock
 	
@@ -151,7 +157,7 @@ def isDisplayBlinking():
 
 def pressTempAdjust():
 # Simulate pressing the temp adjust button by temporarily toggling a GPIO output.
-	print "PRESSING BUTTON"
+	mprint ("PRESSING BUTTON")
 	GPIO.output(buttonGPIO,buttonOn)
 	time.sleep(.1)
 	GPIO.output(buttonGPIO,buttonOff)
@@ -168,14 +174,14 @@ def readSetTemperature():
 	pressTempAdjust()
 	isBlinking,tempValue = isDisplayBlinking()
 	if not isBlinking:
-		print "Error: temp button pressed but display does not blink"
+		mprint ("Error: temp button pressed but display does not blink")
 		return -1
 	return tempValue
 	
 def setTemperature(targetTemp):
 # Set the hot tub temperature, by pressing the button repeatedly while reading the set temp.
 	if targetTemp > maxTemp or targetTemp < minTemp:
-		print "Temp {} outside of range 80 -- 104".format(targetTemp)
+		mprint ("Temp {} outside of range 80 -- 104".format(targetTemp))
 		return
 	# First of, get into blinking mode
 	setTemp = readSetTemperature()
@@ -186,13 +192,13 @@ def setTemperature(targetTemp):
 		pressTempAdjust()
 		# Read the temp, setting waitForNonZeroTemp to 1 to avoid reading while the display is off
 		setTemp = readTemperature(waitForNonZeroTemp = 1)[1]
-		print "Setting temp, i = {}, target = {}, read = {}".format(i,targetTemp,setTemp)
+		mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemp,setTemp))
 		time.sleep(.2)
 	else:
 		# This didn't work for some reason.
-		print "Could not set the temp! Last read temp: {}".format(setTemp)
+		mprint ("Could not set the temp! Last read temp: {}".format(setTemp))
 		return
-	print "Success"
+	mprint ("Success")
 	
 
 	
@@ -205,14 +211,14 @@ if __name__ == "__main__":
 			binaryData,tempValue,heater,avSampPerClock = readTemperature()
 			# printList(binaryData)
 			# printList(binaryData,f)
-			print "Data {:} -- Heater: {} -- Av. samp. per clock {:.2f}".format(tempValue,heater,avSampPerClock)
+			mprint ("Data {:} -- Heater: {} -- Av. samp. per clock {:.2f}".format(tempValue,heater,avSampPerClock))
 			t2 = time.time()
 			# print "Elapsed {:.3f}s".format(t2-t1)
 			t1=t2
 			time.sleep(.5)
 		except KeyboardInterrupt: break
 		except multiprocessing.TimeoutError:
-			print "Time out error!"
+			mprint ("Time out error!")
 			break
 	tearDown()
 	
