@@ -27,8 +27,10 @@ def _led():
 @app.route("/_getTemperature")
 def _getTemperature():
 	print "READING TEMP"
-	temperatureValue = "102F"
-	return jsonify(temperatureValue=temperatureValue)
+	temperatureVal = "102 F"
+	heaterVal = "OFF"
+	setTemperatureVal = "99 F"
+	return jsonify(temperatureValue=temperatureVal,heaterValue = heaterVal,setTemperatureValue=setTemperatureVal,upTime = GetUptime())
 
 def GetUptime():
 	# get uptime from the linux terminal command

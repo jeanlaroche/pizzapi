@@ -33,7 +33,9 @@ span {font-weight: bold;}
         $.getJSON('/_getTemperature', function(data)
             {
                 $("#temperatureValue").text(data.temperatureValue);
-                <!-- $("#temperatureValue").text("AH AH AH); -->
+                $("#heaterValue").text(data.heaterValue);
+                $("#setTemperatureValue").text(data.setTemperatureValue);
+                $("#upTime").text(data.upTime);
                 setTimeout(function(){getTemperature();},500);
             });
     }
@@ -47,13 +49,15 @@ span {font-weight: bold;}
 
 <div data-role="page" data-theme="b">
   <div data-role="header">
-    <div><h3>Raspberry Pi Web Control</h3></div>
+    <div><h2><center>HOT TUB CONTROL</center></h2></div>
   </div>
 
   <div data-role="content">
     <form>
-    <p>The temperate is <span id="temperatureValue"></span></p>
+    <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> Heater: <span id="heaterValue"></span> </h2></p>
     <br>
+    <br>
+    <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> </h2></p>
     <select name="flip-1" id="flip-1" data-role="slider" style="float: left;">
         <option value="off">LED off</option>
         <option value="on">LED on</option>
@@ -61,6 +65,6 @@ span {font-weight: bold;}
     </form>
   </div>
  <div data-role="footer">
-    <div><h4>{{uptime}}</h4></div>
+    <div><h4><span id="upTime"></span></h4></div>
   </div>
 </div>
