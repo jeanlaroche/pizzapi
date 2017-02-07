@@ -22,6 +22,11 @@ def _led():
 		print "Turning led off"
 	return ""
 
+@app.route("/_tempUp")
+def _tempUp():
+	print "TEMP UP"
+	return ""
+
 # ajax GET call this function periodically to read the temp value
 # the state is sent back as json data
 @app.route("/_getTemperature")

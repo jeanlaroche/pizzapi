@@ -12,6 +12,7 @@ span {font-weight: bold;}
 </style>
 
 <script type=text/javascript>
+		
     $(
     // When the LED getTemperature is pressed (change)
     // do an ajax request to server to change LED state
@@ -20,7 +21,12 @@ span {font-weight: bold;}
         $('#flip-1').change(function() 
         {
         $.getJSON('/_led', {state: $('#flip-1').val()});
-        });     
+        });
+		
+        $('#Up').click(function() 
+        {
+        $.getJSON('/_tempUp');
+        });
     }
     );
 
@@ -36,7 +42,7 @@ span {font-weight: bold;}
                 $("#heaterValue").text(data.heaterValue);
                 $("#setTemperatureValue").text(data.setTemperatureValue);
                 $("#upTime").text(data.upTime);
-                setTimeout(function(){getTemperature();},500);
+                <!-- setTimeout(function(){getTemperature();},500); -->
             });
     }
     );
@@ -53,16 +59,19 @@ span {font-weight: bold;}
   </div>
 
   <div data-role="content">
-    <form>
     <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> Heater: <span id="heaterValue"></span> </h2></p>
     <br>
     <br>
     <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> </h2></p>
+	
     <select name="flip-1" id="flip-1" data-role="slider" style="float: left;">
         <option value="off">LED off</option>
         <option value="on">LED on</option>
     </select>
-    </form>
+	<br>
+    <button data-role="button" name="Up" id="Up" type="button" style="float: left;"> UP
+    </button>
+	<br>
   </div>
  <div data-role="footer">
     <div><h4><span id="upTime"></span></h4></div>
