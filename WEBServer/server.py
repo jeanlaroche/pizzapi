@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
+setTemperatureVal=99
+
 app = Flask(__name__)
 
 # return index page when IP address of RPi is typed in the browser
@@ -24,18 +26,29 @@ def _led():
 
 @app.route("/_tempUp")
 def _tempUp():
+	global setTemperatureVal
 	print "TEMP UP"
-	return ""
+	setTemperatureVal = setTemperatureVal+1
+	setTemperatureRet = "{:.0f} F".format(setTemperatureVal)
+	return jsonify(setTemperatureValue=setTemperatureRet)
+
+@app.route("/_tempDown")
+def _tempDown():
+	global setTemperatureVal
+	print "TEMP DOWN"
+	setTemperatureVal = setTemperatureVal-1
+	setTemperatureRet = "{:.0f} F".format(setTemperatureVal)
+	return jsonify(setTemperatureValue=setTemperatureRet)
 
 # ajax GET call this function periodically to read the temp value
 # the state is sent back as json data
 @app.route("/_getTemperature")
 def _getTemperature():
-	print "READING TEMP"
+	global setTemperatureVal
 	temperatureVal = "102 F"
 	heaterVal = "OFF"
-	setTemperatureVal = "99 F"
-	return jsonify(temperatureValue=temperatureVal,heaterValue = heaterVal,setTemperatureValue=setTemperatureVal,upTime = GetUptime())
+	setTemperatureRet = "{:.0f} F".format(setTemperatureVal)
+	return jsonify(temperatureValue=temperatureVal,heaterValue = heaterVal,setTemperatureValue=setTemperatureRet,upTime = GetUptime())
 
 def GetUptime():
 	# get uptime from the linux terminal command

@@ -18,14 +18,20 @@ span {font-weight: bold;}
     // do an ajax request to server to change LED state
     function() 
     {
-        $('#flip-1').change(function() 
-        {
-        $.getJSON('/_led', {state: $('#flip-1').val()});
-        });
-		
         $('#Up').click(function() 
         {
-        $.getJSON('/_tempUp');
+			$.getJSON('/_tempUp', function(data)
+            {
+                $("#setTemperatureValue").text(data.setTemperatureValue);
+            });
+        });
+		
+        $('#Down').click(function() 
+        {
+			$.getJSON('/_tempDown', function(data)
+            {
+                $("#setTemperatureValue").text(data.setTemperatureValue);
+            });
         });
     }
     );
@@ -42,7 +48,7 @@ span {font-weight: bold;}
                 $("#heaterValue").text(data.heaterValue);
                 $("#setTemperatureValue").text(data.setTemperatureValue);
                 $("#upTime").text(data.upTime);
-                <!-- setTimeout(function(){getTemperature();},500); -->
+                setTimeout(function(){getTemperature();},500);
             });
     }
     );
@@ -59,19 +65,17 @@ span {font-weight: bold;}
   </div>
 
   <div data-role="content">
-    <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> Heater: <span id="heaterValue"></span> </h2></p>
+    <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> <br>Heater: <span id="heaterValue"></span> </h2></p>
     <br>
     <br>
     <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> </h2></p>
-	
-    <select name="flip-1" id="flip-1" data-role="slider" style="float: left;">
-        <option value="off">LED off</option>
-        <option value="on">LED on</option>
-    </select>
 	<br>
-    <button data-role="button" name="Up" id="Up" type="button" style="float: left;"> UP
-    </button>
-	<br>
+	<div data-role="fieldcontain">
+		<fieldset class="ui-grid-a">
+				<div class="ui-block-a"><button name="Up" id="Up" type="submit" data-theme="d">UP</button></div>
+				<div class="ui-block-b"><button name="Down" id="Down" type="submit" data-theme="d">DOWN</button></div>
+	    </fieldset>
+	</div>
   </div>
  <div data-role="footer">
     <div><h4><span id="upTime"></span></h4></div>
