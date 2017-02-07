@@ -11,39 +11,28 @@ app = Flask(__name__)
 def Index():
 	return render_template("index.html", uptime=GetUptime())
 
-# ajax GET call this function to set led state
-# depeding on the GET parameter sent
-@app.route("/_led")
-def _led():
-	state = request.args.get('state')
-	if state=="on":
-		# Pins.LEDon()
-		print "Turning led on"
-	else:
-		# Pins.LEDoff()
-		print "Turning led off"
-	return ""
+# Helper function to return a jsonified string with the temp.
+def getSetTempRet():
+	global setTemperatureVal
+	setTemperatureRet = "{:.0f} F".format(setTemperatureVal)
+	return jsonify(setTemperatureValue=setTemperatureRet)
 
 @app.route("/_tempUp")
 def _tempUp():
-	global setTemperatureVal
 	print "TEMP UP"
+	global setTemperatureVal
 	setTemperatureVal = setTemperatureVal+1
-	setTemperatureRet = "{:.0f} F".format(setTemperatureVal)
-	return jsonify(setTemperatureValue=setTemperatureRet)
+	return getSetTempRet()
 
 @app.route("/_tempDown")
 def _tempDown():
-	global setTemperatureVal
 	print "TEMP DOWN"
+	global setTemperatureVal
 	setTemperatureVal = setTemperatureVal-1
-	setTemperatureRet = "{:.0f} F".format(setTemperatureVal)
-	return jsonify(setTemperatureValue=setTemperatureRet)
+	return getSetTempRet()
 
-# ajax GET call this function periodically to read the temp value
-# the state is sent back as json data
-@app.route("/_getTemperature")
-def _getTemperature():
+@app.route("/_getTubStatus")
+def _getTubStatus():
 	global setTemperatureVal
 	temperatureVal = "102 F"
 	heaterVal = "OFF"
@@ -53,9 +42,7 @@ def _getTemperature():
 def GetUptime():
 	# get uptime from the linux terminal command
 	from subprocess import check_output
-	output = check_output(["uptime"])
-	# return only uptime info
-	uptime = output
+	uptime = check_output(["uptime"])
 	return uptime
 	
 # run the webserver on standard port 80, requires sudo

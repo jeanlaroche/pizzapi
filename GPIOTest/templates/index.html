@@ -42,7 +42,7 @@ span {font-weight: bold;}
     // the state text comes from the JSON string returned by the server
     function getTemperature() 
     {
-        $.getJSON('/_getTemperature', function(data)
+        $.getJSON('/_getTubStatus', function(data)
             {
                 $("#temperatureValue").text(data.temperatureValue);
                 $("#heaterValue").text(data.heaterValue);
