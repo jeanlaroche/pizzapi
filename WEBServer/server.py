@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 
+# See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
+
 app = Flask(__name__)
 
 # return index page when IP address of RPi is typed in the browser
@@ -20,24 +22,20 @@ def _led():
 		print "Turning led off"
 	return ""
 
-# ajax GET call this function periodically to read button state
+# ajax GET call this function periodically to read the temp value
 # the state is sent back as json data
-@app.route("/_button")
-def _button():
-	print "Reading pin"
-	state = "pressed"
-	# if Pins.ReadButton():
-		# state = "pressed"
-	# else:
-		# state = "not pressed"
-	return jsonify(buttonState=state)
+@app.route("/_getTemperature")
+def _getTemperature():
+	print "READING TEMP"
+	temperatureValue = "102F"
+	return jsonify(temperatureValue=temperatureValue)
 
 def GetUptime():
 	# get uptime from the linux terminal command
 	from subprocess import check_output
 	output = check_output(["uptime"])
 	# return only uptime info
-	uptime = output[output.find("up"):output.find("user")-5]
+	uptime = output
 	return uptime
 	
 # run the webserver on standard port 80, requires sudo

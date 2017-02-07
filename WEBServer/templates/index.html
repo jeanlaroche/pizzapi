@@ -13,7 +13,7 @@ span {font-weight: bold;}
 
 <script type=text/javascript>
     $(
-    // When the LED button is pressed (change)
+    // When the LED getTemperature is pressed (change)
     // do an ajax request to server to change LED state
     function() 
     {
@@ -25,22 +25,23 @@ span {font-weight: bold;}
     );
 
     $(
-    // periodically (500ms) do an ajax request to get the button state
+    // periodically (500ms) do an ajax request to get the getTemperature state
     // modify the span tag to reflect the state (pressed or not)
     // the state text comes from the JSON string returned by the server
-    function button() 
+    function getTemperature() 
     {
-        $.getJSON('/_button', function(data)
+        $.getJSON('/_getTemperature', function(data)
             {
-                $("#buttonState").text(data.buttonState);
-                setTimeout(function(){button();},500);
+                $("#temperatureValue").text(data.temperatureValue);
+                <!-- $("#temperatureValue").text("AH AH AH); -->
+                setTimeout(function(){getTemperature();},500);
             });
     }
     );
     
 
 </script>
-<!-- Simple JQuery Mobile page that display the button state on the breadoard -->
+<!-- Simple JQuery Mobile page that display the getTemperature state on the breadoard -->
 <!-- You can also change the LED state with the slider switch -->
 <!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
 
@@ -51,7 +52,7 @@ span {font-weight: bold;}
 
   <div data-role="content">
     <form>
-    <p>The button is <span id="buttonState"></span></p>
+    <p>The temperate is <span id="temperatureValue"></span></p>
     <br>
     <select name="flip-1" id="flip-1" data-role="slider" style="float: left;">
         <option value="off">LED off</option>
@@ -60,6 +61,6 @@ span {font-weight: bold;}
     </form>
   </div>
  <div data-role="footer">
-    <div><h4>This Raspberry Pi has been {{uptime}}</h4></div>
+    <div><h4>{{uptime}}</h4></div>
   </div>
 </div>
