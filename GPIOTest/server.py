@@ -15,8 +15,7 @@ def Index():
 
 # Helper function to return a jsonified string with the temp.
 def getTargetTempRet():
-	targetTemperatureRet = "{:.0f} F".format(rt.targetTemperatureVal)
-	return jsonify(targetTemperatureValue=targetTemperatureRet)
+	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_tempUp")
 def _tempUp():
@@ -31,12 +30,10 @@ def _tempDown():
 
 @app.route("/_getTubStatus")
 def _getTubStatus():
-	rt.readTemperature()
-	tempValRet = "{:.0f} F".format(rt.temperatureVal)
-	targetTempValRet = "{:.0f} F".format(rt.targetTemperatureVal)
-	setTempValRet = "{:.0f} F".format(rt.setTemperatureVal)
+	# Don't read the temperature if the but is in the process of adjusting it.
+	if not rt.isAdjustingTemp: rt.readTemperature()
 	heatValRet = "ON" if rt.heaterVal else "OFF"
-	return jsonify(temperatureValue=tempValRet,heaterValue = heatValRet,targetTemperatureValue=targetTempValRet,setTemperatureValue=setTempValRet,upTime = GetUptime())
+	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValRet,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastPrint=rt.lastPrint)
 
 def GetUptime():
 	# get uptime from the linux terminal command

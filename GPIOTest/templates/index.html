@@ -7,7 +7,8 @@
 </head>
 
 <style>
-h3, h4 {text-align: center;}
+h3 {text-align: center;}
+h4 {text-align: left;}
 span {font-weight: bold;}
 </style>
 
@@ -49,6 +50,7 @@ span {font-weight: bold;}
                 $("#setTemperatureValue").text(data.setTemperatureValue);
                 $("#targetTemperatureValue").text(data.targetTemperatureValue);
                 $("#upTime").text(data.upTime);
+                $("#lastPrint").text(data.lastPrint);
                 setTimeout(function(){getTemperature();},1000);
             });
     }
@@ -66,11 +68,11 @@ span {font-weight: bold;}
   </div>
 
   <div data-role="content">
-    <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> <br>Heater: <span id="heaterValue"></span> </h2></p>
+    <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> F<br>Heater: <span id="heaterValue"></span> </h2></p>
     <br>
     <br>
-    <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> </h2></p>
-    <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> </h2></p>
+    <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> F</h2></p>
+    <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> F</h2></p>
 	<br>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
@@ -80,6 +82,8 @@ span {font-weight: bold;}
 	</div>
   </div>
  <div data-role="footer">
+    <div ><h4><span id="lastPrint" ></span></h4></div>
+	<br>
     <div><h4><span id="upTime"></span></h4></div>
   </div>
 </div>

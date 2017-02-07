@@ -2,6 +2,7 @@ import RPi.GPIO as GPIO
 import time
 import sys
 import pdb
+import threading
 # https://sourceforge.net/p/raspberry-gpio-python/wiki/BasicUsage/
 
 import multiprocessing.pool
@@ -24,7 +25,7 @@ def timeout(max_timeout):
 def mprint(thisSting):
 # My special print function to log things.
 	global lastPrint
-	lastPring = thisSting
+	lastPrint = thisSting
 	print(thisSting)
 	
 '''
@@ -47,8 +48,8 @@ heaterVal 				=   0   # Current status of tub heater
 
 isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
 
-dataLength 		= 1000	# How many samples we're reading each time we want to read the temp.
-lastPrint 		= ""	# Last printed output. Useful for logging or debugging.
+dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
+lastPrint 		= "All OK"	# Last printed output. Useful for logging or debugging.
 
 def setup():
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
@@ -144,7 +145,8 @@ def decodeBinaryData(clock,data):
 	return binaryData,tempValue,heater,avSamplePerClock
 
 
-@timeout(1.0)  # if execution takes longer than expected raise a TimeoutError
+# @timeout(1.0)  # if execution takes longer than expected raise a TimeoutError
+# This poses a problem when this is called by the server on a timer.
 def readTemperature(waitForNonZeroTemp = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
 # the display was actually showing some temperature)
@@ -202,12 +204,15 @@ def readSetTemperature():
 	
 def incSetTemperature(delta):
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
+	prevTargetTemperatureVal = targetTemperatureVal
 	if targetTemperatureVal < maxTemp and delta > 0: 
 		targetTemperatureVal += delta
-		setTemperature()
 	if targetTemperatureVal > minTemp and delta < 0: 
 		targetTemperatureVal += delta 
-		setTemperature()
+	if not prevTargetTemperatureVal == targetTemperatureVal and isAdjustingTemp == 0:
+		t = threading.Thread(target=setTemperature)
+		t.daemon = True
+		t.start()
 	return
 	
 def setTemperature():
@@ -216,23 +221,23 @@ def setTemperature():
 	if isAdjustingTemp: return
 	# First of, get into blinking mode
 	isAdjustingTemp = 1
-	setTemp = readSetTemperature()
+	setTemperatureVal = readSetTemperature()
 	# Now press the temp adjust button repeatedly until the temp reaches the desired value
 	for i in range(60):
-		if setTemp == targetTemperatureVal: break
+		if setTemperatureVal == targetTemperatureVal: break
 		# Press button
 		pressTempAdjust()
 		# Read the temp, setting waitForNonZeroTemp to 1 to avoid reading while the display is off
-		setTemp = readTemperature(waitForNonZeroTemp = 1)[1]
-		mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemperatureVal,setTemp))
+		setTemperatureVal = readTemperature(waitForNonZeroTemp = 1)[1]
+		mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemperatureVal,setTemperatureVal))
 		time.sleep(.2)
 	else:
 		# This didn't work for some reason.
-		mprint ("Could not set the temp! Last read temp: {}".format(setTemp))
+		mprint ("Could not set the temp! Last read temp: {}".format(setTemperatureVal))
 		isAdjustingTemp = 0
 		return
 	isAdjustingTemp = 0
-	mprint ("Success")
+	mprint ("Successfully set the target temp")
 	
 if __name__ == "__main__":
 	setup()
@@ -254,17 +259,3 @@ if __name__ == "__main__":
 			break
 	tearDown()
 	
-    # # Get recording
-    # values,elapsed = readGPIO(gpioNum,numMeasures,period)
-    # print "Sampling rate: {:.0f} kHz\n".format(numMeasures/elapsed/1000)
-    # # Output values to file.
-    # with open('scope.txt','w') as f:
-      # for line in values:
-        # f.write("{:.1f} ".format(float(line[0])))
-        # for val in line[1:]:
-          # f.write("{} ".format(val))
-        # f.write('\n')
-        
-        
-  
-
