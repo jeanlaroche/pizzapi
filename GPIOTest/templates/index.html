@@ -22,7 +22,7 @@ span {font-weight: bold;}
         {
 			$.getJSON('/_tempUp', function(data)
             {
-                $("#setTemperatureValue").text(data.setTemperatureValue);
+                $("#targetTemperatureValue").text(data.targetTemperatureValue);
             });
         });
 		
@@ -30,7 +30,7 @@ span {font-weight: bold;}
         {
 			$.getJSON('/_tempDown', function(data)
             {
-                $("#setTemperatureValue").text(data.setTemperatureValue);
+                $("#targetTemperatureValue").text(data.targetTemperatureValue);
             });
         });
     }
@@ -47,8 +47,9 @@ span {font-weight: bold;}
                 $("#temperatureValue").text(data.temperatureValue);
                 $("#heaterValue").text(data.heaterValue);
                 $("#setTemperatureValue").text(data.setTemperatureValue);
+                $("#targetTemperatureValue").text(data.targetTemperatureValue);
                 $("#upTime").text(data.upTime);
-                setTimeout(function(){getTemperature();},500);
+                setTimeout(function(){getTemperature();},1000);
             });
     }
     );
@@ -69,6 +70,7 @@ span {font-weight: bold;}
     <br>
     <br>
     <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> </h2></p>
+    <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> </h2></p>
 	<br>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">

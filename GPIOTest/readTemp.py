@@ -39,13 +39,25 @@ buttonOff 		= 0		# GPIO value to simulate a button release.
 minTemp 		= 80	# Minimum settable temperature
 maxTemp 		= 104 	# Maximum settable temperature
 
+# These values can be read.
+temperatureVal			=	100 # Current tub temperature
+setTemperatureVal		=	99 	# Current set temperature, internal to Hot Tub
+targetTemperatureVal	=	99 	# Target set temperature, what we'd like to set it to.
+heaterVal 				=   0   # Current status of tub heater
+
+isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
+
 dataLength 		= 1000	# How many samples we're reading each time we want to read the temp.
 lastPrint 		= ""	# Last printed output. Useful for logging or debugging.
 
 def setup():
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 	GPIO.setup(dataGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 	GPIO.setup(buttonGPIO, GPIO.OUT)
+	# Read the tub current temp, heater status, and set temp.
+	temperatureVal,heaterVal = readTemperature()[1:3]
+	setTemperatureVal = readSetTemperature()
 	
 def tearDown():
 	GPIO.cleanup(clockGPIO)
@@ -136,10 +148,14 @@ def decodeBinaryData(clock,data):
 def readTemperature(waitForNonZeroTemp = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
 # the display was actually showing some temperature)
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
+	return [0,102,1,0]
 	while 1:
 		clock,data,head = readBinaryData()
 		binaryData,tempValue,heater,avSampPerClock = decodeBinaryData(clock,data)
 		if not tempValue == -1 and (tempValue > 0 or waitForNonZeroTemp == 0): break
+	temperatureVal = tempValue
+	heaterVal = heater
 	return binaryData,tempValue,heater,avSampPerClock
 
 @timeout(1.5)  # if execution takes longer than expected raise a TimeoutError
@@ -169,36 +185,53 @@ def readSetTemperature():
 # This reads the temperature the tub is set at, by pressing the set button
 # and reading the temp.
 	# See if you're already blinking, just in case.
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
+	return setTemperatureVal
 	isBlinking,tempValue = isDisplayBlinking()
-	if isBlinking: return tempValue
+	if isBlinking: 
+		setTemperatureVal = tempValue;
+		return tempValue
 	# Press the temp adjust button
 	pressTempAdjust()
 	isBlinking,tempValue = isDisplayBlinking()
 	if not isBlinking:
 		mprint ("Error: temp button pressed but display does not blink")
 		return -1
+	setTemperatureVal = tempValue;
 	return tempValue
 	
-def setTemperature(targetTemp):
+def incSetTemperature(delta):
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
+	if targetTemperatureVal < maxTemp and delta > 0: 
+		targetTemperatureVal += delta
+		setTemperature()
+	if targetTemperatureVal > minTemp and delta < 0: 
+		targetTemperatureVal += delta 
+		setTemperature()
+	return
+	
+def setTemperature():
 # Set the hot tub temperature, by pressing the button repeatedly while reading the set temp.
-	if targetTemp > maxTemp or targetTemp < minTemp:
-		mprint ("Temp {} outside of range 80 -- 104".format(targetTemp))
-		return
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, isAdjustingTemp
+	if isAdjustingTemp: return
 	# First of, get into blinking mode
+	isAdjustingTemp = 1
 	setTemp = readSetTemperature()
 	# Now press the temp adjust button repeatedly until the temp reaches the desired value
 	for i in range(60):
-		if setTemp == targetTemp: break
+		if setTemp == targetTemperatureVal: break
 		# Press button
 		pressTempAdjust()
 		# Read the temp, setting waitForNonZeroTemp to 1 to avoid reading while the display is off
 		setTemp = readTemperature(waitForNonZeroTemp = 1)[1]
-		mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemp,setTemp))
+		mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemperatureVal,setTemp))
 		time.sleep(.2)
 	else:
 		# This didn't work for some reason.
 		mprint ("Could not set the temp! Last read temp: {}".format(setTemp))
+		isAdjustingTemp = 0
 		return
+	isAdjustingTemp = 0
 	mprint ("Success")
 	
 if __name__ == "__main__":
