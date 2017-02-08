@@ -228,6 +228,7 @@ def setTemperature():
 	# First of, get into blinking mode
 	isAdjustingTemp = 1
 	setTemperatureVal = readSetTemperature()
+	set0 = setTemperatureVal
 	# Now press the temp adjust button repeatedly until the temp reaches the desired value
 	for i in range(60):
 		if setTemperatureVal == targetTemperatureVal: break
@@ -236,7 +237,15 @@ def setTemperature():
 		# Read the temp, setting waitForNonZeroTemp to 1 to avoid reading while the display is off
 		setTemperatureVal = readTemperature(waitForNonZeroTemp = 1)[1]
 		mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemperatureVal,setTemperatureVal))
-		time.sleep(.1)
+		if setTemperatureVal > set0 and targetTemperatureVal < set0 : 
+			mprint("PAUSE to go DOWN")
+			time.sleep(5)
+			set0 = setTemperatureVal
+		if setTemperatureVal < set0 and targetTemperatureVal > set0 : 
+			mprint("PAUSE to go UP")
+			time.sleep(5)
+			set0 = setTemperatureVal
+		time.sleep(.6)
 	else:
 		# This didn't work for some reason.
 		mprint ("Could not set the temp! Last read temp: {}".format(setTemperatureVal))
