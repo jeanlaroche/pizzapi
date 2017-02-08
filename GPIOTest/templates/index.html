@@ -50,7 +50,7 @@ span {font-weight: bold;}
                 $("#setTemperatureValue").text(data.setTemperatureValue);
                 $("#targetTemperatureValue").text(data.targetTemperatureValue);
                 $("#upTime").text(data.upTime);
-                $("#lastPrint").text(data.lastPrint);
+                $("#lastMessage").text(data.lastMessage);
                 setTimeout(function(){getTemperature();},1000);
             });
     }
@@ -59,21 +59,18 @@ span {font-weight: bold;}
 
 </script>
 <!-- Simple JQuery Mobile page that display the getTemperature state on the breadoard -->
-<!-- You can also change the LED state with the slider switch -->
 <!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
 
 <div data-role="page" data-theme="b">
   <div data-role="header">
     <div><h2><center>HOT TUB CONTROL</center></h2></div>
   </div>
-
+  
   <div data-role="content">
     <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> F<br>Heater: <span id="heaterValue"></span> </h2></p>
     <br>
-    <br>
     <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> F</h2></p>
     <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> F</h2></p>
-	<br>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
 				<div class="ui-block-a"><button name="Up" id="Up" type="submit" data-theme="d">UP</button></div>
@@ -82,8 +79,7 @@ span {font-weight: bold;}
 	</div>
   </div>
  <div data-role="footer">
-    <div ><h4><span id="lastPrint" ></span></h4></div>
-	<br>
+    <div ><h4><span id="lastMessage" ></span></h4></div>
     <div><h4><span id="upTime"></span></h4></div>
   </div>
 </div>

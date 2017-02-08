@@ -13,27 +13,23 @@ app = Flask(__name__)
 def Index():
 	return render_template("index.html", uptime=GetUptime())
 
-# Helper function to return a jsonified string with the temp.
-def getTargetTempRet():
-	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
-
 @app.route("/_tempUp")
 def _tempUp():
 	rt.incSetTemperature(1)
-	return getTargetTempRet()
+	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_tempDown")
 def _tempDown():
 	print "TEMP DOWN"
 	rt.incSetTemperature(-1)
-	return getTargetTempRet()
+	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_getTubStatus")
 def _getTubStatus():
 	# Don't read the temperature if the but is in the process of adjusting it.
 	if not rt.isAdjustingTemp: rt.readTemperature()
-	heatValRet = "ON" if rt.heaterVal else "OFF"
-	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValRet,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastPrint=rt.lastPrint)
+	heatValStr = "ON" if rt.heaterVal else "OFF"
+	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage)
 
 def GetUptime():
 	# get uptime from the linux terminal command

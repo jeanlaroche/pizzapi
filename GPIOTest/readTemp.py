@@ -24,8 +24,8 @@ def timeout(max_timeout):
 	
 def mprint(thisSting):
 # My special print function to log things.
-	global lastPrint
-	lastPrint = thisSting
+	global lastMessage
+	lastMessage = thisSting
 	print(thisSting)
 	
 '''
@@ -49,7 +49,7 @@ heaterVal 				=   0   # Current status of tub heater
 isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
 
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
-lastPrint 		= "All OK"	# Last printed output. Useful for logging or debugging.
+lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
 
 def setup():
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
