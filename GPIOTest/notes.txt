@@ -43,6 +43,9 @@ Min V for 1 input is 1.3V.
 
 HTTP WEB SERVER.
 This http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html has a complete solution for controlling a PI with some javascript, ajax and flask
+This one also provided the key insight into "onclick":
+http://stackoverflow.com/questions/27716499/how-to-call-a-php-script-function-on-a-html-button-click
+
 Other links possibly of interest:
 http://randomnerdtutorials.com/raspberry-pi-web-server-using-flask-to-control-gpios/
 http://mattrichardson.com/Raspberry-Pi-Flask/index.html

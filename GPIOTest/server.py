@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import readTemp as rt
 import pdb
+import threading, time
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
@@ -37,9 +38,16 @@ def GetUptime():
 	uptime = check_output(["uptime"])
 	return uptime
 	
+def showHeartBeat():
+	rt.showHeartBeat()
+	tim = threading.Timer(4, showHeartBeat)
+	tim.start()
+	
 # run the webserver on standard port 80, requires sudo
 if __name__ == "__main__":
 	# Pins.Init()
 	rt.setup()
-	app.run(host='0.0.0.0', port=80, debug=True)
+	rt.init()
+	showHeartBeat()
+	app.run(host='0.0.0.0', port=80, debug=True, use_reloader=False)
 	rt.tearDown()

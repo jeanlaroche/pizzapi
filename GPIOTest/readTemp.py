@@ -33,7 +33,8 @@ def mprint(thisSting):
 GPIO.setmode(GPIO.BCM)
 clockGPIO 		= 24	# GPIO used to read the clock line
 dataGPIO 		= 25	# GPIO used to read the data line
-buttonGPIO		= 18		# GPIO used to control the temperature button.
+buttonGPIO		= 18	# GPIO used to control the temperature button.
+heartBeatGPIO	= 12	# GPIO used to show a heart beat when reading temp.
 buttonOn 		= 1		# GPIO Value to simulate a button press
 buttonOff 		= 0		# GPIO value to simulate a button release. 
 
@@ -50,22 +51,29 @@ isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
 
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
-fakeIt 			= 0 		# Set to one to fake function.
+fakeIt 			= 1 		# Set to one to fake function.
 
 def setup():
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 	GPIO.setup(dataGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 	GPIO.setup(buttonGPIO, GPIO.OUT)
+	GPIO.output(buttonGPIO,buttonOff)
+	GPIO.setup(heartBeatGPIO, GPIO.OUT)
+	GPIO.output(heartBeatGPIO,buttonOff)
+	
+def init():
 	# Read the tub current temp, heater status, and set temp.
-	temperatureVal,heaterVal = readTemperature()[1:3]
-	setTemperatureVal = readSetTemperature()
-	targetTemperatureVal = setTemperatureVal
+	if not fakeIt:
+		temperatureVal,heaterVal = readTemperature()[1:3]
+		setTemperatureVal = readSetTemperature()
+		targetTemperatureVal = setTemperatureVal
 	
 def tearDown():
 	GPIO.cleanup(clockGPIO)
 	GPIO.cleanup(dataGPIO)
 	GPIO.cleanup(buttonGPIO)
+	GPIO.cleanup(heartBeatGPIO)
 
 def printList(A,f=0):
 	if not f:
@@ -148,6 +156,10 @@ def decodeBinaryData(clock,data):
 	
 	return binaryData,tempValue,heater,avSamplePerClock
 
+def showHeartBeat():
+	GPIO.output(heartBeatGPIO,buttonOn)
+	time.sleep(0.05)
+	GPIO.output(heartBeatGPIO,buttonOff)
 
 # @timeout(1.0)  # if execution takes longer than expected raise a TimeoutError
 # This poses a problem when this is called by the server on a timer.
@@ -155,13 +167,18 @@ def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
 # the display was actually showing some temperature)
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, fakeIt
-	if fakeIt: return [0,temperatureVal,1,0]
+	GPIO.output(heartBeatGPIO,buttonOn)
+	if fakeIt:
+		time.sleep(0.05)
+		GPIO.output(heartBeatGPIO,buttonOff)
+		return [0,temperatureVal,1,0]
 	while 1:
 		clock,data,head = readBinaryData()
 		binaryData,tempValue,heater,avSampPerClock = decodeBinaryData(clock,data)
 		if not tempValue == -1 and (tempValue > 0 or waitForNonZeroTemp == 0): break
 	heaterVal = heater
 	if updateTempVal: temperatureVal = tempValue
+	GPIO.output(heartBeatGPIO,buttonOff)
 	return binaryData,tempValue,heater,avSampPerClock
 
 # @timeout(1.5)  # if execution takes longer than expected raise a TimeoutError
