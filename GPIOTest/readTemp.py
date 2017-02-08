@@ -33,7 +33,7 @@ def mprint(thisSting):
 GPIO.setmode(GPIO.BCM)
 clockGPIO 		= 24	# GPIO used to read the clock line
 dataGPIO 		= 25	# GPIO used to read the data line
-buttonGPIO		= 4		# GPIO used to control the temperature button.
+buttonGPIO		= 18		# GPIO used to control the temperature button.
 buttonOn 		= 1		# GPIO Value to simulate a button press
 buttonOff 		= 0		# GPIO value to simulate a button release. 
 
@@ -41,8 +41,8 @@ minTemp 		= 80	# Minimum settable temperature
 maxTemp 		= 104 	# Maximum settable temperature
 
 # These values can be read.
-temperatureVal			=	100 # Current tub temperature
-setTemperatureVal		=	99 	# Current set temperature, internal to Hot Tub
+temperatureVal			=	10 # Current tub temperature
+setTemperatureVal		=	10 	# Current set temperature, internal to Hot Tub
 targetTemperatureVal	=	99 	# Target set temperature, what we'd like to set it to.
 heaterVal 				=   0   # Current status of tub heater
 
@@ -151,7 +151,7 @@ def readTemperature(waitForNonZeroTemp = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
 # the display was actually showing some temperature)
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
-	return [0,102,1,0]
+	return [0,temperatureVal,1,0]
 	while 1:
 		clock,data,head = readBinaryData()
 		binaryData,tempValue,heater,avSampPerClock = decodeBinaryData(clock,data)
@@ -239,8 +239,36 @@ def setTemperature():
 	isAdjustingTemp = 0
 	mprint ("Successfully set the target temp")
 	
+def selfTestNoBlock():
+	t = threading.Thread(target=selfTest)
+	t.daemon = True
+	t.start()
+	
+def selfTest():
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, isAdjustingTemp
+	# First, check reading temp.
+	mprint ("Reading temp")
+	time.sleep(1)
+	tempValue,heater = readTemperature()[1:3]
+	mprint ("Temp {} and heater {}".format(tempValue,heater))
+	time.sleep(1)
+	# Read the set temp:
+	mprint ("Reading set temp")
+	time.sleep(1)
+	tempValue = readSetTemperature()
+	mprint ("Set Temp is {}".format(tempValue))
+	time.sleep(4)
+	# Read the set temp:
+	mprint ("Setting temperature to 98")
+	time.sleep(1)
+	targetTemperatureVal = 98
+	setTemperature()
+	time.sleep(1)
+	
 if __name__ == "__main__":
 	setup()
+	selfTest()
+	sys.exit(0)
 	# f = open('scope.txt','w')
 	t1 = time.time()
 	while 1:

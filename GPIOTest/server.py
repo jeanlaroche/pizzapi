@@ -15,13 +15,14 @@ def Index():
 
 @app.route("/_tempUp")
 def _tempUp():
-	rt.incSetTemperature(1)
+	rt.selfTestNoBlock()
+	# rt.incSetTemperature(1)
+	# rt.pressTempAdjust()
 	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_tempDown")
 def _tempDown():
-	print "TEMP DOWN"
-	rt.incSetTemperature(-1)
+	# rt.incSetTemperature(-1)
 	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_getTubStatus")
