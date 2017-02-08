@@ -50,6 +50,7 @@ isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
 
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
+fakeIt 			= 0 		# Set to one to fake function.
 
 def setup():
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
@@ -59,6 +60,7 @@ def setup():
 	# Read the tub current temp, heater status, and set temp.
 	temperatureVal,heaterVal = readTemperature()[1:3]
 	setTemperatureVal = readSetTemperature()
+	targetTemperatureVal = setTemperatureVal
 	
 def tearDown():
 	GPIO.cleanup(clockGPIO)
@@ -140,27 +142,29 @@ def decodeBinaryData(clock,data):
 		except: 
 			# Exceptions occur when we don't read the bits quite correctly, once in a while.
 			mprint("Wrong binary format")
-	else: mprint("Not enough binary data")
+	else:
+		pass
+		# mprint("Not enough binary data")
 	
 	return binaryData,tempValue,heater,avSamplePerClock
 
 
 # @timeout(1.0)  # if execution takes longer than expected raise a TimeoutError
 # This poses a problem when this is called by the server on a timer.
-def readTemperature(waitForNonZeroTemp = 0):
+def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
 # the display was actually showing some temperature)
-	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
-	return [0,temperatureVal,1,0]
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, fakeIt
+	if fakeIt: return [0,temperatureVal,1,0]
 	while 1:
 		clock,data,head = readBinaryData()
 		binaryData,tempValue,heater,avSampPerClock = decodeBinaryData(clock,data)
 		if not tempValue == -1 and (tempValue > 0 or waitForNonZeroTemp == 0): break
-	temperatureVal = tempValue
 	heaterVal = heater
+	if updateTempVal: temperatureVal = tempValue
 	return binaryData,tempValue,heater,avSampPerClock
 
-@timeout(1.5)  # if execution takes longer than expected raise a TimeoutError
+# @timeout(1.5)  # if execution takes longer than expected raise a TimeoutError
 def isDisplayBlinking():
 	# Read the temperature for about 1 seconds and verify that we see some 0 values there.
 	# Also returns the read temperature. If the return is 0, the display was blank the whole time.
@@ -169,6 +173,7 @@ def isDisplayBlinking():
 	for ii in range(10):
 		# Read the temp, count how many 0 values we're getting.
 		tVal = readTemperature()[1]
+		# mprint ("TVal = {}".format(tVal))
 		if tVal == 0: noDisp += 1
 		else: tempValue = tVal
 		time.sleep(.1)
@@ -178,19 +183,20 @@ def pressTempAdjust():
 # Simulate pressing the temp adjust button by temporarily toggling a GPIO output.
 	mprint ("PRESSING BUTTON")
 	GPIO.output(buttonGPIO,buttonOn)
-	time.sleep(.1)
+	time.sleep(.05)
 	GPIO.output(buttonGPIO,buttonOff)
-	time.sleep(.1)
+	time.sleep(.05)
 
 	
 def readSetTemperature():
 # This reads the temperature the tub is set at, by pressing the set button
 # and reading the temp.
 	# See if you're already blinking, just in case.
-	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
-	return setTemperatureVal
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, fakeIt
+	if fakeIt: return setTemperatureVal
 	isBlinking,tempValue = isDisplayBlinking()
 	if isBlinking: 
+		mprint("Already blinking")
 		setTemperatureVal = tempValue;
 		return tempValue
 	# Press the temp adjust button
@@ -230,7 +236,7 @@ def setTemperature():
 		# Read the temp, setting waitForNonZeroTemp to 1 to avoid reading while the display is off
 		setTemperatureVal = readTemperature(waitForNonZeroTemp = 1)[1]
 		mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemperatureVal,setTemperatureVal))
-		time.sleep(.2)
+		time.sleep(.1)
 	else:
 		# This didn't work for some reason.
 		mprint ("Could not set the temp! Last read temp: {}".format(setTemperatureVal))
@@ -252,6 +258,7 @@ def selfTest():
 	tempValue,heater = readTemperature()[1:3]
 	mprint ("Temp {} and heater {}".format(tempValue,heater))
 	time.sleep(1)
+	pdb.set_trace()
 	# Read the set temp:
 	mprint ("Reading set temp")
 	time.sleep(1)
@@ -271,6 +278,7 @@ if __name__ == "__main__":
 	sys.exit(0)
 	# f = open('scope.txt','w')
 	t1 = time.time()
+	pressTempAdjust()
 	while 1:
 		try:
 			binaryData,tempValue,heater,avSampPerClock = readTemperature()
@@ -280,7 +288,7 @@ if __name__ == "__main__":
 			t2 = time.time()
 			# print "Elapsed {:.3f}s".format(t2-t1)
 			t1=t2
-			time.sleep(.5)
+			time.sleep(.1)
 		except KeyboardInterrupt: break
 		except multiprocessing.TimeoutError:
 			mprint ("Time out error!")

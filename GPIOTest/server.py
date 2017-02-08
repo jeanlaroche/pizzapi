@@ -15,20 +15,19 @@ def Index():
 
 @app.route("/_tempUp")
 def _tempUp():
-	rt.selfTestNoBlock()
-	# rt.incSetTemperature(1)
 	# rt.pressTempAdjust()
+	rt.incSetTemperature(1)
 	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_tempDown")
 def _tempDown():
-	# rt.incSetTemperature(-1)
+	rt.incSetTemperature(-1)
 	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_getTubStatus")
 def _getTubStatus():
 	# Don't read the temperature if the but is in the process of adjusting it.
-	if not rt.isAdjustingTemp: rt.readTemperature()
+	if not rt.isAdjustingTemp: rt.readTemperature(updateTempVal=1)
 	heatValStr = "ON" if rt.heaterVal else "OFF"
 	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage)
 
