@@ -34,8 +34,14 @@ span {font-weight: bold;}
                 $("#targetTemperatureValue").text(data.targetTemperatureValue);
             });
         });
+
+		$.getJSON('/_getFullData', function(data)
+            {
+            });
+		
     }
     );
+	
 
     $(
     // periodically (500ms) do an ajax request to get the getTemperature state

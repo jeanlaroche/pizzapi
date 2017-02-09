@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import readTemp as rt
 import pdb
 import threading, time
+import schedule
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
@@ -32,6 +33,13 @@ def _getTubStatus():
 	heatValStr = "ON" if rt.heaterVal else "OFF"
 	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage)
 
+@app.route("/_getFullData")
+def _getFullData():
+	print "INIT CALLED"
+	rt.setup()
+	rt.init()
+	return jsonify(setTemperatureValue=rt.setTemperatureVal)
+
 def GetUptime():
 	# get uptime from the linux terminal command
 	from subprocess import check_output
@@ -50,5 +58,8 @@ if __name__ == "__main__":
 	rt.setup()
 	rt.init()
 	showHeartBeat()
+	# Start scheduler
+	tim = threading.Timer(1, schedule.openAndRun)
+	tim.start()
 	app.run(host='0.0.0.0', port=80, debug=True, use_reloader=False)
 	rt.tearDown()

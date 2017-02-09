@@ -1,0 +1,4 @@
+# This is the schedule file for the hot tub
+22:56 90
+22:57 94
+22:58 92
