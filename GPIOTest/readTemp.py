@@ -97,19 +97,12 @@ def readBinaryDataNew():
 		else: head = 0
 	# Don't put a for with a range() here, because that takes too much time and you could miss the next clock edge.
 	while 1:
-<<<<<<< HEAD
-		# Wait for clock edge rise
-=======
 		# Wait for clock edge up
->>>>>>> 1ceffa0e3c171f24cdaeba35d7743319c769d3a9
 		gotIt = GPIO.wait_for_edge(clockGPIO, GPIO.RISING, timeout = 0.100)
 		if not gotIt:
 			mprint("Timeout while waiting for edge")
 			return 0,[]
-<<<<<<< HEAD
 		data[ii] = GPIO.input(dataGPIO)
-=======
->>>>>>> 1ceffa0e3c171f24cdaeba35d7743319c769d3a9
 		# While the clock is up, sample data, or'ing all recorded values.
 		while GPIO.input(clockGPIO):
 			if GPIO.input(dataGPIO): data[ii] = 1
