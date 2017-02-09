@@ -50,12 +50,13 @@ heaterVal 				=   0   # Current status of tub heater
 isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
 
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
+wordLength		= 21		# How many bits are expected in a message. 21 bits: 7 bits for each display.
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
 fakeIt 			= 0 		# Set to one to fake function.
 
 def setup():
-	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-	GPIO.setup(dataGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+	GPIO.setup(dataGPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 	GPIO.setup(buttonGPIO, GPIO.OUT)
 	GPIO.output(buttonGPIO,buttonOff)
 	GPIO.setup(heartBeatGPIO, GPIO.OUT)
@@ -82,6 +83,34 @@ def printList(A,f=0):
 	else:
 		for val in A: f.write("{} ".format(val))
 		f.write('\n')
+		
+def readBinaryDataNew():
+# Function to read the bit stream coming from the motherboard. If this works, it's better than readBinaryData
+# because you don't have to do any decoding after that. You get your 21 values.
+	ii = 0
+	clock = [0]*dataLength
+	data = [0]*dataLength
+	head = 0;
+	# Make sure you have at least 1000 zero clocks.
+	while (head < 1000):
+		if GPIO.input(clockGPIO) == 0: head += 1
+		else: head = 0
+	# Don't put a for with a range() here, because that takes too much time and you could miss the next clock edge.
+	while 1:
+		# Wait for clock edge rise
+		gotIt = GPIO.wait_for_edge(clockGPIO, GPIO.RISING, timeout = 0.100)
+		if not gotIt:
+			mprint("Timeout while waiting for edge")
+			return 0,[]
+		data[ii] = GPIO.input(dataGPIO)
+		# While the clock is up, sample data, or'ing all recorded values.
+		while GPIO.input(clockGPIO):
+			if GPIO.input(dataGPIO): data[ii] = 1
+		ii = ii+1
+		if ii>= wordLength: break
+	printList(data[0:wordLength])
+	return data,head
+		
 
 def readBinaryData():
 # Function to read the bit stream coming from the motherboard. Samples the clock and data lines, and
