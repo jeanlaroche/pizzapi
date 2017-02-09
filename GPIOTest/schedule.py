@@ -31,6 +31,7 @@ def openAndRun():
 	file = '/home/pi/GPIOTest/hottub.txt'
 	print "STARTING SCHEDULE"
 	readSchedule(file)
+	firstTime = 1
 	# I'm going to do it from scratch. I could use sched, but it would be a bit of a mess.
 	doMidnightReset = 1
 	while 1:
@@ -38,22 +39,32 @@ def openAndRun():
 		thisDate = datetime.datetime.now()
 		curTime = thisDate.strftime('%H:%M')
 		print curTime
+		if firstTime:
+			# First time around, sort the times, and execute the action for the last one that should have run.
+			firstTime = 0
+			allTimes = [key for key in schedule.keys() if key <= curTime].sort()
+			if allTimes: 
+				key = allTimes[-1]
+				rt.targetTemperatureVal = int(schedule[key])
+				rt.setTemperature()
+				todo[key] = 0
+	
 		# Re-read the schedule file. This allows us to change the schedule without restarting. Don't read if
 		# a change is occurring at this precise time, it would reset todo[]
 		if not curTime in schedule.keys() : readSchedule(file)
-		if curTime in schedule.keys() and todo[curTime] == 1:
-			# Execute the schedule!
-			print "Time = {} setting tub to {}F".format(curTime,schedule[curTime])
-			# rt.setup()
-			rt.targetTemperatureVal = int(schedule[curTime])
-			rt.setTemperature()
-			# rt.tearDown()
-			todo[curTime] = 0
+		# Reset all the todo flags at midnight. Do that before doing the scheduling. This will allow an even scheduled at 
+		# midnight to run. Make sure you only do it once of course.
 		if curTime == "00:00" and doMidnightReset:
-			# Reset all the todo
 			for key in schedule.keys(): todo[key] = 1
 			doMidnightReset = 0
 		if curTime > "00:02": doMidnightReset = 1
+		# Now run the schedules.
+		if curTime in schedule.keys() and todo[curTime] == 1:
+			# Execute the schedule if todo is 1 for this event.
+			print "Time = {} setting tub to {}F".format(curTime,schedule[curTime])
+			rt.targetTemperatureVal = int(schedule[curTime])
+			rt.setTemperature()
+			todo[curTime] = 0
 		time.sleep(30)
 		
 if __name__ == "__main__":
