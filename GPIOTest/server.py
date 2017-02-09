@@ -40,6 +40,7 @@ def GetUptime():
 	
 def showHeartBeat():
 	rt.showHeartBeat()
+	print "HEARTBEAT"
 	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
 	

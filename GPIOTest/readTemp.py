@@ -44,17 +44,16 @@ maxTemp 		= 104 	# Maximum settable temperature
 # These values can be read.
 temperatureVal			=	10 # Current tub temperature
 setTemperatureVal		=	10 	# Current set temperature, internal to Hot Tub
-targetTemperatureVal	=	99 	# Target set temperature, what we'd like to set it to.
+targetTemperatureVal	=	10 	# Target set temperature, what we'd like to set it to.
 heaterVal 				=   0   # Current status of tub heater
 
 isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
 
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
-fakeIt 			= 1 		# Set to one to fake function.
+fakeIt 			= 0 		# Set to one to fake function.
 
 def setup():
-	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 	GPIO.setup(dataGPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 	GPIO.setup(buttonGPIO, GPIO.OUT)
@@ -63,6 +62,7 @@ def setup():
 	GPIO.output(heartBeatGPIO,buttonOff)
 	
 def init():
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
 	# Read the tub current temp, heater status, and set temp.
 	if not fakeIt:
 		temperatureVal,heaterVal = readTemperature()[1:3]
