@@ -38,16 +38,23 @@ def _getFullData():
 	print "INIT CALLED"
 	rt.setup()
 	rt.init()
-	return jsonify(setTemperatureValue=rt.setTemperatureVal)
+	return ""
+
+@app.route("/_pageUnload")
+def _pageUnload():
+	print "PAGE UNLOADED"
+	return ""
 
 def GetUptime():
 	# get uptime from the linux terminal command
+	if rt.fakeIt: return ""
 	from subprocess import check_output
 	uptime = check_output(["uptime"])
 	return uptime
 	
 def showHeartBeat():
 	rt.showHeartBeat()
+	if rt.fakeIt: return
 	print "HEARTBEAT"
 	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
