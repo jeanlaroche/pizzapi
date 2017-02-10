@@ -30,6 +30,7 @@ def openAndRun():
 	# Open the schedule file
 	file = '/home/pi/GPIOTest/hottub.txt'
 	print "STARTING SCHEDULE"
+	if rt.fakeIt: return
 	readSchedule(file)
 	firstTime = 1
 	# I'm going to do it from scratch. I could use sched, but it would be a bit of a mess.

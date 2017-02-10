@@ -13,55 +13,68 @@ span {font-weight: bold;}
 </style>
 
 <script type=text/javascript>
-		
-    $(
-    // When the LED getTemperature is pressed (change)
-    // do an ajax request to server to change LED state
-    function() 
-    {
-        $('#Up').click(function() 
-        {
-			$.getJSON('/_tempUp', function(data)
-            {
-                $("#targetTemperatureValue").text(data.targetTemperatureValue);
-            });
-        });
-		
-        $('#Down').click(function() 
-        {
-			$.getJSON('/_tempDown', function(data)
-            {
-                $("#targetTemperatureValue").text(data.targetTemperatureValue);
-            });
-        });
+	
+	// Javascript function for up button
+	function onTempUp() {
+		$.getJSON('/_tempUp', function(data)
+		{
+			$("#targetTemperatureValue").text(data.targetTemperatureValue);
+		});
+	}
+	
+	// Javascript function for down button
+	function onTempDown() {
+		$.getJSON('/_tempDown', function(data)
+		{
+			$("#targetTemperatureValue").text(data.targetTemperatureValue);
+		});
+	}
+	
+	// Read all temps, when the page is reloaded.
+	function getFullData() {
+		$.getJSON('/_getFullData');
+	}
+	
+	// This is called at regular intervals when the page is loaded.
+	function getTemperature() 
+	{
+		$.getJSON('/_getTubStatus', function(data)
+			{
+				$("#temperatureValue").text(data.temperatureValue);
+				$("#heaterValue").text(data.heaterValue);
+				$("#setTemperatureValue").text(data.setTemperatureValue);
+				$("#targetTemperatureValue").text(data.targetTemperatureValue);
+				$("#upTime").text(data.upTime);
+				$("#lastMessage").text(data.lastMessage);
+				setTimeout(function(){getTemperature();},1000);
+			});
+	}
 
-		$.getJSON('/_getFullData', function(data)
-            {
-            });
-		
-    }
+	// This is a JQuery shorthand to define a function that's called when the page is loaded.
+    $(
+		function() 
+		{
+			// Binds the ajax request _pageUnload to onbeforeunload of the window.
+			window.onbeforeunload = function(){
+				// The ajax request must return something, but it's OK to ignore it.
+				$.get('/_pageUnload');
+			};
+
+			// This does an Ajax request for /_getFullData.
+			$.getJSON('/_getFullData');
+			
+			// You can also call a regular javascipt function:
+			getTemperature();
+		}
+    );
+	    
+    $(
+		// You can put more code to be executed at page loading in here but it has to be inside a function.
+//		function () {
+//		$.getJSON('/_tempUp');
+//		}
     );
 	
-
-    $(
-    // periodically (500ms) do an ajax request to get the getTemperature state
-    // modify the span tag to reflect the state (pressed or not)
-    // the state text comes from the JSON string returned by the server
-    function getTemperature() 
-    {
-        $.getJSON('/_getTubStatus', function(data)
-            {
-                $("#temperatureValue").text(data.temperatureValue);
-                $("#heaterValue").text(data.heaterValue);
-                $("#setTemperatureValue").text(data.setTemperatureValue);
-                $("#targetTemperatureValue").text(data.targetTemperatureValue);
-                $("#upTime").text(data.upTime);
-                $("#lastMessage").text(data.lastMessage);
-                setTimeout(function(){getTemperature();},1000);
-            });
-    }
-    );
-    
 
 </script>
 <!-- Simple JQuery Mobile page that display the getTemperature state on the breadoard -->
@@ -79,8 +92,9 @@ span {font-weight: bold;}
     <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> F</h2></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
-				<div class="ui-block-a"><button name="Up" id="Up" type="submit" data-theme="d">UP</button></div>
-				<div class="ui-block-b"><button name="Down" id="Down" type="submit" data-theme="d">DOWN</button></div>
+				<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>
+				<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">DOWN</button></div>
+				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 	</div>
   </div>
