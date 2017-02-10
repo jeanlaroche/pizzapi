@@ -14,64 +14,61 @@ span {font-weight: bold;}
 
 <script type=text/javascript>
 	
-	// This is a shorthand to define a function that's called when the page is loaded.
-    $(
-    function() 
-    {
-		// So everything in this anonymous function is called when the page is loaded.
+	// Javascript function for up button
+	function onTempUp() {
+		$.getJSON('/_tempUp', function(data)
+		{
+			$("#targetTemperatureValue").text(data.targetTemperatureValue);
+		});
+	}
 	
-		// This binds the click action on the item with tag #Up to a function that does an Ajax request and sets targetTemperatureValue
-		// $('#up') is a selector for the item with tag "Up"
-        $('#Up').click(function() 
-        {
-			$.getJSON('/_tempUp', function(data)
-            {
-                $("#targetTemperatureValue").text(data.targetTemperatureValue);
-            });
-        });
-		
-		// This binds the click action on the item with tag #Up to a function that does the Ajax request for temp down.
-        $('#Down').click(function() 
-        {
-			$.getJSON('/_tempDown', function(data)
-            {
-                $("#targetTemperatureValue").text(data.targetTemperatureValue);
-            });
-        });
-		
-		// Binds the ajax request _pageUnload to onbeforeunload of the window.
-		window.onbeforeunload = function(){
-			// The ajax request must return something, but it's OK to ignore it.
-			$.get('/_pageUnload');
-		};
-
-		// This does an Ajax request for /_getFullData.
+	// Javascript function for down button
+	function onTempDown() {
+		$.getJSON('/_tempDown', function(data)
+		{
+			$("#targetTemperatureValue").text(data.targetTemperatureValue);
+		});
+	}
+	
+	// Read all temps, when the page is reloaded.
+	function getFullData() {
 		$.getJSON('/_getFullData');
-		
-    }
-
-    );
+	}
 	
+	// This is called at regular intervals when the page is loaded.
+	function getTemperature() 
+	{
+		$.getJSON('/_getTubStatus', function(data)
+			{
+				$("#temperatureValue").text(data.temperatureValue);
+				$("#heaterValue").text(data.heaterValue);
+				$("#setTemperatureValue").text(data.setTemperatureValue);
+				$("#targetTemperatureValue").text(data.targetTemperatureValue);
+				$("#upTime").text(data.upTime);
+				$("#lastMessage").text(data.lastMessage);
+				setTimeout(function(){getTemperature();},1000);
+			});
+	}
 
+	// This is a JQuery shorthand to define a function that's called when the page is loaded.
     $(
-    // periodically (500ms) do an ajax request to get the getTemperature state
-    // modify the span tag to reflect the state (pressed or not)
-    // the state text comes from the JSON string returned by the server
-    function getTemperature() 
-    {
-        $.getJSON('/_getTubStatus', function(data)
-            {
-                $("#temperatureValue").text(data.temperatureValue);
-                $("#heaterValue").text(data.heaterValue);
-                $("#setTemperatureValue").text(data.setTemperatureValue);
-                $("#targetTemperatureValue").text(data.targetTemperatureValue);
-                $("#upTime").text(data.upTime);
-                $("#lastMessage").text(data.lastMessage);
-                setTimeout(function(){getTemperature();},1000);
-            });
-    }
+		function() 
+		{
+			// Binds the ajax request _pageUnload to onbeforeunload of the window.
+			window.onbeforeunload = function(){
+				// The ajax request must return something, but it's OK to ignore it.
+				$.get('/_pageUnload');
+			};
+
+			// This does an Ajax request for /_getFullData.
+			$.getJSON('/_getFullData');
+			
+			// You can also call a regular javascipt function:
+			// onTempDown();
+			getTemperature();
+		}
     );
-    
+	    
     $(
 		// You can put more code to be executed at page loading in here but it has to be inside a function.
 //		function () {
@@ -79,13 +76,6 @@ span {font-weight: bold;}
 //		}
     );
 	
-	// This also works: define a javascript function, and manually bind it to a button by setting the onclick property of the button onclick="test()" 
-	// I think it's probably a bit more intuitive than the code above!
-	function test() {
-		// alert("ah ah ah");
-		//$.getJSON('/_tempUp');
-		// $("#heaterValue").text("AH AH AH");
-	}
 
 </script>
 <!-- Simple JQuery Mobile page that display the getTemperature state on the breadoard -->
@@ -103,8 +93,8 @@ span {font-weight: bold;}
     <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> F</h2></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
-				<div class="ui-block-a"><button name="Up" id="Up" type="submit" data-theme="d">UP</button></div>
-				<div class="ui-block-b"><button name="Down" id="Down" type="submit" data-theme="d">DOWN</button></div>
+				<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>
+				<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">DOWN</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 	</div>
