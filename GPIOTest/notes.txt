@@ -52,7 +52,9 @@ This http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from
 This one also provided the key insight into "onclick":
 http://stackoverflow.com/questions/27716499/how-to-call-a-php-script-function-on-a-html-button-click
 flask is the python code that allows a python script to respond to GET requests, using the URL to map the right function.
-JQuery is the environment that combines HTML, CCS, javascript and AJAX to make designing a dynamic page super easy. 
+JQuery is the environment that combines HTML, CCS, javascript and AJAX to make designing a dynamic page super easy.
+Using the $() stuff to run the intial code when the page is loaded, using anonymous function to bind the button clicks etc, is very cryptic.
+You can do it in a more visible way by setting the onclick or onchange properties of the element to a regular javascript function. That's a lot clearer. 
 
 Other links possibly of interest:
 http://randomnerdtutorials.com/raspberry-pi-web-server-using-flask-to-control-gpios/
