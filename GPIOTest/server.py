@@ -3,6 +3,7 @@ import readTemp as rt
 import pdb
 import threading, time
 import schedule
+import re
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
@@ -47,9 +48,10 @@ def _pageUnload():
 
 def GetUptime():
 	# get uptime from the linux terminal command
-	if rt.fakeIt: return ""
 	from subprocess import check_output
-	uptime = check_output(["uptime"])
+	if rt.fakeIt: uptime = "14:29:08 up 33 days, 10:36,  1 user,  load average: 0.16, 0.03, 0.01"
+	else: uptime = check_output(["uptime"])
+	uptime=re.sub('[\d]+ user,.*load(.*),.*,.*','load\\1',uptime)
 	return uptime
 	
 def showHeartBeat():

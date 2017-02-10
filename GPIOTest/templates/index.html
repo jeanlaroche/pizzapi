@@ -40,12 +40,23 @@ span {font-weight: bold;}
 	{
 		$.getJSON('/_getTubStatus', function(data)
 			{
+				// The text() is a method of the selector to set the text of the selected elements.
+				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
+				// Since many elements might match.
 				$("#temperatureValue").text(data.temperatureValue);
 				$("#heaterValue").text(data.heaterValue);
 				$("#setTemperatureValue").text(data.setTemperatureValue);
 				$("#targetTemperatureValue").text(data.targetTemperatureValue);
 				$("#upTime").text(data.upTime);
 				$("#lastMessage").text(data.lastMessage);
+				// To set a color, set the style to "color:red"
+				$("#heaterValue").attr('style',data.heaterValue == "OFF" ? 'color:white' : 'color:red');
+				// These would also work!
+				// document.getElementById("heaterValue").style="color:green";
+				// document.getElementById("heaterValue").style.color="green";
+				// document.getElementById("heaterValue").style="font-size:300%";
+				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
+				// various things in the console.
 				setTimeout(function(){getTemperature();},1000);
 			});
 	}
@@ -86,7 +97,7 @@ span {font-weight: bold;}
   </div>
   
   <div data-role="content">
-    <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> F<br>Heater: <span id="heaterValue"></span> </h2></p>
+    <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> F<br>Heater: <span id="heaterValue" ></span> </h2></p>
     <br>
     <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> F</h2></p>
     <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> F</h2></p>

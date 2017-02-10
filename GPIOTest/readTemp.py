@@ -1,4 +1,3 @@
-import RPi.GPIO as GPIO
 import time
 import sys
 import pdb
@@ -8,22 +7,8 @@ import threading
 import multiprocessing.pool
 import functools
 
-def timeout(max_timeout):
-    """Timeout decorator, parameter in seconds."""
-    def timeout_decorator(item):
-        """Wrap the original function."""
-        @functools.wraps(item)
-        def func_wrapper(*args, **kwargs):
-            """Closure for function."""
-            pool = multiprocessing.pool.ThreadPool(processes=1)
-            async_result = pool.apply_async(item, args, kwargs)
-            # raises a TimeoutError if execution exceeds max_timeout
-            return async_result.get(max_timeout)
-        return func_wrapper
-    return timeout_decorator
-	
 def mprint(thisString):
-# My special print function to log things.
+	# My special print function to log things.
 	global lastMessage
 	timeStr = time.ctime(time.time()) + ": "
 	lastMessage = timeStr + thisString
@@ -32,7 +17,6 @@ def mprint(thisString):
 	
 '''
 '''
-GPIO.setmode(GPIO.BCM)
 clockGPIO 		= 24	# GPIO used to read the clock line
 dataGPIO 		= 25	# GPIO used to read the data line
 buttonGPIO		= 18	# GPIO used to control the temperature button.
@@ -56,7 +40,14 @@ wordLength		= 21		# How many bits are expected in a message. 21 bits: 7 bits for
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
 fakeIt 			= 0 		# Set to one to fake function.
 
-logF			= open('/home/pi/GPIOTest/TubLog.txt','w',0)
+if not fakeIt:
+	import RPi.GPIO as GPIO
+	logF			= open('/home/pi/GPIOTest/TubLog.txt','w',0)
+else:
+	import fakeGPIO as GPIO
+	logF			= open('./TubLog.txt','w',0)
+GPIO.setmode(GPIO.BCM)
+
 
 def setup():
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -88,34 +79,6 @@ def printList(A,f=0):
 	else:
 		for val in A: f.write("{} ".format(val))
 		f.write('\n')
-		
-def readBinaryDataNew():
-# Function to read the bit stream coming from the motherboard. If this works, it's better than readBinaryData
-# because you don't have to do any decoding after that. You get your 21 values.
-	ii = 0
-	clock = [0]*dataLength
-	data = [0]*dataLength
-	head = 0;
-	# Make sure you have at least 1000 zero clocks.
-	while (head < 10000):
-		if GPIO.input(clockGPIO) == 0: head += 1
-		else: head = 0
-	# Don't put a for with a range() here, because that takes too much time and you could miss the next clock edge.
-	while 1:
-		# Wait for clock edge up
-		gotIt = GPIO.wait_for_edge(clockGPIO, GPIO.RISING, timeout = 100)
-		if not gotIt:
-			mprint("Timeout while waiting for edge")
-			return 0,[]
-		data[ii] = GPIO.input(dataGPIO)
-		# While the clock is up, sample data, or'ing all recorded values.
-		while GPIO.input(clockGPIO):
-			if GPIO.input(dataGPIO): data[ii] = 1
-		ii = ii+1
-		if ii>= wordLength: break
-	printList(data[0:wordLength])
-	return data,head
-		
 
 def readBinaryData():
 # Function to read the bit stream coming from the motherboard. Samples the clock and data lines, and
@@ -191,16 +154,16 @@ def decodeBinaryData(clock,data):
 	return binaryData,tempValue,heater,avSamplePerClock
 
 def showHeartBeat():
+	# Just blink a LED
 	GPIO.output(heartBeatGPIO,buttonOn)
 	time.sleep(0.05)
 	GPIO.output(heartBeatGPIO,buttonOff)
 
-# @timeout(1.0)  # if execution takes longer than expected raise a TimeoutError
-# This poses a problem when this is called by the server on a timer.
 def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
-# the display was actually showing some temperature)
+# the display was actually showing some temperature). Returns the temperature as a decimal, and other goodies.
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, fakeIt
+	# Blink the heartbeat LED
 	GPIO.output(heartBeatGPIO,buttonOn)
 	if fakeIt:
 		time.sleep(0.05)
@@ -215,7 +178,6 @@ def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 	GPIO.output(heartBeatGPIO,buttonOff)
 	return binaryData,tempValue,heater,avSampPerClock
 
-# @timeout(1.5)  # if execution takes longer than expected raise a TimeoutError
 def isDisplayBlinking():
 	# Read the temperature for about 1 seconds and verify that we see some 0 values there.
 	# Also returns the read temperature. If the return is 0, the display was blank the whole time.
