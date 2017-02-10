@@ -56,7 +56,7 @@ wordLength		= 21		# How many bits are expected in a message. 21 bits: 7 bits for
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
 fakeIt 			= 0 		# Set to one to fake function.
 
-logF			= open('/tmp/Tub.log','w',0)
+logF			= open('/home/pi/GPIOTest/TubLog.txt','w',0)
 
 def setup():
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -191,7 +191,6 @@ def decodeBinaryData(clock,data):
 	return binaryData,tempValue,heater,avSamplePerClock
 
 def showHeartBeat():
-	mprint ("HEART BEAT")
 	GPIO.output(heartBeatGPIO,buttonOn)
 	time.sleep(0.05)
 	GPIO.output(heartBeatGPIO,buttonOff)

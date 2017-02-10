@@ -55,7 +55,6 @@ def GetUptime():
 def showHeartBeat():
 	rt.showHeartBeat()
 	if rt.fakeIt: return
-	print "HEARTBEAT"
 	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
 	
