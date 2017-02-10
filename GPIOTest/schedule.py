@@ -42,9 +42,10 @@ def openAndRun():
 		if firstTime:
 			# First time around, sort the times, and execute the action for the last one that should have run.
 			firstTime = 0
-			allTimes = [key for key in schedule.keys() if key <= curTime].sort()
+			allTimes = sorted([key for key in schedule.keys() if key <= curTime])
 			if allTimes: 
 				key = allTimes[-1]
+				print "Redoing schedule for = {} setting tub to {}F".format(key,schedule[key])
 				rt.targetTemperatureVal = int(schedule[key])
 				rt.setTemperature()
 				todo[key] = 0
