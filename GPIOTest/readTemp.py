@@ -22,11 +22,13 @@ def timeout(max_timeout):
         return func_wrapper
     return timeout_decorator
 	
-def mprint(thisSting):
+def mprint(thisString):
 # My special print function to log things.
 	global lastMessage
-	lastMessage = thisSting
-	print(thisSting)
+	timeStr = time.ctime(time.time()) + ": "
+	lastMessage = timeStr + thisString
+	print(thisString)
+	logF.write( timeStr + thisString + '\n')
 	
 '''
 '''
@@ -54,6 +56,8 @@ wordLength		= 21		# How many bits are expected in a message. 21 bits: 7 bits for
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
 fakeIt 			= 0 		# Set to one to fake function.
 
+logF			= open('/tmp/Tub.log','w',0)
+
 def setup():
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 	GPIO.setup(dataGPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -69,6 +73,7 @@ def init():
 		temperatureVal,heaterVal = readTemperature()[1:3]
 		setTemperatureVal = readSetTemperature()
 		targetTemperatureVal = setTemperatureVal
+		mprint("Init Called: Temp {} Set {} ".format(temperatureVal,setTemperatureVal))
 	
 def tearDown():
 	GPIO.cleanup(clockGPIO)
@@ -92,13 +97,13 @@ def readBinaryDataNew():
 	data = [0]*dataLength
 	head = 0;
 	# Make sure you have at least 1000 zero clocks.
-	while (head < 1000):
+	while (head < 10000):
 		if GPIO.input(clockGPIO) == 0: head += 1
 		else: head = 0
 	# Don't put a for with a range() here, because that takes too much time and you could miss the next clock edge.
 	while 1:
 		# Wait for clock edge up
-		gotIt = GPIO.wait_for_edge(clockGPIO, GPIO.RISING, timeout = 0.100)
+		gotIt = GPIO.wait_for_edge(clockGPIO, GPIO.RISING, timeout = 100)
 		if not gotIt:
 			mprint("Timeout while waiting for edge")
 			return 0,[]
@@ -186,6 +191,7 @@ def decodeBinaryData(clock,data):
 	return binaryData,tempValue,heater,avSamplePerClock
 
 def showHeartBeat():
+	mprint ("HEART BEAT")
 	GPIO.output(heartBeatGPIO,buttonOn)
 	time.sleep(0.05)
 	GPIO.output(heartBeatGPIO,buttonOff)

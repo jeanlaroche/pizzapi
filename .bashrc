@@ -116,6 +116,6 @@ bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 
 alias python="sudo python"
-alias nano="sudo nano"
+#alias nano="sudo nano"
 alias mnt="sudo mount -t cifs //192.168.1.110/gpiotest /mnt/mainpc/git/gpiotest"
 alias iperf="iperf3 -R -c 192.168.1.110"
