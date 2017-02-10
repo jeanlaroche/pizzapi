@@ -40,6 +40,10 @@ I checked that a AA batter triggers the input.
 Recommended R for driving a LED from a GPIO: 330 Ohm. 
 Max V for 0 input is 0.8V
 Min V for 1 input is 1.3V.
+PINs on PI: Seen from above
+
+5V  5V  GND G14 G15 G18 GND G23 G24 GND
+3V  GP2 GP3 GP4 GRD G17 G27 G22 3V  G10
 
 HTTP WEB SERVER.
 This http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html has a complete solution for controlling a PI with some javascript, ajax and flask
