@@ -3,6 +3,8 @@ import pdb
 
 # Function to evaluate the sampling rate for reading GPIOs.
 # Using either RPi or pigpio
+# sudo apt-get install pigpio python-pigpio python3-pigpio
+
 def testSpeed():
 	import pigpio
 	pi = pigpio.pi() 
