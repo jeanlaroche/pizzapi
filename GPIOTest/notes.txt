@@ -35,7 +35,8 @@ Do lsmod to see if SPI is available
 
 
 GPIO reading
-Reading 8 GPIOs simultanously, I'm getting about 60kHz sampling.
+Reading 8 GPIOs simultanously, I'm getting about 60kHz sampling with RPi.GPIO.
+There's also pigpio, and it looks like it's a lot more powerful, and much faster.
 I checked that a AA batter triggers the input.
 Recommended R for driving a LED from a GPIO: 330 Ohm. 
 Max V for 0 input is 0.8V
