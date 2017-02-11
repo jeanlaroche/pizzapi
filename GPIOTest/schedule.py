@@ -46,7 +46,7 @@ def openAndRun():
 			allTimes = sorted([key for key in schedule.keys() if key <= curTime])
 			if allTimes: 
 				key = allTimes[-1]
-				print "Redoing schedule for = {} setting tub to {}F".format(key,schedule[key])
+				rt.mprint("Redoing schedule for = {} setting tub to {}F".format(key,schedule[key]))
 				rt.targetTemperatureVal = int(schedule[key])
 				rt.setTemperature()
 				todo[key] = 0
@@ -63,7 +63,7 @@ def openAndRun():
 		# Now run the schedules.
 		if curTime in schedule.keys() and todo[curTime] == 1:
 			# Execute the schedule if todo is 1 for this event.
-			print "Time = {} setting tub to {}F".format(curTime,schedule[curTime])
+			rt.mprint("Time = {} setting tub to {}F".format(curTime,schedule[curTime]))
 			rt.targetTemperatureVal = int(schedule[curTime])
 			rt.setTemperature()
 			todo[curTime] = 0

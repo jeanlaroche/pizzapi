@@ -57,7 +57,7 @@ def GetUptime():
 def showHeartBeat():
 	rt.showHeartBeat()
 	if rt.fakeIt: return
-	tim = threading.Timer(4, showHeartBeat)
+	tim = threading.Timer(2, showHeartBeat)
 	tim.start()
 	
 # run the webserver on standard port 80, requires sudo
