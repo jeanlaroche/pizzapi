@@ -33,9 +33,31 @@ def testSpeed2():
 	time2=time.time()
 	print "RPI{:} K reads in {:.3}s or {:.0f}kHz\n".format((i+1)/1000,time2-time1,i/(time2-time1)/1000)
 
+print "Don't forget to start the deamon sudo pigpiod"
 pdb.set_trace()
 testSpeed()
 testSpeed2()
+
+import pigpio
+pi = pigpio.pi() 
+
+status = pi.bb_serial_read_open(4, 40000, 1)
+(count, data) = pi.bb_serial_read(4)
+status = pi.bb_serial_read_close(4)
+
+pi.set_mode( 4, pigpio.OUTPUT)
+while 1:
+	try:
+		for i=range(255):
+			time.sleep(.01)
+			pi.set_PWM_dutycycle(4,i) 
+		for i=range(255):
+			time.sleep(.01)
+			pi.set_PWM_dutycycle(4,255-i) 
+	except KeyboardInterrupt: break
+
+pdb.set_trace()
+
 testSpeed()
 testSpeed2()
 testSpeed()
