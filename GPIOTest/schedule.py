@@ -13,6 +13,54 @@ lastHeaterVal			= 	-1 	# Last heater value
 statLogFile 			= '/home/pi/GPIOTest/Stats.txt'
 statLogF				= open(statLogFile,'a',0)
 
+def getCtime():
+	return time.time()/3600-8-412992 # Subtracting a multiple of 24 because time.time() starts at 00:00 
+	
+def max(a,b):
+	return a if a>b else b
+	
+def computeStats():
+	with open(statLogFile,'r') as fd:
+		allLines = fd.readlines()
+	# Separate and massage the heater and temp data. We need floats.
+	heaterData = [line for line in allLines if line[0] == 'H']
+	heaterData = [item.split()[1:3] for item in heaterData]
+	heaterData = [[float(item[0]),float(item[1])] for item in heaterData]
+	tempData = [line for line in allLines if line[0] == 'T']
+	tempData = [item.split()[1:3] for item in tempData]
+	tempData = [[float(item[0]),float(item[1])] for item in tempData]
+	# Current time in float hours.
+	curTime = getCtime()
+	# 00:00 this morning.
+	today = 24*int(curTime / 24)
+	# 00:00 yesterday morning.
+	yesterday = today - 24
+	# Stats.
+	heaterPastHour = 0
+	heaterToday = 0
+	heaterYesterday = 0
+	heaterTotal = 0
+	for ii,[tim,heat] in enumerate(heaterData):
+		# Ignore the first entry, and all entry where heat = 1 (because this means the time span until this entry
+		# had heater off.
+		if ii == 0 or heat == 1: continue
+		# Time at previous entry, 
+		prevTime = heaterData[ii-1][0]
+		# This should not happen since we only log heater changes.
+		if heaterData[ii-1][1] == 0 : 
+			print "Weird, two consecutive heater entry with heater=0"
+			continue
+		# max(prevTime,curTime - 1) is useful because we only want to count the time within the past hour, not since
+		# the last log.
+		if prevTime > curTime - 1 : heaterPastHour += tim - max(prevTime,curTime - 1)
+		if prevTime > today : heaterToday += tim - max(prevTime,today)
+		if prevTime > yesterday and prevTime < today : heaterYesterday += tim - max(prevTime,yesterday)
+		heaterTotal += tim - prevTime
+	totTime = curTime - heaterData[0][0]
+	heaterTotal = heaterTotal / totTime
+	print "Past hour: {:.0f}m -- Since midnight: {:.2f}h -- Yesterday: {:.2f}h -- Av. per day: {:.2f}h".format(60*heaterPastHour,heaterToday,heaterYesterday,24*heaterTotal / totTime)
+	return heaterPastHour,heaterToday,heaterYesterday,heaterTotal
+
 def logHeaterUse():
 	global lastHeaterVal, lastTempVal
 	# Don't do anything if the temp is being read or adjusted.
@@ -20,7 +68,7 @@ def logHeaterUse():
 	rt.readTemperature()
 	
 	timeStr = time.ctime(time.time())
-	curTime = time.time()/3600-413000
+	curTime = getCtime()
 	
 	# Log a heater change in the format: FracTimeInHours new heatervalue date
 	if not lastHeaterVal == rt.heaterVal:
@@ -102,4 +150,4 @@ def openAndRun():
 		time.sleep(30)
 		
 if __name__ == "__main__":
-	openAndRun()
+	computeStats()
