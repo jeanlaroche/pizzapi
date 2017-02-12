@@ -1,5 +1,5 @@
 import time
-import sys
+import sys, os
 import pdb
 import threading
 # https://sourceforge.net/p/raspberry-gpio-python/wiki/BasicUsage/
@@ -34,18 +34,23 @@ targetTemperatureVal	=	10 	# Target set temperature, what we'd like to set it to
 heaterVal 				=   0   # Current status of tub heater
 
 isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
+isReadingTemp			= 	0 	# Flag indicating that we're reading the temp.
+lastTimeHeaterChecked 	= 	0 	# Last time the heater changed state
+totTimeHeaterOn			=	0 	# Total time (in fractional hours) the heater was on
+totTimeHeater			=	0 	# Total time in fractional hours we measured the heater status
 
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
 wordLength		= 21		# How many bits are expected in a message. 21 bits: 7 bits for each display.
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
 fakeIt 			= 0 		# Set to one to fake function.
-
+logFile 		= '/home/pi/GPIOTest/TubLog.txt'
 if not fakeIt:
 	import RPi.GPIO as GPIO
-	logF			= open('/home/pi/GPIOTest/TubLog.txt','w',0)
+	logF			= open(logFile,'w',0)
 else:
 	import fakeGPIO as GPIO
-	logF			= open('./TubLog.txt','w',0)
+	logFile = './TubLog.txt'
+	logF			= open(logFile,'w',0)
 GPIO.setmode(GPIO.BCM)
 
 
@@ -158,16 +163,31 @@ def showHeartBeat():
 	GPIO.output(heartBeatGPIO,buttonOn)
 	time.sleep(0.05)
 	GPIO.output(heartBeatGPIO,buttonOff)
+	# Also touch the log file!
+	os.system('touch ' + logFile)
+	
+def logHeaterUse():
+	global lastTimeHeaterChecked, totTimeHeaterOn, totTimeHeater
+	# Don't do anything if the temp is being read or adjusted, heaterVal is accurate.
+	if not (isAdjustingTemp or isReadingTemp): readTemperature()
+	curTime = time.time()
+	elapsedTime = float(curTime - lastTimeHeaterChecked if lastTimeHeaterChecked else 0)/3600
+	if heaterVal == 1: totTimeHeaterOn += elapsedTime
+	totTimeHeater += elapsedTime
+	lastTimeHeaterChecked = curTime
+	# print "on: {:.4f} all {:.4f}".format(totTimeHeaterOn,totTimeHeater)
 
 def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
 # the display was actually showing some temperature). Returns the temperature as a decimal, and other goodies.
-	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, fakeIt
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, fakeIt, isReadingTemp
+	isReadingTemp = 1
 	# Blink the heartbeat LED
 	GPIO.output(heartBeatGPIO,buttonOn)
 	if fakeIt:
 		time.sleep(0.05)
 		GPIO.output(heartBeatGPIO,buttonOff)
+		isReadingTemp = 0
 		return [0,temperatureVal,1,0]
 	while 1:
 		clock,data,head = readBinaryData()
@@ -176,6 +196,7 @@ def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 	heaterVal = heater
 	if updateTempVal: temperatureVal = tempValue
 	GPIO.output(heartBeatGPIO,buttonOff)
+	isReadingTemp = 0
 	return binaryData,tempValue,heater,avSampPerClock
 
 def isDisplayBlinking():

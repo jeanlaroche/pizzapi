@@ -29,10 +29,11 @@ def _tempDown():
 
 @app.route("/_getTubStatus")
 def _getTubStatus():
-	# Don't read the temperature if the but is in the process of adjusting it.
+	# Don't read the temperature if the tub is in the process of adjusting it.
 	if not rt.isAdjustingTemp: rt.readTemperature(updateTempVal=1)
 	heatValStr = "ON" if rt.heaterVal else "OFF"
-	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage)
+	heaterStats = "Heater ON for {:.2f}h out of {:.2f} or {:.2f}h per day".format(rt.totTimeHeaterOn,rt.totTimeHeater,24*rt.totTimeHeaterOn/rt.totTimeHeater if rt.totTimeHeater else 0.0)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = heaterStats)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -45,17 +46,25 @@ def _getFullData():
 def _pageUnload():
 	print "PAGE UNLOADED"
 	return ""
+	
+@app.route("/_schedule")
+def _schedule():
+	print "RERUN SCHEDULE"
+	schedule.redoSchedule()
+	return ""
+	
 
 def GetUptime():
 	# get uptime from the linux terminal command
 	from subprocess import check_output
 	if rt.fakeIt: uptime = "14:29:08 up 33 days, 10:36,  1 user,  load average: 0.16, 0.03, 0.01"
 	else: uptime = check_output(["uptime"])
-	uptime=re.sub('[\d]+ user,.*load(.*),.*,.*','load\\1',uptime)
+	uptime=re.sub('[\d]+ user[s]*,.*load(.*),.*,.*','load\\1',uptime)
 	return uptime
 	
 def showHeartBeat():
 	rt.showHeartBeat()
+	rt.logHeaterUse()
 	if rt.fakeIt: return
 	tim = threading.Timer(2, showHeartBeat)
 	tim.start()

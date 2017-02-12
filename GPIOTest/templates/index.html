@@ -30,6 +30,11 @@ span {font-weight: bold;}
 		});
 	}
 	
+	// Javascript function for down button
+	function onSchedule() {
+		$.get('/_schedule');
+	}
+
 	// Read all temps, when the page is reloaded.
 	function getFullData() {
 		$.getJSON('/_getFullData');
@@ -49,6 +54,7 @@ span {font-weight: bold;}
 				$("#targetTemperatureValue").text(data.targetTemperatureValue);
 				$("#upTime").text(data.upTime);
 				$("#lastMessage").text(data.lastMessage);
+				$("#heaterStats").text(data.heaterStats);
 				// To set a color, set the style to "color:red"
 				$("#heaterValue").attr('style',data.heaterValue == "OFF" ? 'color:white' : 'color:red');
 				// These would also work!
@@ -98,19 +104,20 @@ span {font-weight: bold;}
   
   <div data-role="content">
     <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> F<br>Heater: <span id="heaterValue" ></span> </h2></p>
-    <br>
     <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> F</h2></p>
     <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> F</h2></p>
 	<div data-role="fieldcontain">
-		<fieldset class="ui-grid-a">
-				<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>
-				<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">DOWN</button></div>
+		<fieldset class="ui-grid-b">
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">DOWN</button></div>
+			<div class="ui-block-c"><button name="Sched" id="Sche" onclick="onSchedule()" data-theme="d">SCHED</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 	</div>
   </div>
  <div data-role="footer">
     <div ><h4><span id="lastMessage" ></span></h4></div>
+    <div ><h4><span id="heaterStats" ></span></h4></div>
     <div><h4><span id="upTime"></span></h4></div>
   </div>
 </div>

@@ -7,9 +7,9 @@ import pdb
 schedule = {}
 todo = {}
 
-def readSchedule(file):
+def readSchedule(file,verbose=0):
 	global schedule, todo
-	print "Reading {}".format(file)
+	if verbose: print "Reading {}".format(file)
 	with open(file,'r') as f:
 		schedule = {}
 		todo = {}
@@ -18,20 +18,33 @@ def readSchedule(file):
 			if line[0] == '#': continue
 			# Split
 			R = re.search(r'(\d+\:\d+)[,\s]+(\d+)',line)
-			if not R:
+			if not R and verbose:
 				print "Could not parse {}, continuing".format(line)
 			schedule[R.group(1)]=R.group(2)
 			todo[R.group(1)] = 1
-	print "Done"
-	for key in schedule.keys():
-		print "At {} --> {}F".format(key,schedule[key])
+	if verbose: print "Done"
+	if verbose:
+		for key in schedule.keys():
+			print "At {} --> {}F".format(key,schedule[key])
+
+# Redo the last scheduled event.
+def redoSchedule():
+	thisDate = datetime.datetime.now()
+	curTime = thisDate.strftime('%H:%M')
+	allTimes = sorted([key for key in schedule.keys() if key <= curTime])
+	if allTimes: 
+		key = allTimes[-1]
+		rt.mprint("Redoing schedule for = {} setting tub to {}F".format(key,schedule[key]))
+		rt.targetTemperatureVal = int(schedule[key])
+		rt.setTemperature()
+		todo[key] = 0
 
 def openAndRun():
 	# Open the schedule file
 	file = '/home/pi/GPIOTest/hottub.txt'
 	print "STARTING SCHEDULE"
 	if rt.fakeIt: return
-	readSchedule(file)
+	readSchedule(file,verbose=1)
 	firstTime = 1
 	# I'm going to do it from scratch. I could use sched, but it would be a bit of a mess.
 	doMidnightReset = 1
@@ -43,13 +56,7 @@ def openAndRun():
 		if firstTime:
 			# First time around, sort the times, and execute the action for the last one that should have run.
 			firstTime = 0
-			allTimes = sorted([key for key in schedule.keys() if key <= curTime])
-			if allTimes: 
-				key = allTimes[-1]
-				rt.mprint("Redoing schedule for = {} setting tub to {}F".format(key,schedule[key]))
-				rt.targetTemperatureVal = int(schedule[key])
-				rt.setTemperature()
-				todo[key] = 0
+			redoSchedule()
 	
 		# Re-read the schedule file. This allows us to change the schedule without restarting. Don't read if
 		# a change is occurring at this precise time, it would reset todo[]
