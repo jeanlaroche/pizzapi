@@ -30,10 +30,11 @@ def _tempDown():
 @app.route("/_getTubStatus")
 def _getTubStatus():
 	# Don't read the temperature if the tub is in the process of adjusting it.
-	if not rt.isAdjustingTemp: rt.readTemperature(updateTempVal=1)
+	if not rt.isAdjustingTemp: 
+		while(rt.isDisplayBlinking()[0]): time.sleep(.2)
+		rt.readTemperature(updateTempVal=1)
 	heatValStr = "ON" if rt.heaterVal else "OFF"
-	heaterStats = "Heater ON for {:.2f}h out of {:.2f} or {:.2f}h per day".format(rt.totTimeHeaterOn,rt.totTimeHeater,24*rt.totTimeHeaterOn/rt.totTimeHeater if rt.totTimeHeater else 0.0)
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = heaterStats)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = "")
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -64,7 +65,7 @@ def GetUptime():
 	
 def showHeartBeat():
 	rt.showHeartBeat()
-	rt.logHeaterUse()
+	schedule.logHeaterUse()
 	if rt.fakeIt: return
 	tim = threading.Timer(2, showHeartBeat)
 	tim.start()

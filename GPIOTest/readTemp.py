@@ -35,9 +35,6 @@ heaterVal 				=   0   # Current status of tub heater
 
 isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
 isReadingTemp			= 	0 	# Flag indicating that we're reading the temp.
-lastTimeHeaterChecked 	= 	0 	# Last time the heater changed state
-totTimeHeaterOn			=	0 	# Total time (in fractional hours) the heater was on
-totTimeHeater			=	0 	# Total time in fractional hours we measured the heater status
 
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
 wordLength		= 21		# How many bits are expected in a message. 21 bits: 7 bits for each display.
@@ -166,17 +163,6 @@ def showHeartBeat():
 	# Also touch the log file!
 	os.system('touch ' + logFile)
 	
-def logHeaterUse():
-	global lastTimeHeaterChecked, totTimeHeaterOn, totTimeHeater
-	# Don't do anything if the temp is being read or adjusted, heaterVal is accurate.
-	if not (isAdjustingTemp or isReadingTemp): readTemperature()
-	curTime = time.time()
-	elapsedTime = float(curTime - lastTimeHeaterChecked if lastTimeHeaterChecked else 0)/3600
-	if heaterVal == 1: totTimeHeaterOn += elapsedTime
-	totTimeHeater += elapsedTime
-	lastTimeHeaterChecked = curTime
-	# print "on: {:.4f} all {:.4f}".format(totTimeHeaterOn,totTimeHeater)
-
 def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
 # the display was actually showing some temperature). Returns the temperature as a decimal, and other goodies.
@@ -269,13 +255,13 @@ def setTemperature():
 		pressTempAdjust()
 		# Read the temp, setting waitForNonZeroTemp to 1 to avoid reading while the display is off
 		setTemperatureVal = readTemperature(waitForNonZeroTemp = 1)[1]
-		mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemperatureVal,setTemperatureVal))
+		# mprint ("Setting temp, i = {}, target = {}, read = {}".format(i,targetTemperatureVal,setTemperatureVal))
 		if setTemperatureVal > set0 and targetTemperatureVal < set0 : 
-			mprint("PAUSE to go DOWN")
+			# mprint("PAUSE to go DOWN")
 			time.sleep(5)
 			set0 = setTemperatureVal
 		if setTemperatureVal < set0 and targetTemperatureVal > set0 : 
-			mprint("PAUSE to go UP")
+			# mprint("PAUSE to go UP")
 			time.sleep(5)
 			set0 = setTemperatureVal
 		time.sleep(.6)

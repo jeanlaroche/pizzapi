@@ -3,10 +3,36 @@ import time
 import re
 import datetime
 import pdb
+import readTemp as rt
 
 schedule = {}
 todo = {}
 
+lastTempVal				= 	-1 	# Last read temp
+lastHeaterVal			= 	-1 	# Last heater value
+statLogFile 			= '/home/pi/GPIOTest/Stats.txt'
+statLogF				= open(statLogFile,'a',0)
+
+def logHeaterUse():
+	global lastHeaterVal, lastTempVal
+	# Don't do anything if the temp is being read or adjusted.
+	if rt.isAdjustingTemp or rt.isReadingTemp: rt.readTemperature()
+	rt.readTemperature()
+	
+	timeStr = time.ctime(time.time())
+	curTime = time.time()/3600-413000
+	
+	# Log a heater change in the format: FracTimeInHours new heatervalue date
+	if not lastHeaterVal == rt.heaterVal:
+		statLogF.write("H {:.2f} {} {}\n".format(curTime,rt.heaterVal,timeStr))
+	
+	if not lastTempVal == rt.temperatureVal and rt.temperatureVal:
+		statLogF.write("T {:.2f} {} {}\n".format(curTime,rt.temperatureVal,timeStr))
+		lastTempVal = rt.temperatureVal
+
+	lastHeaterVal = rt.heaterVal
+	
+	
 def readSchedule(file,verbose=0):
 	global schedule, todo
 	if verbose: print "Reading {}".format(file)
@@ -52,7 +78,6 @@ def openAndRun():
 		# Get the current time.
 		thisDate = datetime.datetime.now()
 		curTime = thisDate.strftime('%H:%M')
-		print curTime
 		if firstTime:
 			# First time around, sort the times, and execute the action for the last one that should have run.
 			firstTime = 0
