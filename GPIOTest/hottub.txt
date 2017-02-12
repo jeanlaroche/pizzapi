@@ -1,7 +1,5 @@
 # This is the schedule file for the hot tub
 23:00 90
-23:55 92
-07:00 94
+10:00 94
 12:00 95
-13:00 96
-17:00 97
+16:00 98

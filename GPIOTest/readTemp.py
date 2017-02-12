@@ -151,7 +151,7 @@ def decodeBinaryData(clock,data):
 			tempValue = 100*D1+10*D2+D3
 		except: 
 			# Exceptions occur when we don't read the bits quite correctly, once in a while.
-			mprint("Wrong binary format")
+			pass
 	else:
 		pass
 		# mprint("Not enough binary data")
@@ -160,9 +160,9 @@ def decodeBinaryData(clock,data):
 
 def showHeartBeat():
 	# Just blink a LED
-	GPIO.output(heartBeatGPIO,buttonOn)
-	time.sleep(0.05)
-	GPIO.output(heartBeatGPIO,buttonOff)
+	# GPIO.output(heartBeatGPIO,buttonOn)
+	# time.sleep(0.05)
+	# GPIO.output(heartBeatGPIO,buttonOff)
 	# Also touch the log file!
 	os.system('touch ' + logFile)
 	
@@ -215,7 +215,6 @@ def isDisplayBlinking():
 
 def pressTempAdjust():
 # Simulate pressing the temp adjust button by temporarily toggling a GPIO output.
-	mprint ("PRESSING BUTTON")
 	GPIO.output(buttonGPIO,buttonOn)
 	time.sleep(.05)
 	GPIO.output(buttonGPIO,buttonOff)
@@ -230,7 +229,6 @@ def readSetTemperature():
 	if fakeIt: return setTemperatureVal
 	isBlinking,tempValue = isDisplayBlinking()
 	if isBlinking: 
-		mprint("Already blinking")
 		setTemperatureVal = tempValue;
 		return tempValue
 	# Press the temp adjust button
@@ -259,6 +257,7 @@ def setTemperature():
 # Set the hot tub temperature, by pressing the button repeatedly while reading the set temp.
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, isAdjustingTemp
 	if isAdjustingTemp: return
+	mprint ("Setting the temperature to {}F".format(targetTemperatureVal))
 	# First of, get into blinking mode
 	isAdjustingTemp = 1
 	setTemperatureVal = readSetTemperature()
@@ -286,7 +285,7 @@ def setTemperature():
 		isAdjustingTemp = 0
 		return
 	isAdjustingTemp = 0
-	mprint ("Successfully set the target temp")
+	mprint ("Successfully set the target temp to {}F".format(targetTemperatureVal))
 	
 def selfTestNoBlock():
 	t = threading.Thread(target=selfTest)
