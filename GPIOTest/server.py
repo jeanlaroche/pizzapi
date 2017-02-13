@@ -34,8 +34,6 @@ def _getTubStatus():
 	# Get the stats from sc.
 	tempTime = [item[0] for item in sc.tempData]
 	tempValue = [item[1] for item in sc.tempData]
-	heaterTime = [item[0] for item in B]
-	heaterValue = [item[1] for item in B]
 	# For the heater we want to display steps when the heater goes from 0 to 1 or 1 to 0
 	# For this, we need to duplicate each entry.
 	A = sc.heaterData
@@ -44,6 +42,8 @@ def _getTubStatus():
 		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
 		B[-1][1] = 1-B[-1][1]	# Flip value.
 		B.append(item[:])
+	heaterTime = [item[0] for item in B]
+	heaterValue = [item[1] for item in B]
  	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue)
 
 @app.route("/_getFullData")
