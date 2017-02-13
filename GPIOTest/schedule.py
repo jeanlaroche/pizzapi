@@ -13,8 +13,8 @@ heaterData 				= 	[]	# Will contain pairs of [time heateron/off]
 tempData 				= 	[]  # Will contain pairs of [time temp]
 if rt.fakeIt:
 	statLogFile 			= './Stats.txt'
-	heaterData 				= 	[[3,0],[5,1],[12,0],[15,1],[20,0]]	# Will contain pairs of [time heateron/off]
-	tempData 				= 	[[3,98],[5,97],[12,95],[15,98],[20,104]]  # Will contain pairs of [time temp]
+	heaterData 				= 	[[33,0],[41,1],[42,0],[43,1],[53,0],[55,1],[62,0],[65,1],[70,0]]	# Will contain pairs of [time heateron/off]
+	tempData 				= 	[[53,98],[55,97],[62,95],[65,98],[70,104]]  # Will contain pairs of [time temp]
 else:
 	statLogFile 			= '/home/pi/GPIOTest/Stats.txt'
 statLogF				= open(statLogFile,'a',0)
@@ -23,6 +23,9 @@ def getCtime():
 	# Subtracting a multiple of 24 because time.time() starts at 00:00.
 	# timezone is to get the local time.
 	return (time.time()-time.timezone)/3600 - 412992 
+	
+def getToday():
+	return(24*int(getCtime() / 24))
 	
 def max(a,b):
 	return a if a>b else b

@@ -42,9 +42,11 @@ def _getTubStatus():
 		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
 		B[-1][1] = 1-B[-1][1]	# Flip value.
 		B.append(item[:])
-	heaterTime = [item[0] for item in B]
+	today = sc.getToday()
+	heaterTime = [item[0]-today for item in B]
 	heaterValue = [item[1] for item in B]
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue)
+	heaterLabel = ["{}".format((item+24*1000)%24) for item in heaterTime]
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel)
 
 @app.route("/_getFullData")
 def _getFullData():

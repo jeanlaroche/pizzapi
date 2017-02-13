@@ -97,13 +97,17 @@ span {font-weight: bold;}
 			Plots = document.getElementById('Plots');
 			var X = data.heaterTime;
 			var Y = data.heaterValue;
+			var XLabels = data.heaterLabel;
 			// second arg is data, third arg is layout.
 			var layout = { margin: { t: 30 },
 			  xaxis: {
 				title: 'Hour',
 				showgrid: false,
 				zeroline: false,
-				color: 'rgba(256,256,0,1)'
+				color: 'rgba(256,256,0,1)',
+				tickvals: X,
+				ticktext: XLabels,
+				tickangle: 0,
 			  },
 				paper_bgcolor : 'rgba(0,0,0,0)',
 				plot_bgcolor : 'rgba(0,0,0,0)',
@@ -112,10 +116,23 @@ span {font-weight: bold;}
 				showline: true,
 				showgrid: false,
 				color: 'rgba(256,256,0,1)'
-			  }};
+			  },
+			showlegend : false
+			  };
 			Plotly.plot( Plots, [{
 			x: X,
-			y: Y }], layout );
+			y: Y,
+			}], layout );
+			Plotly.plot( Plots, [{
+			x: [0,0],
+			y: [0,1],
+			line : {color : 'rgba(256,256,256,1)', width : 3}
+			}], layout );
+			Plotly.plot( Plots, [{
+			x: [-24,-24],
+			y: [0,1],
+			line : {color : 'rgba(256,256,256,1)', width : 3}
+			}], layout );
 		});
 		}
     );
