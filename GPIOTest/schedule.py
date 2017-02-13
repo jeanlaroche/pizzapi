@@ -14,7 +14,9 @@ statLogFile 			= '/home/pi/GPIOTest/Stats.txt'
 statLogF				= open(statLogFile,'a',0)
 
 def getCtime():
-	return time.time()/3600-8-412992 # Subtracting a multiple of 24 because time.time() starts at 00:00 
+	# Subtracting a multiple of 24 because time.time() starts at 00:00.
+	# timezone is to get the local time.
+	return (time.time()-time.timezone)/3600 - 412992 
 	
 def max(a,b):
 	return a if a>b else b
@@ -71,7 +73,7 @@ def logHeaterUse():
 	curTime = getCtime()
 	
 	# Log a heater change in the format: FracTimeInHours new heatervalue date
-	if not lastHeaterVal == rt.heaterVal:
+	if not lastHeaterVal == rt.heaterVal and not lastHeaterVal == -1:
 		statLogF.write("H {:.2f} {} {}\n".format(curTime,rt.heaterVal,timeStr))
 	
 	if not lastTempVal == rt.temperatureVal and rt.temperatureVal:
