@@ -1,5 +1,5 @@
 import time
-import sys, os
+import sys
 import pdb
 import threading
 # https://sourceforge.net/p/raspberry-gpio-python/wiki/BasicUsage/
@@ -59,14 +59,26 @@ def setup():
 	GPIO.setup(heartBeatGPIO, GPIO.OUT)
 	GPIO.output(heartBeatGPIO,buttonOff)
 	
+def resetFlagAux():
+	global isAdjustingTemp
+	print "Resetting flag"
+	isAdjustingTemp = 0
+	
+def resetFlag():
+	tim = threading.Timer(4, resetFlagAux)
+	tim.start()
+	
 def init():
-	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, isAdjustingTemp
 	# Read the tub current temp, heater status, and set temp.
 	if not fakeIt:
+		isAdjustingTemp = 1 # To prevent anybody from reading the temp during this
 		temperatureVal,heaterVal = readTemperature()[1:3]
 		setTemperatureVal = readSetTemperature()
 		targetTemperatureVal = setTemperatureVal
 		mprint("Init Called: Temp {} Set {} ".format(temperatureVal,setTemperatureVal))
+		# Reset flag after a while.
+		resetFlag()
 	
 def tearDown():
 	GPIO.cleanup(clockGPIO)
@@ -146,6 +158,8 @@ def decodeBinaryData(clock,data):
 			D2 = segmentsToNum[tuple(binaryData[7:14])]
 			D3 = segmentsToNum[tuple(binaryData[14:])]
 			tempValue = 100*D1+10*D2+D3
+		except KeyboardInterrupt: 
+			return 0,0,0,0
 		except: 
 			# Exceptions occur when we don't read the bits quite correctly, once in a while.
 			pass
@@ -154,14 +168,6 @@ def decodeBinaryData(clock,data):
 		# mprint("Not enough binary data")
 	
 	return binaryData,tempValue,heater,avSamplePerClock
-
-def showHeartBeat():
-	# Just blink a LED
-	# GPIO.output(heartBeatGPIO,buttonOn)
-	# time.sleep(0.05)
-	# GPIO.output(heartBeatGPIO,buttonOff)
-	# Also touch the log file!
-	os.system('touch ' + logFile)
 	
 def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 # Reads the temperature. If waitForNonZeroTemp is 1, does not return until a non-zero temp is read (i.e.,
@@ -183,6 +189,7 @@ def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 	if updateTempVal: temperatureVal = tempValue
 	GPIO.output(heartBeatGPIO,buttonOff)
 	isReadingTemp = 0
+	print "READ TEMP"
 	return binaryData,tempValue,heater,avSampPerClock
 
 def isDisplayBlinking():
@@ -268,9 +275,9 @@ def setTemperature():
 	else:
 		# This didn't work for some reason.
 		mprint ("Could not set the temp! Last read temp: {}".format(setTemperatureVal))
-		isAdjustingTemp = 0
+		resetFlag()
 		return
-	isAdjustingTemp = 0
+	resetFlag()
 	mprint ("Successfully set the target temp to {}F".format(targetTemperatureVal))
 	
 def selfTestNoBlock():

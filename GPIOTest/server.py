@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import readTemp as rt
 import pdb
-import threading, time
+import threading, time, os
 import schedule
 import re
 
@@ -29,12 +29,9 @@ def _tempDown():
 
 @app.route("/_getTubStatus")
 def _getTubStatus():
-	# Don't read the temperature if the tub is in the process of adjusting it.
-	if not rt.isAdjustingTemp: 
-		while(rt.isDisplayBlinking()[0]): time.sleep(.2)
-		rt.readTemperature(updateTempVal=1)
 	heatValStr = "ON" if rt.heaterVal else "OFF"
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = "")
+	statString = schedule.computeStats()[0]
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -64,10 +61,12 @@ def GetUptime():
 	return uptime
 	
 def showHeartBeat():
-	rt.showHeartBeat()
-	schedule.logHeaterUse()
 	if rt.fakeIt: return
-	tim = threading.Timer(2, showHeartBeat)
+	# Don't read the temperature if the tub is in the process of adjusting it.
+	if not rt.isAdjustingTemp:  rt.readTemperature(updateTempVal=1)
+	schedule.logHeaterUse()
+	os.system('touch ' + rt.logFile)
+	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
 	
 # run the webserver on standard port 80, requires sudo
@@ -75,9 +74,11 @@ if __name__ == "__main__":
 	# Pins.Init()
 	rt.setup()
 	rt.init()
-	showHeartBeat()
-	# Start scheduler
-	tim = threading.Timer(1, schedule.openAndRun)
+	# Start the heartbeat after a few seconds.
+	tim = threading.Timer(4, showHeartBeat)
+	tim.start()
+	# Start scheduler after a while
+	tim = threading.Timer(8, schedule.openAndRun)
 	tim.start()
 	app.run(host='0.0.0.0', port=80, debug=True, use_reloader=False)
 	rt.tearDown()

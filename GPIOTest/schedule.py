@@ -3,7 +3,6 @@ import time
 import re
 import datetime
 import pdb
-import readTemp as rt
 
 schedule = {}
 todo = {}
@@ -60,14 +59,11 @@ def computeStats():
 		heaterTotal += tim - prevTime
 	totTime = curTime - heaterData[0][0]
 	heaterTotal = heaterTotal / totTime
-	print "Past hour: {:.0f}m -- Since midnight: {:.2f}h -- Yesterday: {:.2f}h -- Av. per day: {:.2f}h".format(60*heaterPastHour,heaterToday,heaterYesterday,24*heaterTotal / totTime)
-	return heaterPastHour,heaterToday,heaterYesterday,heaterTotal
+	statString = "Past hour: {:.1f}m -- Since midnight: {:.2f}h -- Yesterday: {:.2f}h -- Av. per day: {:.2f}h".format(60*heaterPastHour,heaterToday,heaterYesterday,24*heaterTotal / totTime)
+	return statString,heaterPastHour,heaterToday,heaterYesterday,heaterTotal
 
 def logHeaterUse():
 	global lastHeaterVal, lastTempVal
-	# Don't do anything if the temp is being read or adjusted.
-	if rt.isAdjustingTemp or rt.isReadingTemp: rt.readTemperature()
-	rt.readTemperature()
 	
 	timeStr = time.ctime(time.time())
 	curTime = getCtime()
@@ -152,4 +148,5 @@ def openAndRun():
 		time.sleep(30)
 		
 if __name__ == "__main__":
-	computeStats()
+	statString = computeStats()[0]
+	print(statString)
