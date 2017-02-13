@@ -9,7 +9,14 @@ todo = {}
 
 lastTempVal				= 	-1 	# Last read temp
 lastHeaterVal			= 	-1 	# Last heater value
-statLogFile 			= '/home/pi/GPIOTest/Stats.txt'
+heaterData 				= 	[]	# Will contain pairs of [time heateron/off]
+tempData 				= 	[]  # Will contain pairs of [time temp]
+if rt.fakeIt:
+	statLogFile 			= './Stats.txt'
+	heaterData 				= 	[[3,0],[5,1],[12,0],[15,1],[20,0]]	# Will contain pairs of [time heateron/off]
+	tempData 				= 	[[3,98],[5,97],[12,95],[15,98],[20,104]]  # Will contain pairs of [time temp]
+else:
+	statLogFile 			= '/home/pi/GPIOTest/Stats.txt'
 statLogF				= open(statLogFile,'a',0)
 
 def getCtime():
@@ -21,6 +28,8 @@ def max(a,b):
 	return a if a>b else b
 	
 def computeStats():
+	global heaterData, tempData
+	if rt.fakeIt: return "",0,0,0,0
 	with open(statLogFile,'r') as fd:
 		allLines = fd.readlines()
 	# Separate and massage the heater and temp data. We need floats.
@@ -57,7 +66,7 @@ def computeStats():
 		if prevTime > today : heaterToday += tim - max(prevTime,today)
 		if prevTime > yesterday and prevTime < today : heaterYesterday += tim - max(prevTime,yesterday)
 		heaterTotal += tim - prevTime
-	totTime = curTime - heaterData[0][0]
+	totTime = curTime - heaterData[0][0] if heaterData else 1
 	heaterTotal = heaterTotal / totTime
 	statString = "Past hour: {:.1f}m -- Since midnight: {:.2f}h -- Yesterday: {:.2f}h -- Av. per day: {:.2f}h".format(60*heaterPastHour,heaterToday,heaterYesterday,24*heaterTotal / totTime)
 	return statString,heaterPastHour,heaterToday,heaterYesterday,heaterTotal
@@ -104,6 +113,9 @@ def redoSchedule():
 	thisDate = datetime.datetime.now()
 	curTime = thisDate.strftime('%H:%M')
 	allTimes = sorted([key for key in schedule.keys() if key <= curTime])
+	if not allTimes:
+		# curTime is before any of the schedule entries, redo the latest one.
+		allTimes = sorted([key for key in schedule.keys() if key > curTime],reverse=True)
 	if allTimes: 
 		key = allTimes[-1]
 		rt.mprint("Redoing schedule for = {} setting tub to {}F".format(key,schedule[key]))

@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import readTemp as rt
 import pdb
 import threading, time, os
-import schedule
+import schedule as sc
 import re
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
@@ -30,8 +30,21 @@ def _tempDown():
 @app.route("/_getTubStatus")
 def _getTubStatus():
 	heatValStr = "ON" if rt.heaterVal else "OFF"
-	statString = schedule.computeStats()[0]
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValue = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString)
+	statString = sc.computeStats()[0]
+	# Get the stats from sc.
+	tempTime = [item[0] for item in sc.tempData]
+	tempValue = [item[1] for item in sc.tempData]
+	heaterTime = [item[0] for item in B]
+	heaterValue = [item[1] for item in B]
+	# For the heater we want to display steps when the heater goes from 0 to 1 or 1 to 0
+	# For this, we need to duplicate each entry.
+	A = sc.heaterData
+	B = []
+	for item in A:
+		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
+		B[-1][1] = 1-B[-1][1]	# Flip value.
+		B.append(item[:])
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -48,7 +61,7 @@ def _pageUnload():
 @app.route("/_schedule")
 def _schedule():
 	print "RERUN SCHEDULE"
-	schedule.redoSchedule()
+	sc.redoSchedule()
 	return ""
 	
 
@@ -64,7 +77,7 @@ def showHeartBeat():
 	if rt.fakeIt: return
 	# Don't read the temperature if the tub is in the process of adjusting it.
 	if not rt.isAdjustingTemp:  rt.readTemperature(updateTempVal=1)
-	schedule.logHeaterUse()
+	sc.logHeaterUse()
 	os.system('touch ' + rt.logFile)
 	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
@@ -78,7 +91,7 @@ if __name__ == "__main__":
 	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
 	# Start scheduler after a while
-	tim = threading.Timer(8, schedule.openAndRun)
+	tim = threading.Timer(8, sc.openAndRun)
 	tim.start()
 	app.run(host='0.0.0.0', port=80, debug=True, use_reloader=False)
 	rt.tearDown()

@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css" />
 <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
 <script src="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 
 <style>
@@ -49,14 +50,14 @@ span {font-weight: bold;}
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
 				// Since many elements might match.
 				$("#temperatureValue").text(data.temperatureValue);
-				$("#heaterValue").text(data.heaterValue);
+				$("#heaterValue").text(data.heaterValueStr);
 				$("#setTemperatureValue").text(data.setTemperatureValue);
 				$("#targetTemperatureValue").text(data.targetTemperatureValue);
 				$("#upTime").text(data.upTime);
 				$("#lastMessage").text(data.lastMessage);
 				$("#heaterStats").text(data.heaterStats);
 				// To set a color, set the style to "color:red"
-				$("#heaterValue").attr('style',data.heaterValue == "OFF" ? 'color:white' : 'color:red');
+				$("#heaterValue").attr('style',data.heaterValueStr == "OFF" ? 'color:white' : 'color:red');
 				// These would also work!
 				// document.getElementById("heaterValue").style="color:green";
 				// document.getElementById("heaterValue").style.color="green";
@@ -90,9 +91,35 @@ span {font-weight: bold;}
 //		function () {
 //		$.getJSON('/_tempUp');
 //		}
+
+		function() {
+			$.getJSON('/_getTubStatus', function(data) {
+			Plots = document.getElementById('Plots');
+			var X = data.heaterTime;
+			var Y = data.heaterValue;
+			// second arg is data, third arg is layout.
+			var layout = { margin: { t: 30 },
+			  xaxis: {
+				title: 'Hour',
+				showgrid: false,
+				zeroline: false,
+				color: 'rgba(256,256,0,1)'
+			  },
+				paper_bgcolor : 'rgba(0,0,0,0)',
+				plot_bgcolor : 'rgba(0,0,0,0)',
+			yaxis: {
+				title: 'Heater',
+				showline: true,
+				showgrid: false,
+				color: 'rgba(256,256,0,1)'
+			  }};
+			Plotly.plot( Plots, [{
+			x: X,
+			y: Y }], layout );
+		});
+		}
     );
 	
-
 </script>
 <!-- Simple JQuery Mobile page that display the getTemperature state on the breadoard -->
 <!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
@@ -120,4 +147,5 @@ span {font-weight: bold;}
     <div ><h4><span id="heaterStats" ></span></h4></div>
     <div><h4><span id="upTime"></span></h4></div>
   </div>
-</div>
+<div id="Plots" style="width:600px;height:250px;"></div>
+ </div>

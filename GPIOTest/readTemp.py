@@ -43,11 +43,11 @@ fakeIt 			= 0 		# Set to one to fake function.
 logFile 		= '/home/pi/GPIOTest/TubLog.txt'
 if not fakeIt:
 	import RPi.GPIO as GPIO
-	logF			= open(logFile,'w',0)
+	logF			= open(logFile,'a',0)
 else:
 	import fakeGPIO as GPIO
 	logFile = './TubLog.txt'
-	logF			= open(logFile,'w',0)
+	logF			= open(logFile,'a',0)
 GPIO.setmode(GPIO.BCM)
 
 
