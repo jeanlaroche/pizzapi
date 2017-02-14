@@ -32,7 +32,7 @@ def max(a,b):
 	
 def printHours(hours):
 	if hours < 1: return "{}'".format(int(hours*60))
-	else: return "{}:{:02d}".format(int(hours),int((hours*60)%60))
+	else: return "{}h{:02d}'".format(int(hours),int((hours*60)%60))
 	
 def computeStats():
 	global heaterData, tempData
@@ -76,7 +76,7 @@ def computeStats():
 		heaterTotal += tim - prevTime
 	totTime = curTime - heaterData[0][0] if heaterData else 1
 	heaterTotal = heaterTotal / totTime
-	statString = "Past hour: {} -- Since midnight: {} -- Yesterday: {} -- 2Days ago: {} -- Av. per day: {}".format(printHours(heaterPastHour),printHours(heaterToday),printHours(heaterYesterday),printHours(heater2DaysAgo),printHours(24*heaterTotal))
+	statString = "Past hour: {} -- Since midnight: {} -- \nYesterday: {} -- 2Days ago: {} -- Av. per day: {}".format(printHours(heaterPastHour),printHours(heaterToday),printHours(heaterYesterday),printHours(heater2DaysAgo),printHours(24*heaterTotal))
 	return statString,heaterPastHour,heaterToday,heaterYesterday,heaterTotal
 
 def logHeaterUse():
