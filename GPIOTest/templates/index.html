@@ -87,57 +87,6 @@ span {font-weight: bold;}
 		}
     );
 	
-	
-	
-	$(
-		function() {
-			$.getJSON('/_getTubStatus', function(returnData) {
-				google.charts.load('current', {packages: ['corechart', 'line']});
-				var theTicks = []
-				for(i=0;i<returnData.heaterTime.length;i+=2)
-					theTicks.push({v:returnData.heaterTime[i],f:returnData.heaterLabel[i]})
-				//theTicks = [{v:32, f:'thirty two'}, {v:64, f:'sixty four'}];
-				google.charts.setOnLoadCallback(function() {
-				  var data = new google.visualization.DataTable();
-				  data.addColumn('number', 'X');
-				  data.addColumn('number', 'Dogs');
-				  data.addRows(returnData.faa)
-				  <!-- data.addRows([ -->
-					<!-- [0, 0, 0],    [1, 10, 5],   [2, 23, 15],  [3, 17, 9],   [4, 18, 10],  [5, 9, 5], -->
-					<!-- [66, 70, 62], [67, 72, 64], [68, 75, 67], [69, 80, 72] -->
-				  <!-- ]); -->
-
-				  var options = {
-					legend: {position: 'none'},
-					hAxis: {
-					  title: 'Hour',
-					  textStyle: {color:'yellow'},
-					  titleTextStyle: {color:'yellow'},
-					  ticks: theTicks,
-					  baselineColor: 'yellow',
-					  gridlines: {color: 'transparent'}
-					  },
-					vAxis: {
-					  textStyle: {color:'yellow'},
-					  titleTextStyle: {color:'yellow'},
-					  title: 'Heater',
-					  ticks: [0,1],
-					  baselineColor: 'yellow',
-					  gridlines: {color: 'transparent'}
-					},
-					colors: ['cyan'],
-					backgroundColor: 'black',
-				  };
-
-				  var chart = new google.visualization.LineChart(document.getElementById('GooglePlot'));
-				  chart.draw(data, options);
-				}
-				);
-			}
-			);
-		}
-	);
-	
     $(
 		// You can put more code to be executed at page loading in here but it has to be inside a function.
 //		function () {
@@ -150,6 +99,7 @@ span {font-weight: bold;}
 			var X = data.heaterTime;
 			var Y = data.heaterValue;
 			var XLabels = data.heaterLabel;
+			var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
 			var layout = { margin: { t: 30 },
 			  xaxis: {
@@ -157,7 +107,7 @@ span {font-weight: bold;}
 				showgrid: false,
 				zeroline: false,
 				color: 'rgba(256,256,0,1)',
-				tickvals: X,
+				tickvals: XTicks,
 				ticktext: XLabels,
 				tickangle: 0,
 			  },
@@ -171,16 +121,10 @@ span {font-weight: bold;}
 			  },
 			showlegend : false
 			  };
-			Plotly.plot( Plots, [{
-			x: X,
-			y: Y,
-			}], layout );
-			Plotly.plot( Plots, [{
-			x: [0,0],
-			y: [0,1],
-			line : {color : 'rgba(256,256,256,1)', width : 3}
-			}], layout );
-		});
+			Plotly.plot( Plots, [{x: X,y: Y,}], layout );
+			Plotly.plot( Plots, [{x: [0,0],y: [0,1], line : {color : 'rgba(256,256,256,1)', width : 1}}], layout );
+			Plotly.plot( Plots, [{x: [-12,-12],y: [0,1], line : {color : 'rgba(256,256,256,1)', width : 1}}], layout );
+			});
 		}
     );
 	

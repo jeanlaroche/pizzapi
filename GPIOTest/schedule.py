@@ -30,9 +30,12 @@ def getToday():
 def max(a,b):
 	return a if a>b else b
 	
+def printHours(hours):
+	if hours < 1: return "{}'".format(int(hours*60))
+	else: return "{}:{:02d}".format(int(hours),int((hours*60)%60))
+	
 def computeStats():
 	global heaterData, tempData
-	if rt.fakeIt: return "",0,0,0,0
 	with open(statLogFile,'r') as fd:
 		allLines = fd.readlines()
 	# Separate and massage the heater and temp data. We need floats.
@@ -52,6 +55,7 @@ def computeStats():
 	heaterPastHour = 0
 	heaterToday = 0
 	heaterYesterday = 0
+	heater2DaysAgo = 0
 	heaterTotal = 0
 	for ii,[tim,heat] in enumerate(heaterData):
 		# Ignore the first entry, and all entry where heat = 1 (because this means the time span until this entry
@@ -68,10 +72,11 @@ def computeStats():
 		if prevTime > curTime - 1 : heaterPastHour += tim - max(prevTime,curTime - 1)
 		if prevTime > today : heaterToday += tim - max(prevTime,today)
 		if prevTime > yesterday and prevTime < today : heaterYesterday += tim - max(prevTime,yesterday)
+		if prevTime > today-48 and prevTime < today-24 : heater2DaysAgo += tim - max(prevTime,today-48)
 		heaterTotal += tim - prevTime
 	totTime = curTime - heaterData[0][0] if heaterData else 1
 	heaterTotal = heaterTotal / totTime
-	statString = "Past hour: {:.1f}m -- Since midnight: {:.2f}h -- Yesterday: {:.2f}h -- Av. per day: {:.2f}h".format(60*heaterPastHour,heaterToday,heaterYesterday,24*heaterTotal / totTime)
+	statString = "Past hour: {} -- Since midnight: {} -- Yesterday: {} -- 2Days ago: {} -- Av. per day: {}".format(printHours(heaterPastHour),printHours(heaterToday),printHours(heaterYesterday),printHours(heater2DaysAgo),printHours(24*heaterTotal))
 	return statString,heaterPastHour,heaterToday,heaterYesterday,heaterTotal
 
 def logHeaterUse():

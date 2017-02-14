@@ -32,22 +32,27 @@ def _getTubStatus():
 	heatValStr = "ON" if rt.heaterVal else "OFF"
 	statString = sc.computeStats()[0]
 	# Get the stats from sc.
+	today = sc.getToday()
+	curTime = sc.getCtime()
 	tempTime = [item[0] for item in sc.tempData]
 	tempValue = [item[1] for item in sc.tempData]
 	# For the heater we want to display steps when the heater goes from 0 to 1 or 1 to 0
 	# For this, we need to duplicate each entry.
-	A = sc.heaterData
+	A = [item for item  in sc.heaterData if item[0] > curTime - 24]
 	B = []
 	for item in A:
 		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
 		B[-1][1] = 1-B[-1][1]	# Flip value.
 		B.append(item[:])
-	today = sc.getToday()
 	heaterTime = [item[0]-today for item in B]
 	heaterValue = [item[1] for item in B]
-	heaterLabel = ["{}".format((item+24*1000)%24) for item in heaterTime]
-	B = [[item[0]-today,item[1]] for item in B]
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,faa = B)
+	heaterLabel = []
+	heaterTicks = []
+	# Putting tick marks every hour, with a label for the hour of the day.
+	for ii in range(int(curTime-24-today),int(curTime-today)):
+		heaterLabel.append("{:}".format(ii%24))
+		heaterTicks.append(ii)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks)
 
 @app.route("/_getFullData")
 def _getFullData():
