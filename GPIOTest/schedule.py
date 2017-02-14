@@ -76,7 +76,10 @@ def computeStats():
 		heaterTotal += tim - prevTime
 	totTime = curTime - heaterData[0][0] if heaterData else 1
 	heaterTotal = heaterTotal / totTime
-	statString = "Past hour: {} -- Since midnight: {} -- \nYesterday: {} -- 2Days ago: {} -- Av. per day: {}".format(printHours(heaterPastHour),printHours(heaterToday),printHours(heaterYesterday),printHours(heater2DaysAgo),printHours(24*heaterTotal))
+	statString = ["Past hour: {}".format(printHours(heaterPastHour))]
+	statString.append("Since midnight: {}".format(printHours(heaterToday)))
+	statString.append("Yesterday: {}".format(printHours(heaterYesterday)))
+	statString.append("2 Days ago: {}".format(printHours(heater2DaysAgo)))
 	return statString,heaterPastHour,heaterToday,heaterYesterday,heaterTotal
 
 def logHeaterUse():
