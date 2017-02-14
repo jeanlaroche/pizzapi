@@ -46,7 +46,8 @@ def _getTubStatus():
 	heaterTime = [item[0]-today for item in B]
 	heaterValue = [item[1] for item in B]
 	heaterLabel = ["{}".format((item+24*1000)%24) for item in heaterTime]
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel)
+	B = [[item[0]-today,item[1]] for item in B]
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,faa = B)
 
 @app.route("/_getFullData")
 def _getFullData():
