@@ -17,10 +17,10 @@ def mprint(thisString):
 	
 '''
 '''
-clockGPIO 		= 24	# GPIO used to read the clock line
-dataGPIO 		= 25	# GPIO used to read the data line
-buttonGPIO		= 18	# GPIO used to control the temperature button.
-heartBeatGPIO	= 12	# GPIO used to show a heart beat when reading temp.
+clockGPIO 		= 3		# GPIO used to read the clock line
+dataGPIO 		= 4		# GPIO used to read the data line
+buttonGPIO		= 17	# GPIO used to control the temperature button.
+heartBeatGPIO	= 27	# GPIO used to show a heart beat when reading temp.
 buttonOn 		= 1		# GPIO Value to simulate a button press
 buttonOff 		= 0		# GPIO value to simulate a button release. 
 
@@ -39,7 +39,7 @@ isReadingTemp			= 	0 	# Flag indicating that we're reading the temp.
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
 wordLength		= 21		# How many bits are expected in a message. 21 bits: 7 bits for each display.
 lastMessage 	= "All OK"	# Last printed output. Useful for logging or debugging.
-fakeIt 			= 1 		# Set to one to fake function.
+fakeIt 			= 0 		# Set to one to fake function.
 logFile 		= '/home/pi/GPIOTest/TubLog.txt'
 if not fakeIt:
 	import RPi.GPIO as GPIO
