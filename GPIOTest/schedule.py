@@ -11,6 +11,8 @@ lastTempVal				= 	-1 	# Last read temp
 lastHeaterVal			= 	-1 	# Last heater value
 heaterData 				= 	[]	# Will contain pairs of [time heateron/off]
 tempData 				= 	[]  # Will contain pairs of [time temp]
+statsDay 				= 	0   # 0 for today, -1 for yesterday etc.
+
 if rt.fakeIt:
 	statLogFile 			= './Stats.txt'
 	heaterData 				= 	[[33,0],[41,1],[42,0],[43,1],[53,0],[55,1],[62,0],[65,1],[70,0]]	# Will contain pairs of [time heateron/off]
@@ -21,7 +23,8 @@ statLogF				= open(statLogFile,'a',0)
 
 def getCtime():
 	# Subtracting a multiple of 24 because time.time() starts at 00:00.
-	# timezone is to get the local time.
+	# timezone is to get the local time. I wasn't careful: 412992 isn't a whole number of weeks. Perhaps I should have use just time.time()-time.timezone() to get the dates
+	# right.
 	return (time.time()-time.timezone)/3600 - 412992 
 	
 def getToday():
@@ -29,12 +32,18 @@ def getToday():
 	
 def max(a,b):
 	return a if a>b else b
+
+def min(a,b):
+	return a if a<b else b
 	
 def printHours(hours):
 	if hours < 1: return "{}'".format(int(hours*60))
 	else: return "{}h{:02d}'".format(int(hours),int((hours*60)%60))
-	
-def computeStats():
+
+
+# Read the stat file, grabs the heater data, and returns what should be displayed.
+def computeGraphData():
+	today = getToday()
 	global heaterData, tempData
 	with open(statLogFile,'r') as fd:
 		allLines = fd.readlines()
@@ -42,21 +51,21 @@ def computeStats():
 	heaterData = [line for line in allLines if line[0] == 'H']
 	heaterData = [item.split()[1:3] for item in heaterData]
 	heaterData = [[float(item[0]),float(item[1])] for item in heaterData]
-	tempData = [line for line in allLines if line[0] == 'T']
-	tempData = [item.split()[1:3] for item in tempData]
-	tempData = [[float(item[0]),float(item[1])] for item in tempData]
-	# Current time in float hours.
-	curTime = getCtime()
-	# 00:00 this morning.
-	today = 24*int(curTime / 24)
-	# 00:00 yesterday morning.
-	yesterday = today - 24
-	# Stats.
-	heaterPastHour = 0
-	heaterToday = 0
-	heaterYesterday = 0
-	heater2DaysAgo = 0
-	heaterTotal = 0
+
+	# For the heater we want to display steps when the heater goes from 0 to 1 or 1 to 0
+	# For this, we need to duplicate each entry.
+	startHour = today+statsDay*24
+	endHour = today+statsDay*24+24
+	A = [item for item  in heaterData if item[0] < endHour and item[0] > startHour]
+	B = [];
+	for item in A:
+		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
+		B[-1][1] = 1-B[-1][1]	# Flip value.
+		B.append(item[:])
+	heaterTime = [item[0]-startHour for item in B]
+	heaterValue = [item[1] for item in B]
+	heaterUsage = 0
+	heaterTotalUsage = 0
 	for ii,[tim,heat] in enumerate(heaterData):
 		# Ignore the first entry, and all entry where heat = 1 (because this means the time span until this entry
 		# had heater off.
@@ -67,20 +76,19 @@ def computeStats():
 		if heaterData[ii-1][1] == 0 : 
 			print "Weird, two consecutive heater entry with heater=0"
 			continue
-		# max(prevTime,curTime - 1) is useful because we only want to count the time within the past hour, not since
+		# max(prevTime,startHour - 1) is useful because we only want to count the time within the past hour, not since
 		# the last log.
-		if prevTime > curTime - 1 : heaterPastHour += tim - max(prevTime,curTime - 1)
-		if prevTime > today : heaterToday += tim - max(prevTime,today)
-		if prevTime > yesterday and prevTime < today : heaterYesterday += tim - max(prevTime,yesterday)
-		if prevTime > today-48 and prevTime < today-24 : heater2DaysAgo += tim - max(prevTime,today-48)
-		heaterTotal += tim - prevTime
-	totTime = curTime - heaterData[0][0] if heaterData else 1
-	heaterTotal = heaterTotal / totTime
-	statString = ["Past hour: {}".format(printHours(heaterPastHour))]
-	statString.append("Today: {}".format(printHours(heaterToday)))
-	statString.append("Yesterday: {}".format(printHours(heaterYesterday)))
-	statString.append("2 Days ago: {}".format(printHours(heater2DaysAgo)))
-	return statString,heaterPastHour,heaterToday,heaterYesterday,heaterTotal
+		if tim > startHour and prevTime < endHour: heaterUsage += min(tim,endHour) - max(prevTime,startHour)
+		heaterTotalUsage += tim - prevTime
+	totTime = getCtime() - heaterData[0][0] if heaterData else 1
+	heaterTotalUsage = heaterTotalUsage / totTime
+	# I should have used time.time() straight with no offset but I didn't. So to get the day right, I have to re-add this.
+	offset = 412992*3600
+	format = '%A, %b %d'
+	thisDayStr = time.strftime(format,time.gmtime(startHour*3600+offset)) if statsDay else "today"
+	nextDayStr = time.strftime(format,time.gmtime(startHour*3600+offset+24*3600))
+	prevDayStr = time.strftime(format,time.gmtime(startHour*3600+offset+-24*3600))
+	return heaterTime,heaterValue,printHours(heaterUsage),"Average usage: " + printHours(24*heaterTotalUsage)+' per day',thisDayStr,prevDayStr,nextDayStr
 
 def logHeaterUse():
 	global lastHeaterVal, lastTempVal

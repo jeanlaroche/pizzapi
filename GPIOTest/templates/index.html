@@ -69,11 +69,10 @@ span {font-weight: bold;}
 				$("#setTemperatureValue").text(data.setTemperatureValue);
 				$("#targetTemperatureValue").text(data.targetTemperatureValue);
 				$("#upTime").text(data.upTime);
+				$("#prevDay").text(data.prevDayStr);
+				$("#nextDay").text(data.nextDayStr);
 				$("#lastMessage").text(data.lastMessage);
-				$("#heaterStats0").text(data.heaterStats[0]);
-				$("#heaterStats1").text(data.heaterStats[1]);
-				$("#heaterStats2").text(data.heaterStats[2]);
-				$("#heaterStats3").text(data.heaterStats[3]);
+				$("#heaterStats0").text(data.heaterStats[1]);
 				// To set a color, set the style to "color:red"
 				$("#heaterValue").attr('style',data.heaterValueStr == "OFF" ? 'color:white' : 'color:red');
 				// These would also work!
@@ -131,6 +130,8 @@ span {font-weight: bold;}
 				color: 'rgba(256,256,0,1)'
 			  },
 			showlegend : false,
+			title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
+			titlefont: {color: 'yellow'},
 			  };
 			Plotly.newPlot( Plots, [{x: X,y: Y, fill: 'tozeroy'}], layout );
 			//Plotly.plot( Plots, [{x: [0,0],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
@@ -175,17 +176,14 @@ span {font-weight: bold;}
     <div><h4><span id="upTime"></span></h4></div>
     <div ><h2>Heater Usage:</h2></div>
     <div ><h5><span id="heaterStats0" ></span></h5></div>
-    <div ><h5><span id="heaterStats1" ></span></h5></div>
-    <div ><h5><span id="heaterStats2" ></span></h5></div>
-    <div ><h5><span id="heaterStats3" ></span></h5></div>
   </div>
 <div id="Plots" style="width:600px;height:250px;"></div>
 <fieldset class="ui-grid-a">
 	<div class="ui-block-a">
-		<button  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
+		<button id="prevDay"  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
 	</div>
 	<div class="ui-block-b">
-		<button  onclick="onNextDay()" data-theme="d">Next Day</button>
+		<button id="nextDay" onclick="onNextDay()" data-theme="d">Next Day</button>
 	</div>
 </fieldset>
 

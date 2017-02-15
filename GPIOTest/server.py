@@ -32,29 +32,10 @@ def _tempDown():
 @app.route("/_getTubStatus")
 def _getTubStatus():
 	heatValStr = "ON" if rt.heaterVal else "OFF"
-	statString = sc.computeStats()[0]
-	# Get the stats from sc.
-	today = sc.getToday()
-	curTime = sc.getCtime()
-	tempTime = [item[0] for item in sc.tempData]
-	tempValue = [item[1] for item in sc.tempData]
-	# For the heater we want to display steps when the heater goes from 0 to 1 or 1 to 0
-	# For this, we need to duplicate each entry.
-	A = [item for item  in sc.heaterData if item[0] < today+statsDay*24+24 and item[0] > today+statsDay*24]
-	B = [];
-	for item in A:
-		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
-		B[-1][1] = 1-B[-1][1]	# Flip value.
-		B.append(item[:])
-	heaterTime = [item[0]-today-statsDay*24 for item in B]
-	heaterValue = [item[1] for item in B]
-	heaterLabel = []
-	heaterTicks = []
-	# Putting tick marks every hour, with a label for the hour of the day.
-	for ii in range(0,25):
-		heaterLabel.append("{:}".format(ii))
-		heaterTicks.append(ii)
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks)
+	heaterTime,heaterValue,heaterUsage,heaterTotalUsage,thisDayStr,prevDayStr,nextDayStr = sc.computeGraphData()
+	heaterTicks = range(0,25)
+	heaterLabel = ["{:}".format(ii) for ii in range(0,25)]
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -65,14 +46,12 @@ def _getFullData():
 
 @app.route("/_onNextDay")
 def _onNextDay():
-	global statsDay
-	if statsDay < 0 : statsDay += 1
+	if sc.statsDay < 0 : sc.statsDay += 1
 	return ""
 
 @app.route("/_onPrevDay")
 def _onPrevDay():
-	global statsDay
-	statsDay -= 1
+	sc.statsDay -= 1
 	return ""
 
 @app.route("/_pageUnload")
