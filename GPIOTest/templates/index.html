@@ -111,7 +111,7 @@ span {font-weight: bold;}
 			var XLabels = data.heaterLabel;
 			var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
-			var layout = { margin: { t: 30 },
+			var layout = { margin: { t: 30, l:20 },
 			  xaxis: {
 				title: 'Hour',
 				showgrid: false,
@@ -124,9 +124,11 @@ span {font-weight: bold;}
 				paper_bgcolor : 'rgba(0,0,0,0)',
 				plot_bgcolor : 'rgba(0,0,0,0)',
 			yaxis: {
-				title: 'Heater',
+				title: '',
 				showline: true,
 				showgrid: false,
+				ticks: '',
+				showticklabels: false,
 				color: 'rgba(256,256,0,1)'
 			  },
 			showlegend : false,
@@ -135,7 +137,8 @@ span {font-weight: bold;}
 			  };
 			Plotly.newPlot( Plots, [{x: X,y: Y, fill: 'tozeroy'}], layout );
 			//Plotly.plot( Plots, [{x: [0,0],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
-			//Plotly.plot( Plots, [{x: [-12,-12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
+			Plotly.plot( Plots, [{x: [12,12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
+			//Plotly.plot( Plots, [{x: [24,24],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
 			});
 	}
 	
@@ -177,7 +180,7 @@ span {font-weight: bold;}
     <div ><h2>Heater Usage:</h2></div>
     <div ><h5><span id="heaterStats0" ></span></h5></div>
   </div>
-<div id="Plots" style="width:600px;height:250px;"></div>
+<div id="Plots" style="width:420px;height:250px;"></div>
 <fieldset class="ui-grid-a">
 	<div class="ui-block-a">
 		<button id="prevDay"  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
