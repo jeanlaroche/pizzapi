@@ -11,6 +11,8 @@ import re
 
 app = Flask(__name__)
 
+statsForToday			= 	1	# 1 for today, 0 for yesterday
+
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
 def Index():
@@ -38,7 +40,10 @@ def _getTubStatus():
 	tempValue = [item[1] for item in sc.tempData]
 	# For the heater we want to display steps when the heater goes from 0 to 1 or 1 to 0
 	# For this, we need to duplicate each entry.
-	A = [item for item  in sc.heaterData if item[0] > curTime - 24]
+	if statsForToday:
+		A = [item for item  in sc.heaterData if item[0] > today]
+	else:
+		A = [item for item  in sc.heaterData if item[0] < today and item[0] > today-24]
 	B = []
 	for item in A:
 		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
@@ -49,7 +54,7 @@ def _getTubStatus():
 	heaterLabel = []
 	heaterTicks = []
 	# Putting tick marks every hour, with a label for the hour of the day.
-	for ii in range(int(curTime-24-today),int(curTime-today)):
+	for ii in range(int(curTime-24-today),int(curTime-today)+1):
 		heaterLabel.append("{:}".format(ii%24))
 		heaterTicks.append(ii)
  	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks)
@@ -59,6 +64,20 @@ def _getFullData():
 	print "INIT CALLED"
 	rt.setup()
 	rt.init()
+	return ""
+
+@app.route("/_onToday")
+def _onToday():
+	global statsForToday
+	statsForToday = 1
+	print "ON TODAY"
+	return ""
+
+@app.route("/_onYesterday")
+def _onYesterday():
+	global statsForToday
+	statsForToday = 0
+	print "ON YESTERDAY"
 	return ""
 
 @app.route("/_pageUnload")

@@ -77,7 +77,7 @@ def computeStats():
 	totTime = curTime - heaterData[0][0] if heaterData else 1
 	heaterTotal = heaterTotal / totTime
 	statString = ["Past hour: {}".format(printHours(heaterPastHour))]
-	statString.append("Since midnight: {}".format(printHours(heaterToday)))
+	statString.append("Today: {}".format(printHours(heaterToday)))
 	statString.append("Yesterday: {}".format(printHours(heaterYesterday)))
 	statString.append("2 Days ago: {}".format(printHours(heater2DaysAgo)))
 	return statString,heaterPastHour,heaterToday,heaterYesterday,heaterTotal
@@ -107,7 +107,7 @@ def readSchedule(file,verbose=0):
 		todo = {}
 		for line in f.readlines():
 			line = line.strip()
-			if line[0] == '#': continue
+			if not line or line[0] == '#': continue
 			# Split
 			R = re.search(r'(\d+\:\d+)[,\s]+(\d+)',line)
 			if not R and verbose:

@@ -32,6 +32,20 @@ span {font-weight: bold;}
 		});
 	}
 	
+	function onToday() {
+		$.get('/_onToday', function(data)
+		{
+			redraw();
+		});
+	}
+
+	function onYesterday() {
+		$.get('/_onYesterday', function(data)
+		{
+			redraw();
+		});
+	}
+
 	// Javascript function for down button
 	function onSchedule() {
 		$.get('/_schedule');
@@ -90,14 +104,8 @@ span {font-weight: bold;}
 		}
     );
 	
-    $(
-		// You can put more code to be executed at page loading in here but it has to be inside a function.
-//		function () {
-//		$.getJSON('/_tempUp');
-//		}
-
-		function() {
-			$.getJSON('/_getTubStatus', function(data) {
+	function redraw() {
+		$.getJSON('/_getTubStatus', function(data) {
 			Plots = document.getElementById('Plots');
 			var X = data.heaterTime;
 			var Y = data.heaterValue;
@@ -124,10 +132,19 @@ span {font-weight: bold;}
 			  },
 			showlegend : false,
 			  };
-			Plotly.plot( Plots, [{x: X,y: Y, fill: 'tozeroy'}], layout );
+			Plotly.newPlot( Plots, [{x: X,y: Y, fill: 'tozeroy'}], layout );
 			Plotly.plot( Plots, [{x: [0,0],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
-			Plotly.plot( Plots, [{x: [-12,-12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
+			//Plotly.plot( Plots, [{x: [-12,-12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
 			});
+	}
+	
+    $(
+		// You can put more code to be executed at page loading in here but it has to be inside a function.
+//		function () {
+//		$.getJSON('/_tempUp');
+//		}
+		function() {
+			redraw()
 		}
     );
 	
@@ -163,4 +180,13 @@ span {font-weight: bold;}
     <div ><h5><span id="heaterStats3" ></span></h5></div>
   </div>
 <div id="Plots" style="width:600px;height:250px;"></div>
+<fieldset class="ui-grid-a">
+	<div class="ui-block-a">
+		<button  onclick="onToday()" data-theme="d">Today</button>
+	</div>
+	<div class="ui-block-b">
+		<button  onclick="onYesterday()" data-theme="d">Yesterday</button>
+	</div>
+</fieldset>
+
  </div>
