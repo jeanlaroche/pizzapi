@@ -11,7 +11,7 @@ import re
 
 app = Flask(__name__)
 
-statsForToday			= 	1	# 1 for today, 0 for yesterday
+statsDay			= 	0	# 0 for today, -1 for yesterday, -2 etc
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
@@ -40,22 +40,19 @@ def _getTubStatus():
 	tempValue = [item[1] for item in sc.tempData]
 	# For the heater we want to display steps when the heater goes from 0 to 1 or 1 to 0
 	# For this, we need to duplicate each entry.
-	if statsForToday:
-		A = [item for item  in sc.heaterData if item[0] > today]
-	else:
-		A = [item for item  in sc.heaterData if item[0] < today and item[0] > today-24]
-	B = []
+	A = [item for item  in sc.heaterData if item[0] < today+statsDay*24+24 and item[0] > today+statsDay*24]
+	B = [];
 	for item in A:
 		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
 		B[-1][1] = 1-B[-1][1]	# Flip value.
 		B.append(item[:])
-	heaterTime = [item[0]-today for item in B]
+	heaterTime = [item[0]-today-statsDay*24 for item in B]
 	heaterValue = [item[1] for item in B]
 	heaterLabel = []
 	heaterTicks = []
 	# Putting tick marks every hour, with a label for the hour of the day.
-	for ii in range(int(curTime-24-today),int(curTime-today)+1):
-		heaterLabel.append("{:}".format(ii%24))
+	for ii in range(0,25):
+		heaterLabel.append("{:}".format(ii))
 		heaterTicks.append(ii)
  	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = statString, tempTime = tempTime, tempValue = tempValue,heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks)
 
@@ -66,18 +63,16 @@ def _getFullData():
 	rt.init()
 	return ""
 
-@app.route("/_onToday")
-def _onToday():
-	global statsForToday
-	statsForToday = 1
-	print "ON TODAY"
+@app.route("/_onNextDay")
+def _onNextDay():
+	global statsDay
+	if statsDay < 0 : statsDay += 1
 	return ""
 
-@app.route("/_onYesterday")
-def _onYesterday():
-	global statsForToday
-	statsForToday = 0
-	print "ON YESTERDAY"
+@app.route("/_onPrevDay")
+def _onPrevDay():
+	global statsDay
+	statsDay -= 1
 	return ""
 
 @app.route("/_pageUnload")
