@@ -84,8 +84,10 @@ def showHeartBeat():
 	tim.start()
 	
 # run the webserver on standard port 80, requires sudo
-if __name__ == "__main__":
-	# Pins.Init()
+#if __name__ == "__main__":
+# Pins.Init()
+def preStart():
+	print "RUNNING PRESTART"
 	rt.setup()
 	rt.init()
 	# Start the heartbeat after a few seconds.
@@ -94,5 +96,13 @@ if __name__ == "__main__":
 	# Start scheduler after a while
 	tim = threading.Timer(8, sc.openAndRun)
 	tim.start()
-	app.run(host='0.0.0.0', port=80, debug=True, use_reloader=False)
+
+preStart()
+
+# NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
+# to do it as above, by a call to "prestart"
+if __name__ == "__main__":
+	app.run(host='0.0.0.0', port=80, debug=True, threaded = False, use_reloader=False)
+	print "TEARDOWN"
 	rt.tearDown()
+	

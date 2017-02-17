@@ -56,6 +56,13 @@ flask is the python code that allows a python script to respond to GET requests,
 JQuery is the environment that combines HTML, CCS, javascript and AJAX to make designing a dynamic page super easy.
 Using the $() stuff to run the intial code when the page is loaded, using anonymous function to bind the button clicks etc, is very cryptic.
 You can do it in a more visible way by setting the onclick or onchange properties of the element to a regular javascript function. That's a lot clearer. 
+To deploy it's best to use something like gunicorn.
+gunicorn -b 127.0.0.1:8080 --chdir /home/pi/GPIOTest server:app
+But gunicorn cannot serve port 80, because port 80 is protected in linux. You need a reverse proxy like nginx. Easy to install.
+nginx: http://www.mrl33h.de/post/12
+Edit the conf /etc/nginx/nginx.conf and comment the line  #include /etc/nginx/sites-enabled/*; 
+sudo service nginx restart to restart nginx after changing the conf.
+Also: gunicorn must run 127.0.0.1 and I must redirect 80 to that. Gunicorn can be run as pi. 
 
 Other links possibly of interest:
 http://randomnerdtutorials.com/raspberry-pi-web-server-using-flask-to-control-gpios/

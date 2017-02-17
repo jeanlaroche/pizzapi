@@ -14,7 +14,7 @@ tempData 				= 	[]  # Will contain pairs of [time temp]
 statsDay 				= 	0   # 0 for today, -1 for yesterday etc.
 
 if rt.fakeIt:
-	statLogFile 			= './Stats.txt'
+	statLogFile 			= './FakeStats.txt'
 	heaterData 				= 	[[33,0],[41,1],[42,0],[43,1],[53,0],[55,1],[62,0],[65,1],[70,0]]	# Will contain pairs of [time heateron/off]
 	tempData 				= 	[[53,98],[55,97],[62,95],[65,98],[70,104]]  # Will contain pairs of [time temp]
 else:
