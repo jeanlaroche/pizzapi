@@ -9,6 +9,7 @@ todo = {}
 
 lastTempVal				= 	-1 	# Last read temp
 lastHeaterVal			= 	-1 	# Last heater value
+fileUpdated				=	1	# Indicates that a new value was written to the stats file (heater only)
 heaterData 				= 	[]	# Will contain pairs of [time heateron/off]
 tempData 				= 	[]  # Will contain pairs of [time temp]
 statsDay 				= 	0   # 0 for today, -1 for yesterday etc.
@@ -91,13 +92,14 @@ def computeGraphData():
 	return heaterTime,heaterValue,printHours(heaterUsage),"Average usage: " + printHours(24*heaterTotalUsage)+' per day',thisDayStr,prevDayStr,nextDayStr
 
 def logHeaterUse():
-	global lastHeaterVal, lastTempVal
+	global lastHeaterVal, lastTempVal, fileUpdated
 	
 	timeStr = time.ctime(time.time())
 	curTime = getCtime()
 	
 	# Log a heater change in the format: FracTimeInHours new heatervalue date
 	if not lastHeaterVal == rt.heaterVal and not lastHeaterVal == -1:
+		fileUpdated = 1
 		statLogF.write("H {:.2f} {} {}\n".format(curTime,rt.heaterVal,timeStr))
 	
 	if not lastTempVal == rt.temperatureVal and rt.temperatureVal:
