@@ -39,9 +39,12 @@ def _getTubStatus():
 
 @app.route("/_getFullData")
 def _getFullData():
-	print "INIT CALLED"
+	print "GET_FULL_DATA"
 	rt.setup()
-	rt.init()
+	# Call this in a separate thread so we can return immediately.
+	tim = threading.Timer(0.1, rt.init)
+	tim.start()
+	# rt.init()
 	return ""
 
 @app.route("/_onNextDay")

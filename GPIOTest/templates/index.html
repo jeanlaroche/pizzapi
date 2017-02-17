@@ -108,6 +108,7 @@ span {font-weight: bold;}
 	function redraw() {
 		$.getJSON('/_getTubStatus', function(data) {
 			Plots = document.getElementById('Plots');
+			//Plots.style = {width:window.innerWidth , height:150};
 			var X = data.heaterTime;
 			var Y = data.heaterValue;
 			var XLabels = data.heaterLabel;
@@ -182,7 +183,7 @@ span {font-weight: bold;}
     <div ><h2>Heater Usage:</h2></div>
     <div ><h5><span id="heaterStats0" ></span></h5></div>
   </div>
-<div id="Plots" style="width:420px;height:250px;"></div>
+<div id="Plots" style="width:auto;height:auto;"></div>
 <fieldset class="ui-grid-a">
 	<div class="ui-block-a">
 		<button id="prevDay"  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
