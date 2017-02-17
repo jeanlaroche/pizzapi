@@ -32,6 +32,8 @@ span {font-weight: bold;}
 		});
 	}
 	
+	// Flask allows you to decode URLs like /_onDay_Prev and /_onDay_Next so they're sent to the same function.
+	// It would be a bit more succint on the python side.
 	function onNextDay() {
 		$.get('/_onNextDay', function(data)
 		{
@@ -46,7 +48,7 @@ span {font-weight: bold;}
 		});
 	}
 
-	// Javascript function for down button
+	// Javascript function to run the schedule
 	function onSchedule() {
 		$.get('/_schedule');
 	}
