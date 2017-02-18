@@ -87,6 +87,7 @@ span {font-weight: bold;}
 				setTimeout(function(){getTemperature();},1000);
 			});
 	}
+	
 
 	// This is a JQuery shorthand to define a function that's called when the page is loaded.
     $(
@@ -103,6 +104,7 @@ span {font-weight: bold;}
 			
 			// You can also call a regular javascipt function:
 			getTemperature();
+			window. addEventListener ( "resize" , function ( event ) {redraw();});
 		}
     );
 	
@@ -115,7 +117,7 @@ span {font-weight: bold;}
 			var XLabels = data.heaterLabel;
 			var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
-			var layout = { margin: { t: 30, l:20 },
+			var layout = { margin: { t: 30, l:20, r:20 },
 			  xaxis: {
 				title: 'Hour',
 				showgrid: false,
@@ -179,12 +181,12 @@ span {font-weight: bold;}
 	</div>
   </div>
  <div data-role="footer">
-    <div ><h4><span id="lastMessage" ></span></h4></div>
-    <div><h4><span id="upTime"></span></h4></div>
+    <div ><h4><span id="lastMessage" style = "color:cyan" ></span></h4></div>
+    <div><h4><span id="upTime" style = "color:cyan"></span></h4></div>
     <div ><h2>Heater Usage:</h2></div>
-    <div ><h5><span id="heaterStats0" ></span></h5></div>
+    <div ><h5><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
-<div id="Plots" style="width:auto;height:auto;"></div>
+<div id="Plots" style="width:auto;height:250px;"></div>
 <fieldset class="ui-grid-a">
 	<div class="ui-block-a">
 		<button id="prevDay"  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
