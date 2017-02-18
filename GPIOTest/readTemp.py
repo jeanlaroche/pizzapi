@@ -76,7 +76,7 @@ def init():
 		temperatureVal,heaterVal = readTemperature()[1:3]
 		setTemperatureVal = readSetTemperature()
 		targetTemperatureVal = setTemperatureVal
-		mprint("Init Called: Temp {} Set {} ".format(temperatureVal,setTemperatureVal))
+		mprint("Full Temp Read: Temp {} Set {} ".format(temperatureVal,setTemperatureVal))
 		# Reset flag after a while.
 		resetFlag()
 	
