@@ -13,6 +13,7 @@ fileUpdated				=	1	# Indicates that a new value was written to the stats file (h
 heaterData 				= 	[]	# Will contain pairs of [time heateron/off]
 tempData 				= 	[]  # Will contain pairs of [time temp]
 statsDay 				= 	0   # 0 for today, -1 for yesterday etc.
+lastTempTime 			=	0 	# When the temp changes, time of the last measured previous value.
 
 if rt.fakeIt:
 	statLogFile 			= './FakeStats.txt'
@@ -92,7 +93,7 @@ def computeGraphData():
 	return heaterTime,heaterValue,printHours(heaterUsage),"Average usage: " + printHours(24*heaterTotalUsage)+' per day',thisDayStr,prevDayStr,nextDayStr
 
 def logHeaterUse():
-	global lastHeaterVal, lastTempVal, fileUpdated
+	global lastHeaterVal, lastTempVal, fileUpdated, lastTempTime
 	
 	timeStr = time.ctime(time.time())
 	curTime = getCtime()
@@ -103,8 +104,13 @@ def logHeaterUse():
 		statLogF.write("H {:.2f} {} {}\n".format(curTime,rt.heaterVal,timeStr))
 	
 	if not lastTempVal == rt.temperatureVal and rt.temperatureVal:
-		statLogF.write("T {:.2f} {} {}\n".format(curTime,rt.temperatureVal,timeStr))
-		lastTempVal = rt.temperatureVal
+		# Check that the last previous temps was at least 4 minutes ago: the temp has been different for 
+		# at least 4 minutes. Other just wait.
+		if 60*(curTime - lastTempTime) > 4:
+			statLogF.write("T {:.2f} {} {}\n".format(curTime,rt.temperatureVal,timeStr))
+			lastTempVal = rt.temperatureVal
+	else:
+		lastTempTime = curTime
 
 	lastHeaterVal = rt.heaterVal
 	
@@ -174,7 +180,7 @@ def openAndRun():
 		# Now run the schedules.
 		if curTime in schedule.keys() and todo[curTime] == 1:
 			# Execute the schedule if todo is 1 for this event.
-			rt.mprint("Time = {} setting tub to {}F".format(curTime,schedule[curTime]))
+			rt.mprint("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime]))
 			rt.targetTemperatureVal = int(schedule[curTime])
 			rt.setTemperature()
 			todo[curTime] = 0
