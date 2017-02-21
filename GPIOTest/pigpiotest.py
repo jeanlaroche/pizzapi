@@ -28,7 +28,7 @@ def decode(binaryData):
 		D2 = rt.segmentsToNum[tuple(binaryData[7:14])]
 		D3 = rt.segmentsToNum[tuple(binaryData[14:])]
 		tempValue = 100*D1+10*D2+D3
-		print "{:02d}\b\b\b".format(tempValue),
+		print "{:03d}\b\b\b\b".format(tempValue),
 	except: 
 		print "Bad value"
 

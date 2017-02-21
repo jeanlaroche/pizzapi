@@ -147,7 +147,7 @@ def redoSchedule():
 	allTimes = sorted([key for key in schedule.keys() if key <= curTime])
 	if not allTimes:
 		# curTime is before any of the schedule entries, redo the latest one.
-		allTimes = sorted([key for key in schedule.keys() if key > curTime],reverse=True)
+		allTimes = sorted([key for key in schedule.keys() if key > curTime])
 	if allTimes: 
 		key = allTimes[-1]
 		rt.mprint("Redoing schedule for = {} setting tub to {}F".format(key,schedule[key]))
