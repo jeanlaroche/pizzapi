@@ -9,6 +9,7 @@ todo = {}
 
 lastTempVal				= 	-1 	# Last read temp
 lastHeaterVal			= 	-1 	# Last heater value
+lastHeaterTime			= 	0	# Time at last heater change
 fileUpdated				=	1	# Indicates that a new value was written to the stats file (heater only)
 heaterData 				= 	[]	# Will contain pairs of [time heateron/off]
 tempData 				= 	[]  # Will contain pairs of [time temp]
@@ -93,7 +94,7 @@ def computeGraphData():
 	return heaterTime,heaterValue,printHours(heaterUsage),"Average usage: " + printHours(24*heaterTotalUsage)+' per day',thisDayStr,prevDayStr,nextDayStr
 
 def logHeaterUse():
-	global lastHeaterVal, lastTempVal, fileUpdated, lastTempTime
+	global lastHeaterVal, lastTempVal, fileUpdated, lastTempTime, lastHeaterTime
 	
 	timeStr = time.ctime(time.time())
 	curTime = getCtime()
@@ -101,11 +102,15 @@ def logHeaterUse():
 	# Log a heater change in the format: FracTimeInHours new heatervalue date
 	if not lastHeaterVal == rt.heaterVal and not lastHeaterVal == -1:
 		fileUpdated = 1
-		statLogF.write("H {:.2f} {} {}\n".format(curTime,rt.heaterVal,timeStr))
-	
+		if lastHeaterVal == 0:
+			statLogF.write("H {:.2f} {} {}\n".format(curTime,rt.heaterVal,timeStr))
+		else:
+			elapsedTime = curTime - lastHeaterTime
+			statLogF.write("H {:.2f} {} {} -- {}\n".format(curTime,rt.heaterVal,timeStr,printHours(elapsedTime)))
+		lastHeaterTime = curTime
 	if not lastTempVal == rt.temperatureVal and rt.temperatureVal:
 		# Check that the last previous temps was at least 4 minutes ago: the temp has been different for 
-		# at least 4 minutes. Other just wait.
+		# at least 4 minutes. Otherwise just wait.
 		if 60*(curTime - lastTempTime) > 4:
 			statLogF.write("T {:.2f} {} {}\n".format(curTime,rt.temperatureVal,timeStr))
 			lastTempVal = rt.temperatureVal
