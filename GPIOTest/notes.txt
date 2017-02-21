@@ -37,6 +37,8 @@ Do lsmod to see if SPI is available
 GPIO reading
 Reading 8 GPIOs simultanously, I'm getting about 60kHz sampling with RPi.GPIO.
 There's also pigpio, and it looks like it's a lot more powerful, and much faster.
+My tests show that if you use read() pigpio is quite slow (slower than RPi.GPIO), because of the socket that's being used.
+However, if you use callbacks, you can easily read the clock and data. Data needs to be written when the clock goes low.
 I checked that a AA batter triggers the input.
 Recommended R for driving a LED from a GPIO: 330 Ohm. 
 Max V for 0 input is 0.8V
