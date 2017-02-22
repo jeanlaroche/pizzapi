@@ -148,6 +148,7 @@ span {font-weight: bold;}
 			Plotly.plot( Plots, [{x: [12,12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
 			Plotly.plot( Plots, [{x: [hours,hours],y: [0,1], mode: 'lines', line : {color : 'white', width : 2, dash : 'dash'}}], layout );
 			//Plotly.plot( Plots, [{x: [24,24],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
+			$("#Stats").text(data.stats);
 			});
 	}
 	
@@ -198,5 +199,8 @@ span {font-weight: bold;}
 		<button id="nextDay" onclick="onNextDay()" data-theme="d">Next Day</button>
 	</div>
 </fieldset>
-
+<div ><h2>Stats Log:</h2></div>
+ <div>
+ <pre id="Stats"></pre>
+ </div>
  </div>

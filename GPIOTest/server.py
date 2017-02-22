@@ -32,12 +32,12 @@ def _tempDown():
 @app.route("/_getTubStatus")
 def _getTubStatus():
 	heatValStr = "ON" if rt.heaterVal else "OFF"
-	heaterTime,heaterValue,heaterUsage,heaterTotalUsage,thisDayStr,prevDayStr,nextDayStr = sc.computeGraphData()
+	heaterTime,heaterValue,heaterUsage,heaterTotalUsage,thisDayStr,prevDayStr,nextDayStr,stats = sc.computeGraphData()
 	heaterTicks = range(0,25)
 	heaterLabel = ["{:}".format(ii) for ii in range(0,25)]
 	fileUpdated = sc.fileUpdated
 	sc.fileUpdated = 0
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats)
 
 @app.route("/_getFullData")
 def _getFullData():

@@ -17,7 +17,7 @@ statsDay 				= 	0   # 0 for today, -1 for yesterday etc.
 lastTempTime 			=	0 	# When the temp changes, time of the last measured previous value.
 
 if rt.fakeIt:
-	statLogFile 			= './FakeStats.txt'
+	statLogFile 			= './Stats.txt'
 	heaterData 				= 	[[33,0],[41,1],[42,0],[43,1],[53,0],[55,1],[62,0],[65,1],[70,0]]	# Will contain pairs of [time heateron/off]
 	tempData 				= 	[[53,98],[55,97],[62,95],[65,98],[70,104]]  # Will contain pairs of [time temp]
 else:
@@ -43,7 +43,6 @@ def printHours(hours):
 	if hours < 1: return "{}'".format(int(hours*60))
 	else: return "{}h{:02d}'".format(int(hours),int((hours*60)%60))
 
-
 # Read the stat file, grabs the heater data, and returns what should be displayed.
 def computeGraphData():
 	today = getToday()
@@ -59,6 +58,16 @@ def computeGraphData():
 	# For this, we need to duplicate each entry.
 	startHour = today+statsDay*24
 	endHour = today+statsDay*24+24
+	
+	stats = ''
+	for line in allLines[-1:0:-1]:
+		if not line: continue
+		lineHour = float(line.split()[1])
+		if lineHour > startHour and lineHour < endHour:
+			stats += line
+	# pdb.set_trace()
+	print stats
+	
 	A = [item for item  in heaterData if item[0] < endHour and item[0] > startHour]
 	B = [];
 	for item in A:
@@ -91,7 +100,7 @@ def computeGraphData():
 	thisDayStr = time.strftime(format,time.gmtime(startHour*3600+offset)) if statsDay else "today"
 	nextDayStr = time.strftime(format,time.gmtime(startHour*3600+offset+24*3600))
 	prevDayStr = time.strftime(format,time.gmtime(startHour*3600+offset+-24*3600))
-	return heaterTime,heaterValue,printHours(heaterUsage),"Average usage: " + printHours(24*heaterTotalUsage)+' per day',thisDayStr,prevDayStr,nextDayStr
+	return heaterTime,heaterValue,printHours(heaterUsage),"Average usage: " + printHours(24*heaterTotalUsage)+' per day',thisDayStr,prevDayStr,nextDayStr,stats
 
 def logHeaterUse():
 	global lastHeaterVal, lastTempVal, fileUpdated, lastTempTime, lastHeaterTime
