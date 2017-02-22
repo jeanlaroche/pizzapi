@@ -106,7 +106,7 @@ def logHeaterUse():
 			statLogF.write("H {:.2f} {} {}\n".format(curTime,rt.heaterVal,timeStr))
 		else:
 			elapsedTime = curTime - lastHeaterTime
-			statLogF.write("H {:.2f} {} {} -- {}\n".format(curTime,rt.heaterVal,timeStr,printHours(elapsedTime)))
+			statLogF.write("H {:.2f} {} {} -- {} Set: {}\n".format(curTime,rt.heaterVal,timeStr,printHours(elapsedTime),rt.targetTemperatureVal))
 		lastHeaterTime = curTime
 	if not lastTempVal == rt.temperatureVal and rt.temperatureVal:
 		# Check that the last previous temps was at least 4 minutes ago: the temp has been different for 
