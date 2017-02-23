@@ -65,8 +65,6 @@ def computeGraphData():
 		lineHour = float(line.split()[1])
 		if lineHour > startHour and lineHour < endHour:
 			stats += line
-	# pdb.set_trace()
-	print stats
 	
 	A = [item for item  in heaterData if item[0] < endHour and item[0] > startHour]
 	B = [];
