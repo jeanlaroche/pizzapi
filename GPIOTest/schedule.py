@@ -62,9 +62,11 @@ def computeGraphData():
 	stats = ''
 	for line in allLines[-1:0:-1]:
 		if not line: continue
-		lineHour = float(line.split()[1])
+		allFields = line.split()
+		
+		lineHour = float(allFields[1])
 		if lineHour > startHour and lineHour < endHour:
-			stats += line
+			stats += ' '.join([allFields[6],allFields[0],allFields[2]]+allFields[8:])+'\n'
 	
 	A = [item for item  in heaterData if item[0] < endHour and item[0] > startHour]
 	B = [];
