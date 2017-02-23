@@ -59,13 +59,14 @@ def computeGraphData():
 	startHour = today+statsDay*24
 	endHour = today+statsDay*24+24
 	
+	# Extract the part of the log that correspond to the period we're interested in.
 	stats = ''
 	for line in allLines[-1:0:-1]:
 		if not line: continue
 		allFields = line.split()
-		
 		lineHour = float(allFields[1])
-		if lineHour > startHour and lineHour < endHour:
+		# In fact, go back 4 more hours in the past.
+		if lineHour > startHour - 4 and lineHour < endHour:
 			stats += ' '.join([allFields[6],allFields[0],allFields[2]]+allFields[8:])+'\n'
 	
 	A = [item for item  in heaterData if item[0] < endHour and item[0] > startHour]
@@ -117,6 +118,9 @@ def logHeaterUse():
 			elapsedTime = curTime - lastHeaterTime
 			statLogF.write("H {:.2f} {} {} -- {} Set: {}\n".format(curTime,rt.heaterVal,timeStr,printHours(elapsedTime),rt.targetTemperatureVal))
 		lastHeaterTime = curTime
+	# To avoid logging the temp everytime we start.
+	if lastTempVal == -1 and rt.temperatureVal: lastTempVal = rt.temperatureVal
+	
 	if not lastTempVal == rt.temperatureVal and rt.temperatureVal:
 		# Check that the last previous temps was at least 4 minutes ago: the temp has been different for 
 		# at least 4 minutes. Otherwise just wait.
