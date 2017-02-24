@@ -77,6 +77,9 @@ span {font-weight: bold;}
 				$("#heaterStats0").text(data.heaterStats[1]);
 				// To set a color, set the style to "color:red"
 				$("#heaterValue").attr('style',data.heaterValueStr == "OFF" ? 'color:white' : 'color:red');
+				$("#Up").attr('disabled',data.allowControl ? false : true);
+				$("#Down").attr('disabled',data.allowControl ? false : true);
+				$("#Sche").attr('disabled',data.allowControl ? false : true);
 				if (data.newHeaterData) redraw();
 				// These would also work!
 				// document.getElementById("heaterValue").style="color:green";

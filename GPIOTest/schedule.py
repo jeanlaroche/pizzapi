@@ -174,7 +174,7 @@ def openAndRun():
 	print "STARTING SCHEDULE"
 	if rt.fakeIt: return
 	readSchedule(file,verbose=1)
-	firstTime = 1
+	firstTime = 0
 	# I'm going to do it from scratch. I could use sched, but it would be a bit of a mess.
 	doMidnightReset = 1
 	while 1:

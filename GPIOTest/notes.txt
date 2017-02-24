@@ -51,6 +51,7 @@ PINs on PI: Seen from above
 The connector is a PCB mounted "IDC" connector.
 
 HTTP WEB SERVER.
+Using http://freedns.afraid.org/subdomain/ to point to my dynamic address. usual weak password.
 This http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html has a complete solution for controlling a PI with some javascript, ajax and flask
 This one also provided the key insight into "onclick":
 http://stackoverflow.com/questions/27716499/how-to-call-a-php-script-function-on-a-html-button-click

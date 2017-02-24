@@ -12,6 +12,7 @@ import re
 app = Flask(__name__)
 
 statsDay			= 	0	# 0 for today, -1 for yesterday, -2 etc
+allowControl = 0
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
@@ -20,24 +21,26 @@ def Index():
 
 @app.route("/_tempUp")
 def _tempUp():
-	# rt.pressTempAdjust()
-	rt.incSetTemperature(1)
+	if allowControl : rt.incSetTemperature(1)
 	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_tempDown")
 def _tempDown():
-	rt.incSetTemperature(-1)
+	if allowControl : rt.incSetTemperature(-1)
 	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_getTubStatus")
 def _getTubStatus():
+	global allowControl
+	allowControl = True if ('192.168' in request.referrer) else False
+	#print "IP: {} Allow: {}".format(request.referrer,allowControl)
 	heatValStr = "ON" if rt.heaterVal else "OFF"
 	heaterTime,heaterValue,heaterUsage,heaterTotalUsage,thisDayStr,prevDayStr,nextDayStr,stats = sc.computeGraphData()
 	heaterTicks = range(0,25)
 	heaterLabel = ["{:}".format(ii) for ii in range(0,25)]
 	fileUpdated = sc.fileUpdated
 	sc.fileUpdated = 0
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -52,6 +55,7 @@ def _getFullData():
 @app.route("/_onNextDay")
 def _onNextDay():
 	if sc.statsDay < 0 : sc.statsDay += 1
+	# pdb.set_trace()
 	return ""
 
 @app.route("/_onPrevDay")
@@ -67,7 +71,7 @@ def _pageUnload():
 @app.route("/_schedule")
 def _schedule():
 	print "RERUN SCHEDULE"
-	sc.redoSchedule()
+	if allowControl : sc.redoSchedule()
 	return ""
 	
 
@@ -107,7 +111,7 @@ preStart()
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
-	app.run(host='0.0.0.0', port=80, debug=True, threaded = False, use_reloader=False)
+	app.run(host='0.0.0.0', port=8080, debug=True, threaded = False, use_reloader=False)
 	print "TEARDOWN"
 	rt.tearDown()
 	
