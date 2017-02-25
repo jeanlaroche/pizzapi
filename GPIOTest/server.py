@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import readTemp as rt
 import pdb
 import threading, time, os
@@ -15,6 +15,10 @@ statsDay			= 	0	# 0 for today, -1 for yesterday, -2 etc
 allowControl 		= 	0	# Allow or disallow control of temp
 alwaysAllow 		= 	0	# Ignore flag above.
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.root_path,'favicon.ico', mimetype='image/vnd.microsoft.icon')
+	
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
 def Index():
@@ -23,7 +27,7 @@ def Index():
 	return render_template("index.html", uptime=GetUptime())
 
 # special private page that allows changing the temp. For lack of a proper login thingy
-@app.route("/6945")
+@app.route("/Pook")
 def Index2():
 	global alwaysAllow
 	alwaysAllow = 1
