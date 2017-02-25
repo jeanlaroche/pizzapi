@@ -32,6 +32,7 @@ def _tempDown():
 @app.route("/_getTubStatus")
 def _getTubStatus():
 	global allowControl
+	print request.referrer
 	allowControl = True if ('192.168' in request.referrer) else False
 	#print "IP: {} Allow: {}".format(request.referrer,allowControl)
 	heatValStr = "ON" if rt.heaterVal else "OFF"

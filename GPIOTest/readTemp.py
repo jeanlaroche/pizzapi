@@ -27,6 +27,8 @@ buttonOff 		= 0		# GPIO value to simulate a button release.
 minTemp 		= 80	# Minimum settable temperature
 maxTemp 		= 104 	# Maximum settable temperature
 
+heaterPower		= 4.0 	# Heater power in kW
+
 # These values can be read.
 temperatureVal			=	10 # Current tub temperature
 setTemperatureVal		=	10 	# Current set temperature, internal to Hot Tub
