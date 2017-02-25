@@ -12,21 +12,31 @@ import re
 app = Flask(__name__)
 
 statsDay			= 	0	# 0 for today, -1 for yesterday, -2 etc
-allowControl = 0
+allowControl 		= 	0	# Allow or disallow control of temp
+alwaysAllow 		= 	0	# Ignore flag above.
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
 def Index():
+	global alwaysAllow
+	alwaysAllow = 0
 	return render_template("index.html", uptime=GetUptime())
 
+# special private page that allows changing the temp. For lack of a proper login thingy
+@app.route("/6945")
+def Index2():
+	global alwaysAllow
+	alwaysAllow = 1
+	return render_template("index.html", uptime=GetUptime())
+	
 @app.route("/_tempUp")
 def _tempUp():
-	if allowControl : rt.incSetTemperature(1)
+	if allowControl or alwaysAllow: rt.incSetTemperature(1)
 	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_tempDown")
 def _tempDown():
-	if allowControl : rt.incSetTemperature(-1)
+	if allowControl or alwaysAllow: rt.incSetTemperature(-1)
 	return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_getTubStatus")
@@ -41,7 +51,7 @@ def _getTubStatus():
 	heaterLabel = ["{:}".format(ii) for ii in range(0,25)]
 	fileUpdated = sc.fileUpdated
 	sc.fileUpdated = 0
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -72,7 +82,7 @@ def _pageUnload():
 @app.route("/_schedule")
 def _schedule():
 	print "RERUN SCHEDULE"
-	if allowControl : sc.redoSchedule()
+	if allowControl or alwaysAllow: sc.redoSchedule()
 	return ""
 	
 
