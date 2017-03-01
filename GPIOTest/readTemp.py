@@ -242,6 +242,9 @@ def incSetTemperature(delta):
 		targetTemperatureVal += delta
 	if targetTemperatureVal > minTemp and delta < 0: 
 		targetTemperatureVal += delta 
+	# The problem here is that if isAdjustingTemp hasn't been reset yet, this won't have any effect.
+	# Ideally, I should wait in setTemperature() for the flag to go low. Ah but then, if you call the function
+	# several time in a row, things would be bad...
 	if not prevTargetTemperatureVal == targetTemperatureVal and isAdjustingTemp == 0:
 		t = threading.Thread(target=setTemperature)
 		t.daemon = True

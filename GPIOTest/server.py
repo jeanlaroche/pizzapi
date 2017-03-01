@@ -46,7 +46,6 @@ def _tempDown():
 @app.route("/_getTubStatus")
 def _getTubStatus():
 	global allowControl
-	print request.referrer
 	allowControl = True if ('192.168' in request.referrer) else False
 	#print "IP: {} Allow: {}".format(request.referrer,allowControl)
 	heatValStr = "ON" if rt.heaterVal else "OFF"
@@ -104,6 +103,7 @@ def showHeartBeat():
 	if not rt.isAdjustingTemp:  rt.readTemperature(updateTempVal=1)
 	sc.logHeaterUse()
 	os.system('touch ' + rt.logFile)
+	#rt.mprint("HeartBeat")
 	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
 	
