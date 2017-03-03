@@ -7,6 +7,15 @@ import pdb
 schedule = {}
 todo = {}
 
+# Per kWh cost in dollars.
+winLoCost 				=	0.20	# Low rate in winter.
+winHiCost 				=	0.22	# High rate in winter.
+sumLoCost 				=	0.26	# Low rate in summer.
+sumHiCost 				=	0.36	# High rate in summer.
+startHiHour				= 	16		# High cost starts at 4pm
+endHiHour				= 	21		# High cost ends at 9pm
+summerMonths 			= 	[6,7,8,9]
+
 lastTempVal				= 	-1 	# Last read temp
 lastHeaterVal			= 	-1 	# Last heater value
 lastHeaterTime			= 	0	# Time at last heater change
@@ -33,6 +42,17 @@ def getCtime():
 def getToday():
 	return(24*int(getCtime() / 24))
 	
+# This returns the low and high cost of one hour of heater usage.
+def getCost(statsDay):
+	thisDate = datetime.datetime.now()-datetime.timedelta(days=-statsDay)
+	if thisDate.month in summerMonths:
+		if thisDate.weekday() in [5,6]: costLow,costHigh = sumLoCost,sumLoCost
+		else: costLow,costHigh = sumLoCost,sumHiCost
+	else:
+		if thisDate.weekday() in [5,6]: costLow,costHigh = winLoCost,winLoCost
+		else: costLow,costHigh = winLoCost,winHiCost
+	return costLow*rt.heaterPower,costHigh*rt.heaterPower
+	
 def max(a,b):
 	return a if a>b else b
 
@@ -45,8 +65,8 @@ def printHours(hours):
 
 # Read the stat file, grabs the heater data, and returns what should be displayed.
 def computeGraphData():
-	today = getToday()
 	global heaterData, tempData
+	today = getToday()
 	with open(statLogFile,'r') as fd:
 		allLines = fd.readlines()
 	# Separate and massage the heater and temp data. We need floats.
@@ -78,7 +98,11 @@ def computeGraphData():
 	heaterTime = [item[0]-startHour for item in B]
 	heaterValue = [item[1] for item in B]
 	heaterUsage = 0
+	heaterCost = 0
 	heaterTotalUsage = 0
+	
+	costLow,costHigh = getCost(statsDay)
+	
 	for ii,[tim,heat] in enumerate(heaterData):
 		# Ignore the first entry, and all entry where heat = 1 (because this means the time span until this entry
 		# had heater off.
@@ -91,8 +115,13 @@ def computeGraphData():
 			continue
 		# max(prevTime,startHour - 1) is useful because we only want to count the time within the past hour, not since
 		# the last log.
-		if tim > startHour and prevTime < endHour: heaterUsage += min(tim,endHour) - max(prevTime,startHour)
+		if tim > startHour and prevTime < endHour: 
+			dur = min(tim,endHour) - max(prevTime,startHour)
+			if tim > startHiHour and tim < endHiHour: heaterCost += dur * costHigh
+			else: heaterCost += dur * costLow
+			heaterUsage += dur
 		heaterTotalUsage += tim - prevTime
+
 	totTime = getCtime() - heaterData[0][0] if heaterData else 1
 	heaterTotalUsage = heaterTotalUsage / totTime
 	# I should have used time.time() straight with no offset but I didn't. So to get the day right, I have to re-add this.
@@ -102,7 +131,7 @@ def computeGraphData():
 	nextDayStr = time.strftime(format,time.gmtime(startHour*3600+offset+24*3600))
 	prevDayStr = time.strftime(format,time.gmtime(startHour*3600+offset+-24*3600))
 	avUsageStr = "Average usage: {} / day -- {:.1f} kWh -- {:.0f} W".format(printHours(24*heaterTotalUsage),24*heaterTotalUsage*rt.heaterPower,heaterTotalUsage*rt.heaterPower*1000)
-	usageStr = "{} -- {:.1f} kWh -- {:.0f} W".format(printHours(heaterUsage),heaterUsage*rt.heaterPower,heaterUsage*rt.heaterPower*1000/24)
+	usageStr = "{} -- {:.1f} kWh -- {:.0f} W -- {:.2f}$".format(printHours(heaterUsage),heaterUsage*rt.heaterPower,heaterUsage*rt.heaterPower*1000/24,heaterCost)
 	return heaterTime,heaterValue,usageStr,avUsageStr,thisDayStr,prevDayStr,nextDayStr,stats
 
 def logHeaterUse():
