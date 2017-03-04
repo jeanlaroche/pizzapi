@@ -131,7 +131,7 @@ def computeGraphData():
 	nextDayStr = time.strftime(format,time.gmtime(startHour*3600+offset+24*3600))
 	prevDayStr = time.strftime(format,time.gmtime(startHour*3600+offset+-24*3600))
 	avUsageStr = "Average usage: {} / day -- {:.1f} kWh -- {:.0f} W".format(printHours(24*heaterTotalUsage),24*heaterTotalUsage*rt.heaterPower,heaterTotalUsage*rt.heaterPower*1000)
-	usageStr = "{} -- {:.1f} kWh -- {:.0f} W -- {:.2f}$".format(printHours(heaterUsage),heaterUsage*rt.heaterPower,heaterUsage*rt.heaterPower*1000/24,heaterCost)
+	usageStr = "{} -- {:.1f} kWh <br> {:.0f} W -- {:.2f}$".format(printHours(heaterUsage),heaterUsage*rt.heaterPower,heaterUsage*rt.heaterPower*1000/24,heaterCost)
 	return heaterTime,heaterValue,usageStr,avUsageStr,thisDayStr,prevDayStr,nextDayStr,stats
 
 def logHeaterUse():
