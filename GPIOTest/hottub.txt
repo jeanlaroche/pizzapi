@@ -1,6 +1,11 @@
 # This is the schedule file for the hot tub
 # I'm setting it to 97, and a bit before 4pm where power 
 # becomes expensive, I raise it to 100F.
-23:30 97
-15:00 100
+# 23:30 97 				executes every day
+# 23:30 97 M-F			executes Monday to Friday
+# 23:30 97 WE			executes Sat and Sunday
+23:30 97 
+15:00 100 M-F
+19:00 100 WE
+
 

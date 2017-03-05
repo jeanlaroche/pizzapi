@@ -174,15 +174,21 @@ def readSchedule(file,verbose=0):
 			line = line.strip()
 			if not line or line[0] == '#': continue
 			# Split
-			R = re.search(r'(\d+\:\d+)[,\s]+(\d+)',line)
+			R = re.search(r'(\d+\:\d+)[,\s]+(\d+)[,\s]*(.*)',line)
 			if not R and verbose:
 				print "Could not parse {}, continuing".format(line)
-			schedule[R.group(1)]=R.group(2)
+			if not R.group(3): schedule[R.group(1)]=[R.group(2)]
+			else: 
+				# Parse the day field.
+				if R.group(3).lower() == 'm-f': dayField = [0,1,2,3,4]
+				elif R.group(3).lower() == 'we': dayField = [5,6]
+				else: dayField = []
+				schedule[R.group(1)]=[R.group(2),dayField]
 			todo[R.group(1)] = 1
 	if verbose: print "Done"
 	if verbose:
 		for key in schedule.keys():
-			print "At {} --> {}F".format(key,schedule[key])
+			print "At {} --> {}F".format(key,schedule[key][0])
 
 # Redo the last scheduled event.
 def redoSchedule():
@@ -194,10 +200,11 @@ def redoSchedule():
 		allTimes = sorted([key for key in schedule.keys() if key > curTime])
 	if allTimes: 
 		key = allTimes[-1]
-		rt.mprint("Redoing schedule for = {} setting tub to {}F".format(key,schedule[key]))
-		rt.targetTemperatureVal = int(schedule[key])
-		rt.setTemperature()
-		todo[key] = 0
+		if len(schedule[key]) == 0 or (thisDate.weekday() in schedule[key][1]):		
+			rt.mprint("Redoing schedule for = {} setting tub to {}F".format(key,schedule[key][0]))
+			rt.targetTemperatureVal = int(schedule[key][0])
+			rt.setTemperature()
+			todo[key] = 0
 
 def openAndRun():
 	# Open the schedule file
@@ -205,17 +212,12 @@ def openAndRun():
 	print "STARTING SCHEDULE"
 	if rt.fakeIt: return
 	readSchedule(file,verbose=1)
-	firstTime = 0
 	# I'm going to do it from scratch. I could use sched, but it would be a bit of a mess.
 	doMidnightReset = 1
 	while 1:
 		# Get the current time.
 		thisDate = datetime.datetime.now()
 		curTime = thisDate.strftime('%H:%M')
-		if firstTime:
-			# First time around, sort the times, and execute the action for the last one that should have run.
-			firstTime = 0
-			redoSchedule()
 	
 		# Re-read the schedule file. This allows us to change the schedule without restarting. Don't read if
 		# a change is occurring at this precise time, it would reset todo[]
@@ -229,10 +231,12 @@ def openAndRun():
 		# Now run the schedules.
 		if curTime in schedule.keys() and todo[curTime] == 1:
 			# Execute the schedule if todo is 1 for this event.
-			rt.mprint("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime]))
-			rt.targetTemperatureVal = int(schedule[curTime])
-			rt.setTemperature()
-			todo[curTime] = 0
+			# Check the day of the week! Execute if there's no week day indication or the current week day is in!
+			if len(schedule[curTime]) == 0 or (thisDate.weekday() in schedule[curTime][1]):
+				rt.mprint("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime][0]))
+				rt.targetTemperatureVal = int(schedule[curTime][0])
+				rt.setTemperature()
+				todo[curTime] = 0
 		time.sleep(30)
 		
 if __name__ == "__main__":
