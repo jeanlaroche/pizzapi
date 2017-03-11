@@ -77,6 +77,21 @@ def _onPrevDay():
 	sc.statsDay -= 1
 	return ""
 
+@app.route("/_onToday")
+def _onToday():
+	sc.statsDay = 0
+	return ""
+
+@app.route("/_onMinusWeek")
+def _onMinusWeek():
+	sc.statsDay -= 7
+	return ""
+
+@app.route("/_onPlusWeek")
+def _onPlusWeek():
+	sc.statsDay += 7
+	return ""
+	
 @app.route("/_pageUnload")
 def _pageUnload():
 	print "PAGE UNLOADED"

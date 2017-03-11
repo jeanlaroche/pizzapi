@@ -141,6 +141,7 @@ def logHeaterUse():
 	curTime = getCtime()
 	
 	# Log a heater change in the format: FracTimeInHours new heatervalue date
+	#rt.mprint("Logging heater {}".format(rt.heaterVal))
 	if not lastHeaterVal == rt.heaterVal and not lastHeaterVal == -1:
 		fileUpdated = 1
 		if lastHeaterVal == 0:
@@ -200,7 +201,7 @@ def redoSchedule():
 		allTimes = sorted([key for key in schedule.keys() if key > curTime])
 	if allTimes: 
 		key = allTimes[-1]
-		if len(schedule[key]) == 0 or (thisDate.weekday() in schedule[key][1]):		
+		if len(schedule[key]) == 1 or (thisDate.weekday() in schedule[key][1]):		
 			rt.mprint("Redoing schedule for = {} setting tub to {}F".format(key,schedule[key][0]))
 			rt.targetTemperatureVal = int(schedule[key][0])
 			rt.setTemperature()
@@ -232,7 +233,7 @@ def openAndRun():
 		if curTime in schedule.keys() and todo[curTime] == 1:
 			# Execute the schedule if todo is 1 for this event.
 			# Check the day of the week! Execute if there's no week day indication or the current week day is in!
-			if len(schedule[curTime]) == 0 or (thisDate.weekday() in schedule[curTime][1]):
+			if len(schedule[curTime]) == 1 or (thisDate.weekday() in schedule[curTime][1]):
 				rt.mprint("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime][0]))
 				rt.targetTemperatureVal = int(schedule[curTime][0])
 				rt.setTemperature()
