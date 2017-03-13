@@ -89,7 +89,7 @@ def _onMinusWeek():
 
 @app.route("/_onPlusWeek")
 def _onPlusWeek():
-	sc.statsDay += 7
+	if sc.statsDay < -6 : sc.statsDay += 7
 	return ""
 	
 @app.route("/_pageUnload")
