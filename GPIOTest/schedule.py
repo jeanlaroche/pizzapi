@@ -35,9 +35,9 @@ statLogF				= open(statLogFile,'a',0)
 
 def getCtime():
 	# Subtracting a multiple of 24 because time.time() starts at 00:00.
-	# timezone is to get the local time. I wasn't careful: 412992 isn't a whole number of weeks. Perhaps I should have use just time.time()-time.timezone() to get the dates
+	# timezone is to get the local time. I wasn't careful: 412992 isn't a whole number of weeks. Perhaps I should have use just time.time()-time.timezone() to get the dates. Actually you have to use altzone to get the DST time.
 	# right.
-	return (time.time()-time.timezone)/3600 - 412992 
+	return (time.time()-time.altzone)/3600 - 412992 
 	
 def getToday():
 	return(24*int(getCtime() / 24))
