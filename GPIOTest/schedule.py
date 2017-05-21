@@ -168,16 +168,25 @@ def logHeaterUse():
 def readSchedule(file,verbose=0):
 	global schedule, todo
 	if verbose: print "Reading {}".format(file)
+	holdTemp = 0
 	with open(file,'r') as f:
 		schedule = {}
 		todo = {}
 		for line in f.readlines():
-			line = line.strip()
+			line = line.strip().lower()
 			if not line or line[0] == '#': continue
 			# Split
 			R = re.search(r'(\d+\:\d+)[,\s]+(\d+)[,\s]*(.*)',line)
-			if not R and verbose:
-				print "Could not parse {}, continuing".format(line)
+			if not R:
+				# See if we have a line that says "hold"
+				R = re.search(r'hold[,\s]+(\d+)',line)
+				if not R or not R.group(1):
+					if verbose: print "Could not parse {}, continuing".format(line)
+					continue
+				else:
+					holdTemp = R.group(1)
+					print "Hold temp {}".format(holdTemp)
+					continue
 			if not R.group(3): schedule[R.group(1)]=[R.group(2)]
 			else: 
 				# Parse the day field.
@@ -186,7 +195,12 @@ def readSchedule(file,verbose=0):
 				else: dayField = []
 				schedule[R.group(1)]=[R.group(2),dayField]
 			todo[R.group(1)] = 1
+	if holdTemp:
+		# Replace all temperatures in case of a hold
+		for key in schedule:
+			schedule[key][0]=holdTemp
 	if verbose: print "Done"
+	
 	if verbose:
 		for key in schedule.keys():
 			print "At {} --> {}F".format(key,schedule[key][0])
