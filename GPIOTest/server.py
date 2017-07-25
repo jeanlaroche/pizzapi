@@ -141,7 +141,7 @@ preStart()
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
-	app.run(host='0.0.0.0', port=8080, debug=True, threaded = False, use_reloader=False)
+	app.run(host='0.0.0.0', port=8080, debug=True, threaded = False, use_reloader=True)
 	print "TEARDOWN"
 	rt.tearDown()
 	

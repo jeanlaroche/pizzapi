@@ -158,14 +158,15 @@ span {font-weight: bold;}
 				title: '',
 				showline: true,
 				showgrid: false,
-				ticks: '',
-				showticklabels: false,
+				tickvals: [0,1],
+				ticktext: ['0','1'],
 				color: 'rgba(256,256,0,1)'
 			  },
 			showlegend : false,
 			title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
 			titlefont: {color: 'yellow'},
 			  };
+			$("#Stats").text(data.stats);
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
 			Plotly.newPlot( Plots, [{x: X,y: Y, fill: 'tozeroy'}], layout );
@@ -173,7 +174,6 @@ span {font-weight: bold;}
 			Plotly.plot( Plots, [{x: [12,12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
 			Plotly.plot( Plots, [{x: [hours,hours],y: [0,1], mode: 'lines', line : {color : 'white', width : 2, dash : 'dash'}}], layout );
 			//Plotly.plot( Plots, [{x: [24,24],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
-			$("#Stats").text(data.stats);
 			});
 	}
 	
