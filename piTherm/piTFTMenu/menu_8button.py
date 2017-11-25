@@ -136,7 +136,7 @@ while 1:
             pos = (pygame.mouse.get_pos() [0], pygame.mouse.get_pos() [1])
             print pos #for checking
             pygame.draw.circle(screen, white, pos, 2, 0) #for debugging purposes - adds a small dot where the screen is pressed
-            on_click()
+            #on_click()
 
 #ensure there is always a safe way to end the program if the touch screen fails
 
