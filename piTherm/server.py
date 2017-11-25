@@ -67,7 +67,7 @@ def GetUptime():
 def preStart():
     global hc
     print "RUNNING PRESTART"
-    hc = heaterControl()
+    hc = heaterControl.heaterControl()
 
 
 
