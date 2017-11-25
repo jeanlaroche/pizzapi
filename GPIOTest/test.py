@@ -1,5 +1,13 @@
 import RPi.GPIO as GPIO
 import time
+import pdb
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(15, GPIO.OUT)
+GPIO.output(15,0)
+pdb.set_trace()
+GPIO.output(15,1)
+pdb.set_trace()
 
 
 # Function to evaluate the sampling rate for reading GPIOs.

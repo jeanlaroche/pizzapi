@@ -78,7 +78,7 @@ def init():
 		isAdjustingTemp = 1 # To prevent anybody from reading the temp during this
 		temperatureVal,heaterVal = readTemperature()[1:3]
 		setTemperatureVal = readSetTemperature()
-		targetTemperatureVal = setTemperatureVal
+		#targetTemperatureVal = setTemperatureVal
 		mprint("Full Temp Read: Temp {} Set {} ".format(temperatureVal,setTemperatureVal))
 		# Reset flag after a while.
 		resetFlag()
