@@ -24,7 +24,7 @@ def run_cmd(cmd):
 
 # Turn screen on
 def screen_on():
-        pygame.quit()
+    pygame.quit()
 	backlight = GPIO.PWM(18, 1023)
 	backlight.start(100)
 	GPIO.cleanup()

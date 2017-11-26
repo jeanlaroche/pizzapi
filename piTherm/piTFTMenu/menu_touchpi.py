@@ -6,8 +6,12 @@ import os
 import RPi.GPIO
 from subprocess import *
 os.environ["SDL_FBDEV"] = "/dev/fb1"
-os.environ["SDL_MOUSEDEV"] = "/dev/input/touchscreen"
-os.environ["SDL_MOUSEDRV"] = "TSLIB"
+#os.environ["SDL_MOUSEDEV"] = "/dev/input/touchscreen"
+#os.environ["SDL_MOUSEDRV"] = "TSLIB"
+
+#set size of the screen
+size = width, height = 480, 320
+screen = pygame.display.set_mode(size)
 
 # Initialize pygame and hide mouse
 pygame.init()
@@ -172,9 +176,6 @@ orange  = (255, 127,   0)
 
 # Set up the base menu you can customize your menu with the colors above
 
-#set size of the screen
-size = width, height = 480, 320
-screen = pygame.display.set_mode(size)
 
 # Background Color
 screen.fill(black)
