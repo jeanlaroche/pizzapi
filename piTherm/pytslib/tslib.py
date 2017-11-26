@@ -46,7 +46,7 @@ if ts_config(ts):
 def read(ts):
 	s = ts_sample()
 	while True:
-		if ts_read_raw(ts, byref(s), 1) < 0:
+		if ts_read(ts, byref(s), 1) < 0:
 			exit("ts_read_raw failed")
 		if s.pressure != 0:
 			print s.x,s.y

@@ -55,8 +55,7 @@ def initTsLib():
     ts_config.restype = c_int
     ts_config.argtype = [POINTER(tsdev)]
 
-
-    ts = ts_open("/dev/input/event2", 0)
+    ts = ts_open("/dev/input/event2", 1)
     if ts == 0:
         exit("ts_open failed")
 
@@ -83,8 +82,6 @@ class displayControl(object):
         s = ts_sample()
         if self.ts_read(self.ts, byref(s), 1) < 0:
             exit("ts_read_raw failed")
-        # if s.pressure != 0:
-        #     print s.x, s.y
         return s
 
     # define function for printing text in a specific place with a specific width and height with a specific colour and border
@@ -100,11 +97,9 @@ class displayControl(object):
         label=font.render(str(text), 1, (colour))
         self.screen.blit(label,(xpo,ypo))
 
-    # define function that checks for touch location
-    def on_touch(self,):
-        # get the position that was touched
-        touch_pos = (pygame.mouse.get_pos() [0], pygame.mouse.get_pos() [1])
-        print touch_pos
+    def make_circle(self,text,xpo,ypo,radius,colour):
+        self.make_label(text,xpo-40,ypo-40,120,blue)
+        pygame.draw.circle(self.screen,red,(xpo,ypo),100,10)
 
     def draw(self):
         # Set up the base menu you can customize your menu with the colors above
@@ -116,31 +111,22 @@ class displayControl(object):
         
         # Buttons and labels
         # First Row
-        self.make_label("Room Temp: 70F", 20, 20, self.fontSize, red)
-        self.make_button("Menu Item 1", 30, self.ySize-80, 55, 210, blue)
+        self.make_circle("76",self.xSize/2,self.ySize/2,100,red)
+        # self.make_label("Room Temp: 70F", 20, 20, self.fontSize, red)
+        # self.make_button("Menu Item 1", 30, self.ySize-80, 55, 210, blue)
+        # self.make_label("Room Temp: 70F", 20, 20, self.fontSize, red)
+        # self.make_button("Menu Item 1", 30, self.ySize-80, 55, 210, blue)
 
     def eventLoop(self):
         import pdb
         # While loop to manage touch self.screen inputs
         while 1:
             try:
-                s = self.getTSEvent()
-                print s.x,s.y
-                # for event in pygame.event.get():
-                #     print event.type
-                #     if event.type == pygame.MOUSEBUTTONDOWN:
-                #         #pdb.set_trace()
-                #         print "self.screen pressed" #for debugging purposes
-                #         pos1 = (pygame.mouse.get_pos() [0], pygame.mouse.get_pos() [1])
-                #         pos = event.pos
-                #         #pos = (pos[1],pos[0])
-                #         print pos #for checking
-                #         print pos1 #for checking
-                #         pygame.draw.circle(self.screen, white, pos, 2, 0) #for debugging purposes - adds a small dot where the self.screen is pressed
-                #         #on_click()
-                #         #self.on_touch()
-                # time.sleep(0.01)
                 pygame.display.update()
+                s = self.getTSEvent()
+                if s.pressure:
+                    print s.x,s.y
+                else: time.sleep(0.01)
             except:
                 pygame.quit()
                 break
