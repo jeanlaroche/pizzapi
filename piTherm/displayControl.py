@@ -5,7 +5,10 @@ import subprocess
 import os
 from subprocess import *
 os.environ["SDL_FBDEV"] = "/dev/fb1"
-
+os.environ["SDL_MOUSEDRV"] = "TSLIBa"
+os.environ["SDL_MOUSEDEV"] = "/dev/input/event2"
+os.environ["TSLIB_CALIBFILE"] = "/etc/pointercal"
+os.environ["TSLIB_CONFFILE"] = "/etc/ts.conf"
 
 #colors     R    G    B
 white   = (255, 255, 255)
@@ -66,18 +69,23 @@ class displayControl(object):
         self.make_button("Menu Item 1", 30, self.ySize-80, 55, 210, blue)
 
     def eventLoop(self):
+        import pdb
         # While loop to manage touch self.screen inputs
         while 1:
             try:
                 for event in pygame.event.get():
                     print event.type
                     if event.type == pygame.MOUSEBUTTONDOWN:
+                        #pdb.set_trace()
                         print "self.screen pressed" #for debugging purposes
-                        pos = (pygame.mouse.get_pos() [1], pygame.mouse.get_pos() [0])
+                        pos1 = (pygame.mouse.get_pos() [0], pygame.mouse.get_pos() [1])
+                        pos = event.pos
+                        #pos = (pos[1],pos[0])
                         print pos #for checking
+                        print pos1 #for checking
                         pygame.draw.circle(self.screen, white, pos, 2, 0) #for debugging purposes - adds a small dot where the self.screen is pressed
                         #on_click()
-                        self.on_touch()
+                        #self.on_touch()
                 time.sleep(0.01)
                 pygame.display.update()
             except:
