@@ -55,7 +55,8 @@ def initTsLib():
     ts_config.restype = c_int
     ts_config.argtype = [POINTER(tsdev)]
 
-    ts = ts_open("/dev/input/event2", 1)
+    doBlockingMode = 0
+    ts = ts_open("/dev/input/event2", doBlockingMode)
     if ts == 0:
         exit("ts_open failed")
 
@@ -69,14 +70,21 @@ class displayControl(object):
     xSize = 480
     ySize = 320
     fontSize = 80
+    stopNow = 0
 
-    def __init__(self):
+    def __init__(self,touchCallback = None):
         # Initialize pygame and hide mouse
         pygame.init()
         size = width, height = self.xSize, self.ySize
         self.screen = pygame.display.set_mode(size)
         pygame.mouse.set_visible(0)
         self.ts, self.ts_read, self.ts_close = initTsLib()
+        self.touchCallback = touchCallback
+
+    def close(self):
+        print "Closing display"
+        self.stopNow=1
+        self.ts_close(self.ts)
 
     def getTSEvent(self,):
         s = ts_sample()
@@ -84,8 +92,11 @@ class displayControl(object):
             exit("ts_read_raw failed")
         return s
 
+    def onTouch(self,s):
+        if self.touchCallback: self.touchCallback(s)
+
     # define function for printing text in a specific place with a specific width and height with a specific colour and border
-    def make_button(self, text, xpo, ypo, height, width, colour):
+    def make_button(self, text, xpo, ypo, width, height, colour):
         font=pygame.font.Font(None,42)
         label=font.render(str(text), 1, (colour))
         self.screen.blit(label,(xpo,ypo))
@@ -100,6 +111,7 @@ class displayControl(object):
     def make_circle(self,text,xpo,ypo,radius,colour):
         self.make_label(text,xpo-40,ypo-40,120,blue)
         pygame.draw.circle(self.screen,red,(xpo,ypo),100,10)
+
 
     def draw(self):
         # Set up the base menu you can customize your menu with the colors above
@@ -117,16 +129,22 @@ class displayControl(object):
         # self.make_label("Room Temp: 70F", 20, 20, self.fontSize, red)
         # self.make_button("Menu Item 1", 30, self.ySize-80, 55, 210, blue)
 
+    def update(self):
+        pygame.display.update()
+
     def eventLoop(self):
         import pdb
         # While loop to manage touch self.screen inputs
+        self.stopNow = 0
         while 1:
             try:
                 pygame.display.update()
                 s = self.getTSEvent()
                 if s.pressure:
                     print s.x,s.y
+                    self.onTouch(s)
                 else: time.sleep(0.01)
+                if self.stopNow: break
             except:
                 pygame.quit()
                 break
