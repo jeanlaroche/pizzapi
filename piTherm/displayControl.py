@@ -4,9 +4,11 @@ import time
 import subprocess
 import os
 from subprocess import *
+
+inputDev = "/dev/input/event0"
 os.environ["SDL_FBDEV"] = "/dev/fb1"
-os.environ["SDL_MOUSEDRV"] = "TSLIBa"
-os.environ["SDL_MOUSEDEV"] = "/dev/input/event2"
+os.environ["SDL_MOUSEDRV"] = "TSLIB"
+os.environ["SDL_MOUSEDEV"] = inputDev
 os.environ["TSLIB_CALIBFILE"] = "/etc/pointercal"
 os.environ["TSLIB_CONFFILE"] = "/etc/ts.conf"
 
@@ -43,6 +45,10 @@ def initTsLib():
     ts_read.restype = c_int
     ts_read.argtypes = [POINTER(tsdev), POINTER(ts_sample), c_int]
 
+    ts_read_raw = tslib.ts_read_raw
+    ts_read_raw.restype = c_int
+    ts_read_raw.argtypes = [POINTER(tsdev), POINTER(ts_sample), c_int]
+
     ts_open = tslib.ts_open
     ts_open.restype = POINTER(tsdev)
     ts_open.argtypes = [c_char_p, c_int]
@@ -55,8 +61,8 @@ def initTsLib():
     ts_config.restype = c_int
     ts_config.argtype = [POINTER(tsdev)]
 
-    doBlockingMode = 0
-    ts = ts_open("/dev/input/event2", doBlockingMode)
+    doBlockingMode = 1
+    ts = ts_open(inputDev, doBlockingMode)
     if ts == 0:
         exit("ts_open failed")
 
@@ -71,6 +77,7 @@ class displayControl(object):
     ySize = 320
     fontSize = 80
     stopNow = 0
+    allButtons = []
 
     def __init__(self,touchCallback = None):
         # Initialize pygame and hide mouse
@@ -88,9 +95,10 @@ class displayControl(object):
 
     def getTSEvent(self,):
         s = ts_sample()
-        if self.ts_read(self.ts, byref(s), 1) < 0:
-            exit("ts_read_raw failed")
-        return s
+        if self.ts_read(self.ts, byref(s), 1):
+            return s
+        else:
+            return None
 
     def onTouch(self,s):
         if self.touchCallback: self.touchCallback(s)
@@ -101,6 +109,15 @@ class displayControl(object):
         label=font.render(str(text), 1, (colour))
         self.screen.blit(label,(xpo,ypo))
         pygame.draw.rect(self.screen, blue, (xpo-10,ypo-10,width,height),3)
+        button = {'x':xpo,'y':ypo,'dx':width,'dy':height}
+        self.allButtons.append(button)
+
+    def findHit(self,s):
+        x,y=s.x,s.y
+        for ii,but in enumerate(self.allButtons):
+            if x>but['x'] and x < but['x']+but['dx'] and y>but['y'] and y < but['y']+but['dy']:
+                return ii
+        else: return -1
 
     # define function for printing text in a specific place with a specific colour
     def make_label(self, text, xpo, ypo, fontSize, colour):
@@ -109,7 +126,7 @@ class displayControl(object):
         self.screen.blit(label,(xpo,ypo))
 
     def make_circle(self,text,xpo,ypo,radius,colour):
-        self.make_label(text,xpo-40,ypo-40,120,blue)
+        self.make_label(text,xpo-45,ypo-45,120,blue)
         pygame.draw.circle(self.screen,red,(xpo,ypo),100,10)
 
 
@@ -136,14 +153,15 @@ class displayControl(object):
         import pdb
         # While loop to manage touch self.screen inputs
         self.stopNow = 0
+        prevPress = 0
         while 1:
             try:
                 pygame.display.update()
                 s = self.getTSEvent()
-                if s.pressure:
-                    print s.x,s.y
+                if s:
+                    #print s.x, s.y, s.pressure
                     self.onTouch(s)
-                else: time.sleep(0.01)
+                    prevPress = s.pressure
                 if self.stopNow: break
             except:
                 pygame.quit()

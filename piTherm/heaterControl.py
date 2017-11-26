@@ -11,6 +11,7 @@ class heaterControl(object):
     tempHistoryLengthS = 120
     relayGPIO = 17
     stopNow = 0
+    buttonPressed = -1
 
     tempHistory = []
 
@@ -41,8 +42,12 @@ class heaterControl(object):
         self.display.close()
 
     def onTouch(self,s):
-        print "Heater control on touch"
-        if s.x<30 and s.y < 30:
+        # print s.pressure
+        if s.pressure:
+            self.buttonPressed = self.display.findHit(s)
+        if s.pressure == 0 and self.buttonPressed > -1:
+            print "Heater control button: {}".format(self.buttonPressed)
+        if s.x<30 and s.y < 30 and s.pressure:
             self.close()
 
     def draw(self):
@@ -51,10 +56,12 @@ class heaterControl(object):
         buttY=50
         margin=10
         startX = margin
-        self.display.make_button("On",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.blue)
-        startX += buttX+margin
         self.display.make_button("Off",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.blue)
-        self.display.make_circle("76", self.display.xSize / 2, self.display.ySize / 2, 100, dc.red)
+        startX += buttX+margin
+        self.display.make_button("Run",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.blue)
+        startX += buttX+margin
+        self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.blue)
+        self.display.make_circle("76", 120, 120, 100, dc.red)
         self.display.update()
 
     def updateTemp(self):
