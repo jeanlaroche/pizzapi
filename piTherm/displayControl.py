@@ -160,8 +160,6 @@ class displayControl(object):
         off = ts_sample()
         timeThresh = 0.100
         self.down = 0
-        skip = 0
-        toSkip = 0
         A = [[]]*10
         while 1:
             try:
@@ -172,16 +170,12 @@ class displayControl(object):
                     if a: s=a
                     else: break
                 if s:
-                    skip += 1
                     #print s.x, s.y, s.pressure
                     if self.down == 0:
-                        skip = 0
-                    if skip == toSkip:
                         self.firstDownPos = (s.x,s.y)
                         print "FIRST {}".format(s.y)
                     self.down = 1
-                    if skip >= toSkip:
-                        self.onTouch(s)
+                    self.onTouch(s)
                     lastT = time.time()
                 elif time.time()-lastT > timeThresh and self.down == 1:
                     self.down = 0
