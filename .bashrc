@@ -120,3 +120,5 @@ alias python="sudo python"
 alias mnt="sudo mount -t cifs //192.168.1.110/gpiotest /mnt/mainpc/git/gpiotest"
 alias iperf="iperf3 -R -c 192.168.1.110"
 alias ip="dig +short myip.opendns.com @resolver1.opendns.com"
+alias pycharm='sh /opt/pycharm-community-2017.2.4/bin/pycharm.sh &'
+

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 import pdb
 import threading, time, os
 import re
+import heaterControl
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
@@ -12,7 +13,7 @@ app = Flask(__name__)
 statsDay = 0  # 0 for today, -1 for yesterday, -2 etc
 allowControl = 0  # Allow or disallow control of temp
 alwaysAllow = 0  # Ignore flag above.
-
+hc = None
 
 @app.route('/favicon.ico')
 def favicon():
@@ -64,7 +65,10 @@ def GetUptime():
 # if __name__ == "__main__":
 # Pins.Init()
 def preStart():
+    global hc
     print "RUNNING PRESTART"
+    hc = heaterControl.heaterControl()
+
 
 
 # rt.setup()
