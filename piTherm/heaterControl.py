@@ -66,16 +66,16 @@ class heaterControl(object):
         if self.buttonPressed == -1:
             if down:
                 dx,dy=s.x-self.display.firstDownPos[0],s.y-self.display.firstDownPos[1]
-                self._targetTemp = self.targetTemp - dy /10
+                self._targetTemp = self.targetTemp - dy /20
                 print dy,self._targetTemp
-                #self.draw(doTarget=self._targetTemp)
-                # import pdb
-                # pdb.set_trace()
-                self.display.screen.fill(dc.black,rect=pygame.Rect(0,0,200,20))
-                self.display.make_label("Target {}".format(self._targetTemp),0,0,40,dc.red)
+                self.showTarget(self._targetTemp)
             else:
                 self.targetTemp = self._targetTemp
                 self.draw()
+
+    def showTarget(self,target):
+        self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 0, 200, 40))
+        self.display.make_label("Target {}F".format(target), self.display.xSize / 2, 0, 40, dc.red)
 
     def draw(self,doTarget=0):
         self.display.screen.fill(dc.black)
@@ -88,10 +88,8 @@ class heaterControl(object):
         self.display.make_button("Run",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.green)
         startX += buttX+margin
         self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.green)
-        if not doTarget:
-            self.display.make_circle("{:.0f}".format(round(self.roomTemp)), 120, 120, 100, dc.red)
-        else:
-            self.display.make_circle("{:.0f}".format(round(doTarget)), 120, 120, 100, dc.red)
+        self.display.make_circle("{:.0f}".format(round(self.roomTemp)), 120, 120, 100, dc.red)
+        self.showTarget(self.targetTemp)
         self.display.update()
 
     def updateTemp(self):

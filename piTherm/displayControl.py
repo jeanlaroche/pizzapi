@@ -162,10 +162,14 @@ class displayControl(object):
         self.down = 0
         skip = 0
         toSkip = 3
+        A = [[]]*10
         while 1:
             try:
                 pygame.display.update()
-                s = self.getTSEvent()
+                for ii in range(4):
+                    A[ii] = self.getTSEvent()
+                    #print A[ii]
+                s = A[0]
                 if s:
                     skip += 1
                     #print s.x, s.y, s.pressure
@@ -175,7 +179,8 @@ class displayControl(object):
                         self.firstDownPos = (s.x,s.y)
                         print "FIRST {}".format(s.y)
                     self.down = 1
-                    self.onTouch(s)
+                    if skip >= toSkip:
+                        self.onTouch(s)
                     lastT = time.time()
                 elif time.time()-lastT > timeThresh and self.down == 1:
                     self.down = 0
