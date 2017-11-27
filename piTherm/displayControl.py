@@ -161,15 +161,16 @@ class displayControl(object):
         timeThresh = 0.100
         self.down = 0
         skip = 0
-        toSkip = 3
+        toSkip = 0
         A = [[]]*10
         while 1:
             try:
                 pygame.display.update()
+                s=None
                 for ii in range(4):
-                    A[ii] = self.getTSEvent()
-                    #print A[ii]
-                s = A[0]
+                    a = self.getTSEvent()
+                    if a: s=a
+                    else: break
                 if s:
                     skip += 1
                     #print s.x, s.y, s.pressure

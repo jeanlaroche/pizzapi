@@ -59,6 +59,10 @@ class heaterControl(object):
             if s.x < 30 and s.y < 30: self.close()
         if not down and self.buttonPressed > -1:
             print "Heater control button: {}".format(self.buttonPressed)
+            self.drawButtons(highlightButton=self.buttonPressed)
+            def foo():
+                self.drawButtons()
+            Timer(.5, foo, ()).start()
             if self.buttonPressed == 0: self.onTempOff()
             if self.buttonPressed == 1: self.onRun()
             if self.buttonPressed == 2: self.onHold()
@@ -77,17 +81,22 @@ class heaterControl(object):
         self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 0, 200, 40))
         self.display.make_label("Target {}F".format(target), self.display.xSize / 2, 0, 40, dc.red)
 
-    def draw(self,doTarget=0):
-        self.display.screen.fill(dc.black)
+    def drawButtons(self,highlightButton=-1):
         buttX=80
         buttY=50
         margin=10
         startX = margin
-        self.display.make_button("Off",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.green)
+        colors = [dc.green]*3
+        if highlightButton > -1: colors[highlightButton] = dc.red
+        self.display.make_button("Off",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[0])
         startX += buttX+margin
-        self.display.make_button("Run",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.green)
+        self.display.make_button("Run",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[1])
         startX += buttX+margin
-        self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, dc.green)
+        self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[2])
+
+    def draw(self,highlightButton=-1):
+        self.display.screen.fill(dc.black)
+        self.drawButtons(highlightButton)
         self.display.make_circle("{:.0f}".format(round(self.roomTemp)), 120, 120, 100, dc.red)
         self.showTarget(self.targetTemp)
         self.display.update()
