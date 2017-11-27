@@ -4,9 +4,11 @@ from threading import Timer, Thread
 import displayControl as dc
 import time
 import pygame
+import Adafruit_DHT
+
 
 class heaterControl(object):
-    roomTemp = 70
+    roomTemp = 0
     targetTemp = 70
     updatePeriodS = 2
     tempHistoryLengthS = 120
@@ -16,6 +18,9 @@ class heaterControl(object):
 
     tempHistory = []
     _targetTemp = 0
+    sensor = Adafruit_DHT.DHT11
+    sensorPin = 14
+    celcius = 0
 
     def __init__(self):
         # Init GPIO
@@ -30,7 +35,7 @@ class heaterControl(object):
             self.updateTemp()
             if self.stopNow == 0:
                 Timer(self.updatePeriodS, updateTemp, ()).start()
-        updateTemp()
+        Timer(self.updatePeriodS, updateTemp, ()).start()
 
         def eventLoop():
             self.display.eventLoop()
@@ -94,19 +99,31 @@ class heaterControl(object):
         startX += buttX+margin
         self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[2])
 
+    def showRoomTemp(self,):
+        X,Y,R=120,120,100
+        self.display.screen.fill(dc.black, rect=pygame.Rect(X-R, Y-R, 2*R, 2*R))
+        self.display.make_circle("{:.0f}".format((self.roomTemp)), X, Y, R, dc.red)
+
     def draw(self,highlightButton=-1):
         self.display.screen.fill(dc.black)
         self.drawButtons(highlightButton)
-        self.display.make_circle("{:.0f}".format(round(self.roomTemp)), 120, 120, 100, dc.red)
+        self.showRoomTemp()
         self.showTarget(self.targetTemp)
         self.display.update()
 
     def updateTemp(self):
-        curTemp = 68
+        humidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
+        if curTemp is None or humidity >= 100:
+            print "Failed to read temp"
+            return
         self.tempHistory = np.roll(self.tempHistory,1)
         self.tempHistory[0]=curTemp
+        prevRoomTemp = round(self.roomTemp)
         self.roomTemp = np.mean(self.tempHistory[self.tempHistory>0])
-        print "Room temp {} {} data points".format(self.roomTemp,len(self.tempHistory[self.tempHistory>0]))
+        if not self.celcius: self.roomTemp = self.roomTemp * 1.8 + 32
+        print "Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity)
+        if round(self.roomTemp) != prevRoomTemp or 1:
+            self.showRoomTemp()
 
     def startLoop(self):
         self.stopNow = 0
