@@ -21,7 +21,7 @@ span {font-weight: bold;}
 	function onTempUp() {
 		$.getJSON('/_tempUp', function(data)
 		{
-			$("#targetTemperatureValue").text(data.targetTemperatureValue);
+			$("#targetTemp").text(data.targetTemp);
 		});
 	}
 	
@@ -29,7 +29,7 @@ span {font-weight: bold;}
 	function onTempDown() {
 		$.getJSON('/_tempDown', function(data)
 		{
-			$("#targetTemperatureValue").text(data.targetTemperatureValue);
+			$("#targetTemp").text(data.targetTemp);
 		});
 	}
 	
@@ -83,26 +83,25 @@ span {font-weight: bold;}
 	// This is called at regular intervals when the page is loaded.
 	function getTemperature() 
 	{
-		$.getJSON('/_getTubStatus', function(data)
+		$.getJSON('/_getData', function(data)
 			{
 				// The text() is a method of the selector to set the text of the selected elements.
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
 				// Since many elements might match.
-				$("#temperatureValue").text(data.temperatureValue);
-				$("#heaterValue").text(data.heaterValueStr);
-				$("#setTemperatureValue").text(data.setTemperatureValue);
-				$("#targetTemperatureValue").text(data.targetTemperatureValue);
-				$("#upTime").text(data.upTime);
-				$("#prevDay").text(data.prevDayStr);
-				$("#nextDay").text(data.nextDayStr);
-				$("#lastMessage").text(data.lastMessage);
-				$("#heaterStats0").text(data.heaterStats[1]);
+				$("#roomTemp").text(data.roomTemp);
+				$("#targetTemp").text(data.targetTemp);
+				$("#humidity").text(data.humidity);
+				//$("#upTime").text(data.upTime);
+				//$("#prevDay").text(data.prevDayStr);
+				//$("#nextDay").text(data.nextDayStr);
+				//$("#lastMessage").text(data.lastMessage);
+				//$("#heaterStats0").text(data.heaterStats[1]);
 				// To set a color, set the style to "color:red"
-				$("#heaterValue").attr('style',data.heaterValueStr == "OFF" ? 'color:white' : 'color:red');
-				$("#Up").attr('disabled',data.allowControl ? false : true);
-				$("#Down").attr('disabled',data.allowControl ? false : true);
-				$("#Sche").attr('disabled',data.allowControl ? false : true);
-				if (data.newHeaterData) redraw();
+				//$("#heaterValue").attr('style',data.heaterValueStr == "OFF" ? 'color:white' : 'color:red');
+				//$("#Up").attr('disabled',data.allowControl ? false : true);
+				//$("#Down").attr('disabled',data.allowControl ? false : true);
+				//$("#Sche").attr('disabled',data.allowControl ? false : true);
+				//if (data.newHeaterData) redraw();
 				// These would also work!
 				// document.getElementById("heaterValue").style="color:green";
 				// document.getElementById("heaterValue").style.color="green";
@@ -125,7 +124,7 @@ span {font-weight: bold;}
 			};
 
 			// This does an Ajax request for /_getFullData.
-			$.getJSON('/_getFullData');
+			//$.getJSON('/_getData');
 			
 			// You can also call a regular javascipt function:
 			getTemperature();
@@ -183,7 +182,7 @@ span {font-weight: bold;}
 //		$.getJSON('/_tempUp');
 //		}
 		function() {
-			redraw()
+			//redraw()
 		}
     );
 	
@@ -193,13 +192,13 @@ span {font-weight: bold;}
 
 <div data-role="page" data-theme="b">
   <div data-role="header">
-    <div><h2><center>FURNACE CONTROL</center></h2></div>
+    <div><h2><center>THERMOSTAT CONTROL</center></h2></div>
   </div>
   
   <div data-role="content">
-    <p><h2>Room temperature: <span id="temperatureValue"></span> F<br>Heater: <span id="heaterValue" ></span> </h2></p>
-    <p><h2>Heat Set Temp: <span id="setTemperatureValue"></span> F</h2></p>
-    <p><h2>Heat set Temp: <span id="targetTemperatureValue"></span> F</h2></p>
+    <p><h2>Room temperature: <span id="roomTemp"></span> F<br>Heater: <span id="heaterValue" ></span> </h2></p>
+    <p><h2>Target Temp: <span id="targetTemp"></span> F</h2></p>
+    <p><h2>Humidity: <span id="humidity"></span> %</h2></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-b">
 			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>

@@ -38,19 +38,28 @@ def Index2():
 @app.route("/_tempUp")
 def _tempUp():
     print "TEMP UP"
+    hc.incTargetTemp(1)
+    return jsonify(targetTemp=int(hc.targetTemp))
         # if allowControl or alwaysAllow: rt.incSetTemperature(1)
         # return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_tempDown")
 def _tempDown():
     print "Temp Down"
-        # if allowControl or alwaysAllow: rt.incSetTemperature(-1)
+    hc.incTargetTemp(-1)
+    return jsonify(targetTemp=int(hc.targetTemp))
+    # if allowControl or alwaysAllow: rt.incSetTemperature(-1)
         # return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
 @app.route("/_pageUnload")
 def _pageUnload():
     print "PAGE UNLOADED"
     return ""
+
+@app.route("/_getData")
+def _getData():
+    print "Get Data"
+    return jsonify(roomTemp=int(hc.roomTemp),targetTemp=int(hc.targetTemp),humidity=hc.humidity)
 
 
 def GetUptime():
@@ -67,8 +76,7 @@ def GetUptime():
 def preStart():
     global hc
     print "RUNNING PRESTART"
-    hc = heaterControl.heaterControl()
-
+    hc = heaterControl.heaterControl(doStart=1)
 
 
 # rt.setup()
@@ -80,5 +88,5 @@ preStart()
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=True)
+    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
     print "TEARDOWN"

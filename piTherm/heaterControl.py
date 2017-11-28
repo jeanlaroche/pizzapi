@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import RPi.GPIO as GPIO
 import numpy as np
 from threading import Timer, Thread
@@ -15,6 +16,7 @@ class heaterControl(object):
     relayGPIO = 17
     stopNow = 0
     buttonPressed = -1
+    humidity = 0
 
     tempHistory = []
     _targetTemp = 0
@@ -22,7 +24,7 @@ class heaterControl(object):
     sensorPin = 14
     celcius = 0
 
-    def __init__(self):
+    def __init__(self,doStart=1):
         # Init GPIO
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.relayGPIO, GPIO.OUT)
@@ -35,13 +37,14 @@ class heaterControl(object):
             self.updateTemp()
             if self.stopNow == 0:
                 Timer(self.updatePeriodS, updateTemp, ()).start()
-        Timer(self.updatePeriodS, updateTemp, ()).start()
+        if doStart: Timer(self.updatePeriodS, updateTemp, ()).start()
 
         def eventLoop():
             self.display.eventLoop()
         self.touchThread = Thread(target=eventLoop, args=(), group=None)
         self.touchThread.daemon = True
-        self.touchThread.start()
+        if doStart: self.touchThread.start()
+        self.draw()
 
     def close(self):
         print "Closing Heater Control"
@@ -49,6 +52,8 @@ class heaterControl(object):
         self.display.close()
 
     def onTempOff(self):
+        self.targetTemp = 50
+        self.showTarget(self.targetTemp)
         print "TEMP OFF"
 
     def onRun(self):
@@ -56,6 +61,10 @@ class heaterControl(object):
 
     def onHold(self):
         print "HOLD"
+
+    def incTargetTemp(self,inc):
+        self.targetTemp += inc
+        self.showTarget(self.targetTemp)
 
     def onTouch(self,s,down):
         # print s.x,s.y
@@ -105,11 +114,14 @@ class heaterControl(object):
         self.display.make_circle("{:.0f}".format((self.roomTemp)), X, Y, R, dc.red)
 
     def draw(self,highlightButton=-1):
+        print "Draw0"
         self.display.screen.fill(dc.black)
         self.drawButtons(highlightButton)
         self.showRoomTemp()
         self.showTarget(self.targetTemp)
+        print "Draw1"
         self.display.update()
+        print "Draw2"
 
     def updateTemp(self):
         humidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
@@ -120,6 +132,7 @@ class heaterControl(object):
         self.tempHistory[0]=curTemp
         prevRoomTemp = round(self.roomTemp)
         self.roomTemp = np.mean(self.tempHistory[self.tempHistory>0])
+        self.humidity = humidity
         if not self.celcius: self.roomTemp = self.roomTemp * 1.8 + 32
         print "Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity)
         if round(self.roomTemp) != prevRoomTemp or 1:
@@ -132,5 +145,7 @@ class heaterControl(object):
             time.sleep(1)
 
 if __name__ == '__main__':
+    print "Constructor"
     hc = heaterControl()
+    print "Startloop"
     hc.startLoop()

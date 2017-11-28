@@ -83,17 +83,23 @@ class displayControl(object):
 
     def __init__(self,touchCallback = None):
         # Initialize pygame and hide mouse
+        print "Initpygame"
         pygame.init()
         size = width, height = self.xSize, self.ySize
+        print "set mode"
         self.screen = pygame.display.set_mode(size)
+        print "Mouse"
         pygame.mouse.set_visible(0)
+        print "tslib"
         self.ts, self.ts_read, self.ts_close = initTsLib()
         self.touchCallback = touchCallback
+        print "Done"
 
     def close(self):
         print "Closing display"
         self.stopNow=1
         self.ts_close(self.ts)
+        pygame.quit()
 
     def getTSEvent(self,):
         s = ts_sample()
@@ -183,6 +189,7 @@ class displayControl(object):
                 # print "{} {} ".format(lastT,time.time())
 
                 if self.stopNow: break
+                #time.sleep(0.010)
             except:
                 pygame.quit()
                 break
