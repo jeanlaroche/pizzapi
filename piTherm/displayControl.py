@@ -1,6 +1,7 @@
 import sys, pygame
 from pygame.locals import *
-import time
+import time, signal
+from signal import alarm, signal, SIGALRM, SIGKILL
 import subprocess
 import os
 from subprocess import *
@@ -27,17 +28,17 @@ from ctypes import *
 
 
 class tsdev(Structure):
-	pass
+    pass
 
 class timeval(Structure):
-	_fields_ = [("tv_sec", c_long),
-		("tv_usec", c_long)]
+    _fields_ = [("tv_sec", c_long),
+        ("tv_usec", c_long)]
 
 class ts_sample(Structure):
-	_fields_ = [("x", c_int),
-		("y", c_int),
-		("pressure", c_uint),
-		("tv", timeval)]
+    _fields_ = [("x", c_int),
+        ("y", c_int),
+        ("pressure", c_uint),
+        ("tv", timeval)]
 
 def initTsLib():
     tslib = cdll.LoadLibrary("libts-0.0.so.0")
@@ -84,10 +85,20 @@ class displayControl(object):
     def __init__(self,touchCallback = None):
         # Initialize pygame and hide mouse
         print "Initpygame"
-        pygame.init()
         size = width, height = self.xSize, self.ySize
         print "set mode"
-        self.screen = pygame.display.set_mode(size)
+        class Alarm(Exception):
+            pass
+        def alarm_handler(signum, frame):
+            raise Alarm
+        signal(SIGALRM, alarm_handler)
+        alarm(3)
+        try:
+            pygame.init()
+            self.screen = pygame.display.set_mode(size) 
+            alarm(0)
+        except Alarm:
+            raise KeyboardInterrupt
         print "Mouse"
         pygame.mouse.set_visible(0)
         print "tslib"
