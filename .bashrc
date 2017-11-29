@@ -122,3 +122,10 @@ alias iperf="iperf3 -R -c 192.168.1.110"
 alias ip="dig +short myip.opendns.com @resolver1.opendns.com"
 alias pycharm='sh /opt/pycharm-community-2017.2.4/bin/pycharm.sh &'
 
+export TSLIB_CONSOLEDEVICE=none
+export TSLIB_FBDEVICE=/dev/fb1
+export TSLIB_TSDEVICE=/dev/input/event0
+export TSLIB_CALIBFILE=/etc/pointercal
+export TSLIB_CONFFILE=/etc/ts.conf
+export QWS_MOUSE_PROTO=tslib
+

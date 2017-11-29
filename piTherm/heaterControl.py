@@ -11,12 +11,13 @@ import Adafruit_DHT
 class heaterControl(object):
     roomTemp = 0
     targetTemp = 70
-    updatePeriodS = 2
+    updatePeriodS = 4
     tempHistoryLengthS = 120
     relayGPIO = 17
     stopNow = 0
     buttonPressed = -1
     humidity = 0
+    waitForUp = 0
 
     tempHistory = []
     _targetTemp = 0
@@ -70,8 +71,9 @@ class heaterControl(object):
         # print s.x,s.y
         if down:
             self.buttonPressed = self.display.findHit(s)
-            if s.x < 30 and s.y < 30: self.close()
-        if not down and self.buttonPressed > -1:
+            if s.x < 60 and s.y < 60: self.close()
+        if down and self.waitForUp: return
+        if self.buttonPressed > -1 and down:
             print "Heater control button: {}".format(self.buttonPressed)
             self.drawButtons(highlightButton=self.buttonPressed)
             def foo():
@@ -80,28 +82,33 @@ class heaterControl(object):
             if self.buttonPressed == 0: self.onTempOff()
             if self.buttonPressed == 1: self.onRun()
             if self.buttonPressed == 2: self.onHold()
-
+            self.waitForUp = 1
         if self.buttonPressed == -1:
             if down:
-                dx,dy=s.x-self.display.firstDownPos[0],s.y-self.display.firstDownPos[1]
-                self._targetTemp = self.targetTemp - dy /20
-                print dy,self._targetTemp
-                self.showTarget(self._targetTemp)
-            else:
-                self.targetTemp = self._targetTemp
-                self.draw()
+                if s.y > self.display.ySize/2: self.incTargetTemp(-1)
+                else: self.incTargetTemp(1)
+            self.waitForUp = 1
+            # if down:
+                # dx,dy=s.x-self.display.firstDownPos[0],s.y-self.display.firstDownPos[1]
+                # self._targetTemp = self.targetTemp - dy /20
+                # print dy,self._targetTemp
+                # self.showTarget(self._targetTemp)
+            # else:
+                # self.targetTemp = self._targetTemp
+                # #self.draw()
+        if not down: self.waitForUp = 0
 
     def showTarget(self,target):
         self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 0, 200, 40))
-        self.display.make_label("Target {}F".format(target), self.display.xSize / 2, 0, 40, dc.red)
+        self.display.make_label("Target {}F".format(target), self.display.xSize / 2, 0, 40, dc.nblue)
 
     def drawButtons(self,highlightButton=-1):
         buttX=80
         buttY=50
         margin=10
         startX = margin
-        colors = [dc.green]*3
-        if highlightButton > -1: colors[highlightButton] = dc.red
+        colors = [dc.nocre]*3
+        if highlightButton > -1: colors[highlightButton] = dc.nred
         self.display.make_button("Off",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[0])
         startX += buttX+margin
         self.display.make_button("Run",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[1])
@@ -111,17 +118,15 @@ class heaterControl(object):
     def showRoomTemp(self,):
         X,Y,R=120,120,100
         self.display.screen.fill(dc.black, rect=pygame.Rect(X-R, Y-R, 2*R, 2*R))
-        self.display.make_circle("{:.0f}".format((self.roomTemp)), X, Y, R, dc.red)
+        self.display.make_circle("{:.0f}".format((self.roomTemp)), X, Y, R, dc.nred)
+        self.display.make_label("Humidity {}".format(self.humidity),X-63,Y+40,30,dc.nteal)
 
     def draw(self,highlightButton=-1):
-        print "Draw0"
         self.display.screen.fill(dc.black)
         self.drawButtons(highlightButton)
         self.showRoomTemp()
         self.showTarget(self.targetTemp)
-        print "Draw1"
         self.display.update()
-        print "Draw2"
 
     def updateTemp(self):
         humidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
@@ -137,12 +142,22 @@ class heaterControl(object):
         print "Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity)
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
+        self.showUptime()
 
     def startLoop(self):
         self.stopNow = 0
         self.draw()
         while self.stopNow == 0:
             time.sleep(1)
+            
+    def showUptime(self):
+        # get uptime from the linux terminal command
+        from subprocess import check_output
+        import re
+        uptime = check_output(["uptime"])
+        uptime = re.sub('[\d]+ user[s]*,.*load(.*),.*,.*', 'load\\1', uptime).strip()
+        self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 50, 300, 40))
+        self.display.make_label(uptime, self.display.xSize / 2, 50, 20, dc.nblue)
 
 if __name__ == '__main__':
     print "Constructor"

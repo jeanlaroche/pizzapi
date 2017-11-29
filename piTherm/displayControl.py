@@ -24,6 +24,12 @@ magenta = (255,   0, 255)
 yellow  = (255, 255,   0)
 orange  = (255, 127,   0)
 
+nblue = (31, 155, 186) # blue
+ngreen = (36, 173, 82) # (green) 
+nred = (255, 96, 38) #(red) 
+nteal = (29, 71, 224) # blue 
+nocre = (154, 193, 25) # (moutarde?). 
+npeacock = (51,161,201)  # peacock
 from ctypes import *
 
 
@@ -127,7 +133,7 @@ class displayControl(object):
         font=pygame.font.Font(None,42)
         label=font.render(str(text), 1, (colour))
         self.screen.blit(label,(xpo,ypo))
-        pygame.draw.rect(self.screen, green, (xpo-10,ypo-10,width,height),3)
+        pygame.draw.rect(self.screen, ngreen, (xpo-10,ypo-10,width,height),3)
         button = {'x':xpo,'y':ypo,'dx':width,'dy':height}
         self.allButtons.append(button)
 
@@ -145,8 +151,8 @@ class displayControl(object):
         self.screen.blit(label,(xpo,ypo))
 
     def make_circle(self,text,xpo,ypo,radius,colour):
-        self.make_label(text,xpo-45,ypo-45,120,green)
-        pygame.draw.circle(self.screen,red,(xpo,ypo),100,10)
+        self.make_label(text,xpo-45,ypo-50,120,ngreen)
+        pygame.draw.circle(self.screen,nred,(xpo,ypo),100,10)
 
 
     def draw(self):
@@ -155,11 +161,11 @@ class displayControl(object):
         self.screen.fill(black)
         
         # Outer Border
-        pygame.draw.rect(self.screen, green, (0,0,self.xSize,self.ySize),10)
+        pygame.draw.rect(self.screen, ngreen, (0,0,self.xSize,self.ySize),10)
         
         # Buttons and labels
         # First Row
-        self.make_circle("76",self.xSize/2,self.ySize/2,100,red)
+        self.make_circle("76",self.xSize/2,self.ySize/2,100,nred)
         # self.make_label("Room Temp: 70F", 20, 20, self.fontSize, red)
         # self.make_button("Menu Item 1", 30, self.ySize-80, 55, 210, green)
         # self.make_label("Room Temp: 70F", 20, 20, self.fontSize, red)
@@ -175,14 +181,14 @@ class displayControl(object):
         prevPress = 0
         lastT = 0
         off = ts_sample()
-        timeThresh = 0.100
+        timeThresh = 0.010
         self.down = 0
         A = [[]]*10
         while 1:
             try:
                 pygame.display.update()
                 s=None
-                for ii in range(4):
+                for ii in range(2):
                     a = self.getTSEvent()
                     if a: s=a
                     else: break
@@ -200,7 +206,7 @@ class displayControl(object):
                 # print "{} {} ".format(lastT,time.time())
 
                 if self.stopNow: break
-                #time.sleep(0.010)
+                time.sleep(0.001)
             except:
                 pygame.quit()
                 break

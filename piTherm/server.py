@@ -59,7 +59,7 @@ def _pageUnload():
 @app.route("/_getData")
 def _getData():
     print "Get Data"
-    return jsonify(roomTemp=int(hc.roomTemp),targetTemp=int(hc.targetTemp),humidity=hc.humidity)
+    return jsonify(roomTemp=int(hc.roomTemp),targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime())
 
 
 def GetUptime():
