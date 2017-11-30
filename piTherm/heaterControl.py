@@ -47,25 +47,31 @@ class heaterControl(object):
             self.onTouch(s,down)
         self.display = dc.displayControl(onTouch)
 
+        # Temp update thread.
         def updateTemp():
-            self.updateTemp()
-            if self.stopNow == 0:
-                t = Timer(self.updatePeriodS, updateTemp, ())
-                t.daemon=True
-                t.start()
-        if doStart: Timer(self.updatePeriodS, updateTemp, ()).start()
-
+            while self.stopNow == 0:
+                self.updateTemp()
+                time.sleep(self.updatePeriodS)
+        self.updateTempThread = Thread(target=updateTemp, args=(), group=None)
+        self.updateTempThread.daemon = True
+        print "Starting temp update thread"
+        if doStart: self.updateTempThread.start()
+        
+        # Display event loop thread.
         def eventLoop():
             self.display.eventLoop()
         self.touchThread = Thread(target=eventLoop, args=(), group=None)
         self.touchThread.daemon = True
+        print "Starting display thread"
         if doStart: self.touchThread.start()
         self.draw()
-        # Start schedule.
+        
+        # Schedule thread
         def doSchedule():
             schedule.openAndRun(self)
         self.scheduleThread = Thread(target=doSchedule, args=(), group=None)
         self.scheduleThread.daemon = True
+        print "Starting schedule thread"
         if doStart: self.scheduleThread.start()
         
     def controlHeater(self):
@@ -140,8 +146,9 @@ class heaterControl(object):
             self.waitForUp = 1
         if self.buttonPressed == -1:
             if down:
-                if s.y > self.display.ySize/2: self.incTargetTemp(-1)
-                else: self.incTargetTemp(1)
+                inc = 5 if s.x > self.display.xSize - 50 else 1
+                if s.y > self.display.ySize/2: self.incTargetTemp(-inc)
+                else: self.incTargetTemp(inc)
             self.waitForUp = 1
             # if down:
                 # dx,dy=s.x-self.display.firstDownPos[0],s.y-self.display.firstDownPos[1]
