@@ -50,7 +50,9 @@ class heaterControl(object):
         def updateTemp():
             self.updateTemp()
             if self.stopNow == 0:
-                Timer(self.updatePeriodS, updateTemp, ()).start()
+                t = Timer(self.updatePeriodS, updateTemp, ())
+                t.daemon=True
+                t.start()
         if doStart: Timer(self.updatePeriodS, updateTemp, ()).start()
 
         def eventLoop():
@@ -81,7 +83,7 @@ class heaterControl(object):
         else:
             self.heaterToggleCount = 0
         #print "Toggle count {}".format(self.heaterToggleCount)
-        if time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60:
+        if self.heaterOn and time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60:
             self.heaterOn = 0
             self.state = state_on_too_long
         print "{}".format(stateStr[self.state]),
@@ -203,12 +205,8 @@ class heaterControl(object):
     def startLoop(self):
         self.stopNow = 0
         self.draw()
-        try:
-            while self.stopNow == 0:
-                time.sleep(1)
-        except Exception as e:
-            GPIO.output(self.relayGPIO,0)
-            throw(e)
+        while self.stopNow == 0:
+            time.sleep(1)
             
     def showUptime(self):
         # get uptime from the linux terminal command
@@ -220,7 +218,12 @@ class heaterControl(object):
         self.display.make_label(uptime, self.display.xSize / 2, 50, 20, dc.nblue)
 
 if __name__ == '__main__':
-    print "Constructor"
-    hc = heaterControl()
-    print "Startloop"
-    hc.startLoop()
+    try:
+        print "Constructor"
+        hc = heaterControl()
+        print "STARTLOOP"
+        hc.startLoop()
+    except:
+        print "STOPPING due to interrupt!"
+        hc.close()
+        
