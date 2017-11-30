@@ -6,6 +6,7 @@ import displayControl as dc
 import time
 import pygame
 import Adafruit_DHT
+import schedule
 
 
 class heaterControl(object):
@@ -24,6 +25,11 @@ class heaterControl(object):
     sensor = Adafruit_DHT.DHT11
     sensorPin = 14
     celcius = 0
+    holding = 0
+    heaterOn = 0
+    heaterToggleDeltaTemp = 1
+    heaterToggleCount = 0
+    heaterToggleMinCount = 3
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -46,26 +52,57 @@ class heaterControl(object):
         self.touchThread.daemon = True
         if doStart: self.touchThread.start()
         self.draw()
+        # Start schedule.
+        def doSchedule():
+            schedule.openAndRun(self)
+        self.scheduleThread = Thread(target=doSchedule, args=(), group=None)
+        self.scheduleThread.daemon = True
+        if doStart: self.scheduleThread.start()
+        
+    def controlHeater(self):
+        # Todo: maybe we need a maximum length of time the furnace can be on.
+        if self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp: 
+            self.heaterToggleCount += 1
+            if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterOn = 1
+        elif self.roomTemp >= self.targetTemp + self.heaterToggleDeltaTemp: 
+            self.heaterToggleCount += 1
+            if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterOn = 0
+        else:
+            self.heaterToggleCount = 0
+        print "Toggle count {}".format(self.heaterToggleCount)
+        if self.heaterOn: print "HEATER ON" 
+        else: print "HEATER OFF"
+        if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
+
+    def mprint(self,this):
+        print(this)
 
     def close(self):
         print "Closing Heater Control"
         self.stopNow = 1
         self.display.close()
 
-    def onTempOff(self):
-        self.targetTemp = 50
+    def setTargetTemp(self,targetTemp):
+        self.targetTemp = targetTemp
+        self.heaterToggleCount = 0
         self.showTarget(self.targetTemp)
+        
+    def onTempOff(self):
+        self.setTargetTemp(50)
         print "TEMP OFF"
 
     def onRun(self):
+        self.holding = 0
+        schedule.redoSchedule()
         print "RUN"
 
     def onHold(self):
+        self.holding = 1-self.holding
+        self.drawButtons()
         print "HOLD"
 
     def incTargetTemp(self,inc):
-        self.targetTemp += inc
-        self.showTarget(self.targetTemp)
+        self.setTargetTemp(self.targetTemp + inc)
 
     def onTouch(self,s,down):
         # print s.x,s.y
@@ -113,13 +150,14 @@ class heaterControl(object):
         startX += buttX+margin
         self.display.make_button("Run",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[1])
         startX += buttX+margin
+        if self.holding: colors[2] = dc.nred
         self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[2])
 
     def showRoomTemp(self,):
         X,Y,R=120,120,100
         self.display.screen.fill(dc.black, rect=pygame.Rect(X-R, Y-R, 2*R, 2*R))
-        self.display.make_circle("{:.0f}".format((self.roomTemp)), X, Y, R, dc.nred)
-        self.display.make_label("Humidity {}".format(self.humidity),X-63,Y+40,30,dc.nteal)
+        self.display.make_circle("{:.1f}".format((self.roomTemp)), X, Y, R, dc.nred)
+        self.display.make_label("Humidity {}".format(self.humidity),X-64,Y+40,30,dc.nteal)
 
     def draw(self,highlightButton=-1):
         self.display.screen.fill(dc.black)
@@ -143,6 +181,8 @@ class heaterControl(object):
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()
+        self.display.make_disk(self.display.xSize-50,self.display.ySize-50,40,dc.nteal if not self.heaterOn else dc.nred)
+        self.controlHeater()
 
     def startLoop(self):
         self.stopNow = 0

@@ -98,7 +98,7 @@ class displayControl(object):
         def alarm_handler(signum, frame):
             raise Alarm
         signal(SIGALRM, alarm_handler)
-        alarm(3)
+        alarm(2)
         try:
             pygame.init()
             self.screen = pygame.display.set_mode(size) 
@@ -151,9 +151,11 @@ class displayControl(object):
         self.screen.blit(label,(xpo,ypo))
 
     def make_circle(self,text,xpo,ypo,radius,colour):
-        self.make_label(text,xpo-45,ypo-50,120,ngreen)
+        self.make_label(text,xpo-78,ypo-54,120,ngreen)
         pygame.draw.circle(self.screen,nred,(xpo,ypo),100,10)
-
+    
+    def make_disk(self,xpo,ypo,radius,colour):
+        pygame.draw.circle(self.screen,colour,(xpo,ypo),radius,0)
 
     def draw(self):
         # Set up the base menu you can customize your menu with the colors above
