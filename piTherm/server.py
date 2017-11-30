@@ -78,7 +78,6 @@ def preStart():
     print "RUNNING PRESTART"
     hc = heaterControl.heaterControl(doStart=1)
 
-
 # rt.setup()
 # rt.init()
 # Start the heartbeat after a few seconds.
@@ -89,4 +88,5 @@ preStart()
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+    hc.close()
     print "TEARDOWN"
