@@ -8,13 +8,17 @@ import pygame
 import Adafruit_DHT
 import schedule
 
+state_off = 0
+state_on = 1
+state_on_too_long = 2
+stateStr = ['Heater off','Heater on','Heater on too long']
 
 class heaterControl(object):
     roomTemp = 0
     targetTemp = 70
     updatePeriodS = 4
     tempHistoryLengthS = 120
-    relayGPIO = 17
+    relayGPIO = 21
     stopNow = 0
     buttonPressed = -1
     humidity = 0
@@ -27,9 +31,12 @@ class heaterControl(object):
     celcius = 0
     holding = 0
     heaterOn = 0
-    heaterToggleDeltaTemp = 1
+    heaterToggleDeltaTemp = .5
     heaterToggleCount = 0
-    heaterToggleMinCount = 3
+    heaterToggleMinCount = 2
+    maxContinuousOnTimeMin = 1
+    lastTurnOnTime = float('inf')
+    state = state_off
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -63,22 +70,31 @@ class heaterControl(object):
         # Todo: maybe we need a maximum length of time the furnace can be on.
         if self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp: 
             self.heaterToggleCount += 1
-            if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterOn = 1
+            if self.heaterToggleCount >= self.heaterToggleMinCount and self.state != state_on_too_long: 
+                if self.heaterOn == 0: self.lastTurnOnTime = time.time()
+                self.heaterOn = 1
+                self.state = state_on
         elif self.roomTemp >= self.targetTemp + self.heaterToggleDeltaTemp: 
             self.heaterToggleCount += 1
             if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterOn = 0
+            self.state = state_off
         else:
             self.heaterToggleCount = 0
-        print "Toggle count {}".format(self.heaterToggleCount)
-        if self.heaterOn: print "HEATER ON" 
-        else: print "HEATER OFF"
+        #print "Toggle count {}".format(self.heaterToggleCount)
+        if time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60:
+            self.heaterOn = 0
+            self.state = state_on_too_long
+        print "{}".format(stateStr[self.state]),
+        print " Last turn on time: {:.0f}s ago".format(time.time()-self.lastTurnOnTime)
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
+        GPIO.output(self.relayGPIO,self.heaterOn)
 
     def mprint(self,this):
         print(this)
 
     def close(self):
         print "Closing Heater Control"
+        GPIO.output(self.relayGPIO,0)
         self.stopNow = 1
         self.display.close()
 
@@ -187,8 +203,12 @@ class heaterControl(object):
     def startLoop(self):
         self.stopNow = 0
         self.draw()
-        while self.stopNow == 0:
-            time.sleep(1)
+        try:
+            while self.stopNow == 0:
+                time.sleep(1)
+        except Exception as e:
+            GPIO.output(self.relayGPIO,0)
+            throw(e)
             
     def showUptime(self):
         # get uptime from the linux terminal command
