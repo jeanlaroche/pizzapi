@@ -1,0 +1,22 @@
+# This is the schedule file for the hot tub
+# I'm setting it to 97, and a bit before 4pm where power 
+# becomes expensive, I raise it to 100F.
+#23:30 97 				executes every day
+#23:30 98 M-F			executes Monday to Friday
+#23:30 98 WE			executes Sat and Sunday
+#hold 90				hold temperature 80 until line is removed.
+
+
+# Morning stuff
+06:45 66 M-F
+09:00 60 M-F
+# MidDay
+08:15 66 WE
+10:00 60 WE
+# Evening and night.
+17:00 69
+23:00 50
+
+
+
+

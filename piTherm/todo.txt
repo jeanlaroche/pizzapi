@@ -1,0 +1,5 @@
+Pick getter colors!
+Server code
+Schedule code
+Status, humidity
+Add saving of status etc.
