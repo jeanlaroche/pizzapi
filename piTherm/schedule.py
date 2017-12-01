@@ -6,9 +6,9 @@ import pdb
 schedule = {}
 todo = {}
 
-lastTempVal				= 	-1 	# Last read temp
-lastHeaterVal			= 	-1 	# Last heater value
-lastHeaterTime			= 	0	# Time at last heater change
+lastRoomTemp				= 	-1 	# Last read temp
+lastHeaterOn			= 	-1 	# Last heater value
+lastHeaterOnTime			= 	0	# Time at last heater change
 fileUpdated				=	1	# Indicates that a new value was written to the stats file (heater only)
 heaterData 				= 	[]	# Will contain pairs of [time heateron/off]
 tempData 				= 	[]  # Will contain pairs of [time temp]
@@ -111,33 +111,33 @@ def computeGraphData():
 	return heaterTime,heaterValue,usageStr,avUsageStr,thisDayStr,prevDayStr,nextDayStr,stats
 
 def logHeaterUse():
-	global lastHeaterVal, lastTempVal, fileUpdated, lastTempTime, lastHeaterTime
+	global lastHeaterOn, lastRoomTemp, fileUpdated, lastTempTime, lastHeaterOnTime
 	
 	timeStr = time.ctime(time.time())
 	curTime = getCtime()
 	
 	# Log a heater change in the format: FracTimeInHours new heatervalue date
-	if not lastHeaterVal == hc.heaterVal and not lastHeaterVal == -1:
+	if not lastHeaterOn == hc.heaterOn and not lastHeaterOn == -1:
 		fileUpdated = 1
-		if lastHeaterVal == 0:
-			statLogF.write("H {:.2f} {} {}\n".format(curTime,hc.heaterVal,timeStr))
+		if lastHeaterOn == 0:
+			statLogF.write("H {:.2f} {} {}\n".format(curTime,hc.heaterOn,timeStr))
 		else:
-			elapsedTime = curTime - lastHeaterTime
-			statLogF.write("H {:.2f} {} {} -- {} Set: {}\n".format(curTime,hc.heaterVal,timeStr,printHours(elapsedTime),hc.targetTemp))
-		lastHeaterTime = curTime
+			elapsedTime = curTime - lastHeaterOnTime
+			statLogF.write("H {:.2f} {} {} -- {} Set: {}\n".format(curTime,hc.heaterOn,timeStr,printHours(elapsedTime),hc.targetTemp))
+		lastHeaterOnTime = curTime
 	# To avoid logging the temp everytime we stahc.
-	if lastTempVal == -1 and hc.roomTemp: lastTempVal = hc.roomTemp
+	if lastRoomTemp == -1 and hc.roomTemp: lastRoomTemp = hc.roomTemp
 	
-	if not lastTempVal == hc.roomTemp and hc.roomTemp:
+	if not lastRoomTemp == hc.roomTemp and hc.roomTemp:
 		# Check that the last previous temps was at least 4 minutes ago: the temp has been different for 
 		# at least 4 minutes. Otherwise just wait.
 		if 60*(curTime - lastTempTime) > 4:
 			statLogF.write("T {:.2f} {} {}\n".format(curTime,hc.roomTemp,timeStr))
-			lastTempVal = hc.roomTemp
+			lastRoomTemp = hc.roomTemp
 	else:
 		lastTempTime = curTime
 
-	lastHeaterVal = hc.heaterVal
+	lastHeaterOn = hc.heaterOn
 	
 	
 def readSchedule(file,verbose=0):

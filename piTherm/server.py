@@ -51,6 +51,12 @@ def _tempDown():
     # if allowControl or alwaysAllow: rt.incSetTemperature(-1)
         # return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
 
+@app.route("/_schedule")
+def _schedule():
+    print "Schedule"
+    hc.onRun()
+    return ""
+        
 @app.route("/_pageUnload")
 def _pageUnload():
     print "PAGE UNLOADED"
@@ -59,7 +65,7 @@ def _pageUnload():
 @app.route("/_getData")
 def _getData():
     print "Get Data"
-    return jsonify(roomTemp=int(hc.roomTemp),targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn)
+    return jsonify(roomTemp=int(hc.roomTemp),targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg)
 
 
 def GetUptime():

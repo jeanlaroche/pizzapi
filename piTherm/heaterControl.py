@@ -37,6 +37,7 @@ class heaterControl(object):
     maxContinuousOnTimeMin = 1
     lastTurnOnTime = float('inf')
     state = state_off
+    lastMsg = ''
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -54,7 +55,7 @@ class heaterControl(object):
                 time.sleep(self.updatePeriodS)
         self.updateTempThread = Thread(target=updateTemp, args=(), group=None)
         self.updateTempThread.daemon = True
-        print "Starting temp update thread"
+        self.mprint("Starting temp update thread")
         if doStart: self.updateTempThread.start()
         
         # Display event loop thread.
@@ -62,7 +63,7 @@ class heaterControl(object):
             self.display.eventLoop()
         self.touchThread = Thread(target=eventLoop, args=(), group=None)
         self.touchThread.daemon = True
-        print "Starting display thread"
+        self.mprint("Starting display thread")
         if doStart: self.touchThread.start()
         self.draw()
         
@@ -71,7 +72,7 @@ class heaterControl(object):
             schedule.openAndRun(self)
         self.scheduleThread = Thread(target=doSchedule, args=(), group=None)
         self.scheduleThread.daemon = True
-        print "Starting schedule thread"
+        self.mprint("Starting schedule thread")
         if doStart: self.scheduleThread.start()
         
     def controlHeater(self):
@@ -82,26 +83,29 @@ class heaterControl(object):
                 if self.heaterOn == 0: self.lastTurnOnTime = time.time()
                 self.heaterOn = 1
                 self.state = state_on
+                self.showHeater()
         elif self.roomTemp >= self.targetTemp + self.heaterToggleDeltaTemp: 
             self.heaterToggleCount += 1
             if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterOn = 0
             self.state = state_off
+            self.showHeater()
         else:
             self.heaterToggleCount = 0
-        #print "Toggle count {}".format(self.heaterToggleCount)
+        #self.mprint("Toggle count {}".format(self.heaterToggleCount))
         if self.heaterOn and time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60:
             self.heaterOn = 0
             self.state = state_on_too_long
-        print "{}".format(stateStr[self.state]),
-        print " Last turn on time: {:.0f}s ago".format(time.time()-self.lastTurnOnTime)
+        self.mprint("{}".format(stateStr[self.state])),
+        self.mprint(" Last turn on time: {:.0f}s ago".format(time.time()-self.lastTurnOnTime))
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
     def mprint(self,this):
         print(this)
+        self.lastMsg = this
 
     def close(self):
-        print "Closing Heater Control"
+        self.mprint("Closing Heater Control")
         GPIO.output(self.relayGPIO,0)
         self.stopNow = 1
         self.display.close()
@@ -113,17 +117,17 @@ class heaterControl(object):
         
     def onTempOff(self):
         self.setTargetTemp(50)
-        print "TEMP OFF"
+        self.mprint("TEMP OFF")
 
     def onRun(self):
         self.holding = 0
         schedule.redoSchedule()
-        print "RUN"
+        self.mprint("RUN")
 
     def onHold(self):
         self.holding = 1-self.holding
         self.drawButtons()
-        print "HOLD"
+        self.mprint("HOLD")
 
     def incTargetTemp(self,inc):
         self.setTargetTemp(self.targetTemp + inc)
@@ -135,7 +139,7 @@ class heaterControl(object):
             if s.x < 60 and s.y < 60: self.close()
         if down and self.waitForUp: return
         if self.buttonPressed > -1 and down:
-            print "Heater control button: {}".format(self.buttonPressed)
+            self.mprint("Heater control button: {}".format(self.buttonPressed))
             self.drawButtons(highlightButton=self.buttonPressed)
             def foo():
                 self.drawButtons()
@@ -191,10 +195,13 @@ class heaterControl(object):
         self.showTarget(self.targetTemp)
         self.display.update()
 
+    def showHeater(self):
+        self.display.make_disk(self.display.xSize-50,self.display.ySize-50,40,dc.nteal if not self.heaterOn else dc.nred)
+        
     def updateTemp(self):
         humidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
         if curTemp is None or humidity >= 100:
-            print "Failed to read temp"
+            self.mprint("Failed to read temp")
             return
         self.tempHistory = np.roll(self.tempHistory,1)
         self.tempHistory[0]=curTemp
@@ -202,12 +209,14 @@ class heaterControl(object):
         self.roomTemp = np.mean(self.tempHistory[self.tempHistory>0])
         self.humidity = humidity
         if not self.celcius: self.roomTemp = self.roomTemp * 1.8 + 32
-        print "Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity)
+        #self.mprint("Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
+        print("Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()
-        self.display.make_disk(self.display.xSize-50,self.display.ySize-50,40,dc.nteal if not self.heaterOn else dc.nred)
+        self.showHeater()
         self.controlHeater()
+        schedule.logHeaterUse()
 
     def startLoop(self):
         self.stopNow = 0
@@ -223,14 +232,18 @@ class heaterControl(object):
         uptime = re.sub('[\d]+ user[s]*,.*load(.*),.*,.*', 'load\\1', uptime).strip()
         self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 50, 300, 40))
         self.display.make_label(uptime, self.display.xSize / 2, 50, 20, dc.nblue)
+        #self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 70, 300, 40))
+        #self.display.make_label(self.lastMsg, self.display.xSize / 2, 70, 20, dc.nblue)
+        self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
+        self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 20, dc.nblue)
 
 if __name__ == '__main__':
     try:
-        print "Constructor"
+        self.mprint("Constructor")
         hc = heaterControl()
-        print "STARTLOOP"
+        self.mprint("STARTLOOP")
         hc.startLoop()
     except:
-        print "STOPPING due to interrupt!"
+        self.mprint("STOPPING due to interrupt!")
         hc.close()
         
