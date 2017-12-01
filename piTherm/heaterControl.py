@@ -11,8 +11,7 @@ import schedule
 state_off = 0
 state_on = 1
 state_on_too_long = 2
-state_about_to_go_on = 3
-stateStr = ['Heater off','Heater on','Heater on too long','About to go on']
+stateStr = ['Heater off','Heater on','Heater on too long']
 
 class heaterControl(object):
     roomTemp = 0
@@ -80,7 +79,6 @@ class heaterControl(object):
         # Todo: maybe we need a maximum length of time the furnace can be on.
         if self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp: 
             self.heaterToggleCount += 1
-            self.state = state_about_to_go_on
             if self.heaterToggleCount >= self.heaterToggleMinCount and self.state != state_on_too_long: 
                 if self.heaterOn == 0: self.lastTurnOnTime = time.time()
                 self.heaterOn = 1
