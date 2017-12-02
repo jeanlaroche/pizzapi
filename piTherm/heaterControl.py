@@ -18,7 +18,7 @@ class heaterControl(object):
     targetTemp = 70
     updatePeriodS = 4
     tempHistoryLengthS = 120
-    relayGPIO = 21
+    relayGPIO = 12
     stopNow = 0
     buttonPressed = -1
     humidity = 0
@@ -27,7 +27,7 @@ class heaterControl(object):
     tempHistory = []
     _targetTemp = 0
     sensor = Adafruit_DHT.DHT11
-    sensorPin = 14
+    sensorPin = 5
     celcius = 0
     holding = 0
     heaterOn = 0
