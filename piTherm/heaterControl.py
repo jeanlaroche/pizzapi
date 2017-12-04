@@ -15,6 +15,7 @@ stateStr = ['Heater off','Heater on','Heater on too long']
 
 class heaterControl(object):
     roomTemp = 0
+    roomTempAdjust = +2
     targetTemp = 70
     updatePeriodS = 4
     tempHistoryLengthS = 120
@@ -34,7 +35,7 @@ class heaterControl(object):
     heaterToggleDeltaTemp = .5
     heaterToggleCount = 0
     heaterToggleMinCount = 2
-    maxContinuousOnTimeMin = 1
+    maxContinuousOnTimeMin = 15
     lastTurnOnTime = float('inf')
     state = state_off
     lastMsg = ''
@@ -203,6 +204,7 @@ class heaterControl(object):
         if curTemp is None or humidity >= 100:
             self.mprint("Failed to read temp")
             return
+        curTemp += self.roomTempAdjust
         self.tempHistory = np.roll(self.tempHistory,1)
         self.tempHistory[0]=curTemp
         prevRoomTemp = round(self.roomTemp)
@@ -216,7 +218,12 @@ class heaterControl(object):
         self.showUptime()
         self.showHeater()
         self.controlHeater()
-        schedule.logHeaterUse()
+        self.printQueue()
+        
+    def printQueue(self):
+        with open('queue.txt','w') as fd:
+            for val in self.tempHistory:
+                fd.write("{} ".format(val))
 
     def startLoop(self):
         self.stopNow = 0

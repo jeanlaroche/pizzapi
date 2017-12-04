@@ -7,14 +7,14 @@
 #hold 90				hold temperature 80 until line is removed.
 
 
-# Morning stuff
-06:45 66 M-F
+# Monday Friday
+06:55 66 M-F
 09:00 60 M-F
-# MidDay
+# Week ends
 08:15 66 WE
 10:00 60 WE
 # Evening and night.
-17:00 69
+17:00 66
 23:00 50
 
 
