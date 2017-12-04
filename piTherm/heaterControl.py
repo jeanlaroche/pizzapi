@@ -45,6 +45,7 @@ class heaterControl(object):
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.relayGPIO, GPIO.OUT)
         self.tempHistory = np.zeros(self.tempHistoryLengthS/self.updatePeriodS)
+        schedule.hc = self
         def onTouch(s,down):
             self.onTouch(s,down)
         self.display = dc.displayControl(onTouch)
@@ -197,6 +198,9 @@ class heaterControl(object):
         self.drawButtons(highlightButton)
         self.showRoomTemp()
         self.showTarget(self.targetTemp)
+        
+        #self.displayJPEG()
+
         self.display.update()
 
     def showHeater(self):
@@ -235,6 +239,11 @@ class heaterControl(object):
         while self.stopNow == 0:
             time.sleep(1)
             
+    def displayJPEG(self):
+        import pygame
+        img=pygame.image.load('./maxPatch.jpg')
+        self.display.screen.blit(img,(0,0))
+        
     def showUptime(self):
         # get uptime from the linux terminal command
         from subprocess import check_output
