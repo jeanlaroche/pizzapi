@@ -148,6 +148,7 @@ class heaterControl(object):
             if self.buttonPressed == 0: self.onTempOff()
             if self.buttonPressed == 1: self.onRun()
             if self.buttonPressed == 2: self.onHold()
+            if self.buttonPressed == 3: self.setTargetTemp(66)
             self.waitForUp = 1
         if self.buttonPressed == -1:
             if down:
@@ -174,7 +175,7 @@ class heaterControl(object):
         buttY=50
         margin=10
         startX = margin
-        colors = [dc.nocre]*3
+        colors = [dc.nocre]*4
         if highlightButton > -1: colors[highlightButton] = dc.nred
         self.display.make_button("Off",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[0])
         startX += buttX+margin
@@ -182,6 +183,8 @@ class heaterControl(object):
         startX += buttX+margin
         if self.holding: colors[2] = dc.nred
         self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[2])
+        startX += buttX+margin
+        self.display.make_button("66F",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[3])
 
     def showRoomTemp(self,):
         X,Y,R=120,120,100
