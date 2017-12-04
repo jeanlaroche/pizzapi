@@ -219,6 +219,7 @@ class heaterControl(object):
         self.showHeater()
         self.controlHeater()
         self.printQueue()
+        schedule.logHeaterUse()
         
     def printQueue(self):
         with open('queue.txt','w') as fd:
