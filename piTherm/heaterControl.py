@@ -11,7 +11,8 @@ import schedule
 state_off = 0
 state_on = 1
 state_on_too_long = 2
-stateStr = ['Heater off','Heater on','Heater on too long']
+state_pausing = 3
+stateStr = ['Heater off','Heater on','Heater on too long','Heater paused']
 
 class heaterControl(object):
     roomTemp = 0
@@ -35,7 +36,9 @@ class heaterControl(object):
     heaterToggleDeltaTemp = .5
     heaterToggleCount = 0
     heaterToggleMinCount = 2
-    maxContinuousOnTimeMin = 15
+    maxContinuousOnTimeMin = 45
+    timeBeforePauseMin = 15
+    pauseLengthMin = 4
     lastTurnOnTime = float('inf')
     state = state_off
     lastMsg = ''
@@ -76,6 +79,49 @@ class heaterControl(object):
         self.scheduleThread.daemon = True
         self.mprint("Starting schedule thread")
         if doStart: self.scheduleThread.start()
+        
+    def updateState(self):
+        tempLow = self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp 
+        tempHigh = self.roomTemp >= self.targetTemp + self.heaterToggleDeltaTemp
+        
+        if self.state == state_off:
+            if tempLow:
+                self.heaterToggleCount += 1
+                if self.heaterToggleCount >= self.heaterToggleMinCount
+                    # Temp low, turn heater on.
+                    self.lastTurnOnTime = time.time()
+                    self.lastTurnOnForPause = time.time()
+                    self.heaterOn = 1
+                    self.heaterToggleCount = 0
+                    self.state = state_on
+        elif self.state == state_on:
+            if tempHigh:
+                self.heaterToggleCount += 1
+                if self.heaterToggleCount >= self.heaterToggleMinCount: 
+                    # Temp reached turn heater off
+                    self.heaterOn = 0
+                    self.state = state_off
+                    self.heaterToggleCount = 0
+            if time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60
+                # Heater on for too long
+                self.heaterOn = 0
+                self.state = state_on_too_long
+            if time.time()-self.lastTurnOnForPause  > self.timeBeforePauseMin*60:
+                # Take a break
+                self.heaterOn = 0
+                self.state = state_pausing
+                self.pauseTime = time.time()
+        elif state.state == state_pausing:
+            if time.time()-self.pauseTime > self.pauseLengthMin*60:
+                self.heaterOn = 1
+                self.state = state_on
+                self.lastTurnOnForPause = time.time()
+        elif state.state == state_on_too_long:
+            pass
+        self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime)),
+        if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
+        GPIO.output(self.relayGPIO,self.heaterOn)
+        self.showHeater()
         
     def controlHeater(self):
         # Todo: maybe we need a maximum length of time the furnace can be on.
