@@ -37,8 +37,8 @@ class heaterControl(object):
     heaterToggleCount = 0
     heaterToggleMinCount = 2
     maxContinuousOnTimeMin = 45
-    timeBeforePauseMin = 5
-    pauseLengthMin = 2
+    timeBeforePauseMin = 15
+    pauseLengthMin = 3
     pauseTime = float('inf')
     lastTurnOnForPause = float('inf')
     lastTurnOnTime = float('inf')
