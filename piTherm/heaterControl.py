@@ -87,7 +87,8 @@ class heaterControl(object):
         if self.state == state_off:
             if tempLow:
                 self.heaterToggleCount += 1
-                if self.heaterToggleCount >= self.heaterToggleMinCount
+                if self.heaterToggleCount >= self.heaterToggleMinCount:
+                    self.mprint("Turning heater on",logit=1)
                     # Temp low, turn heater on.
                     self.lastTurnOnTime = time.time()
                     self.lastTurnOnForPause = time.time()
@@ -98,21 +99,25 @@ class heaterControl(object):
             if tempHigh:
                 self.heaterToggleCount += 1
                 if self.heaterToggleCount >= self.heaterToggleMinCount: 
+                    self.mprint("Turning heater off",logit=1)
                     # Temp reached turn heater off
                     self.heaterOn = 0
                     self.state = state_off
                     self.heaterToggleCount = 0
-            if time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60
+            if time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60:
                 # Heater on for too long
+                self.mprint("Turning heater off, too long",logit=1)
                 self.heaterOn = 0
                 self.state = state_on_too_long
             if time.time()-self.lastTurnOnForPause  > self.timeBeforePauseMin*60:
                 # Take a break
+                self.mprint("Turning heater off, Taking a break",logit=1)
                 self.heaterOn = 0
                 self.state = state_pausing
                 self.pauseTime = time.time()
         elif state.state == state_pausing:
             if time.time()-self.pauseTime > self.pauseLengthMin*60:
+                self.mprint("Turning heater on, from break",logit=1)
                 self.heaterOn = 1
                 self.state = state_on
                 self.lastTurnOnForPause = time.time()
@@ -148,9 +153,12 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this):
+    def mprint(self,this,logit=0):
         print(this)
         self.lastMsg = this
+        if logit:
+            with open('heater.log','a') as fd:
+                fd.write(this+'\n')
 
     def close(self):
         self.mprint("Closing Heater Control")
@@ -270,7 +278,8 @@ class heaterControl(object):
             self.showRoomTemp()
         self.showUptime()
         self.showHeater()
-        self.controlHeater()
+        #self.controlHeater()
+        self.updateState()
         self.printQueue()
         schedule.logHeaterUse()
         
