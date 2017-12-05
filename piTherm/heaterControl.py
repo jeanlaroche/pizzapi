@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 import numpy as np
 from threading import Timer, Thread
 import displayControl as dc
-import time
+import time, os
 import pygame
 import Adafruit_DHT
 import schedule
@@ -18,7 +18,7 @@ class heaterControl(object):
     roomTemp = 0
     roomTempAdjust = +2
     targetTemp = 70
-    updatePeriodS = 4
+    updatePeriodS = 5
     tempHistoryLengthS = 120
     relayGPIO = 12
     stopNow = 0
@@ -37,11 +37,14 @@ class heaterControl(object):
     heaterToggleCount = 0
     heaterToggleMinCount = 2
     maxContinuousOnTimeMin = 45
-    timeBeforePauseMin = 15
-    pauseLengthMin = 4
+    timeBeforePauseMin = 5
+    pauseLengthMin = 2
+    pauseTime = float('inf')
+    lastTurnOnForPause = float('inf')
     lastTurnOnTime = float('inf')
     state = state_off
     lastMsg = ''
+    imagePath = './image.jpg'
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -115,15 +118,16 @@ class heaterControl(object):
                 self.heaterOn = 0
                 self.state = state_pausing
                 self.pauseTime = time.time()
-        elif state.state == state_pausing:
+        elif self.state == state_pausing:
             if time.time()-self.pauseTime > self.pauseLengthMin*60:
                 self.mprint("Turning heater on, from break",logit=1)
                 self.heaterOn = 1
                 self.state = state_on
                 self.lastTurnOnForPause = time.time()
-        elif state.state == state_on_too_long:
+        elif self.state == state_on_too_long:
             pass
-        self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime)),
+        self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
+        self.mprint("pause time {:.0f}s ago -- last turn on for pause {:.0f}s ago".format(time.time()-self.pauseTime,time.time()-self.lastTurnOnForPause))
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
         self.showHeater()
@@ -153,7 +157,7 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this,logit=0):
+    def mprint(self,this,logit=1):
         print(this)
         self.lastMsg = this
         if logit:
@@ -252,9 +256,7 @@ class heaterControl(object):
         self.drawButtons(highlightButton)
         self.showRoomTemp()
         self.showTarget(self.targetTemp)
-        
-        #self.displayJPEG()
-
+        if self.imagePath: self.displayJPEG()
         self.display.update()
 
     def showHeater(self):
@@ -295,9 +297,11 @@ class heaterControl(object):
             time.sleep(1)
             
     def displayJPEG(self):
+        return
         import pygame
-        img=pygame.image.load('./maxPatch.jpg')
-        self.display.screen.blit(img,(0,0))
+        if os.path.exists(self.imagePath):
+            img=pygame.image.load(self.imagePath)
+            self.display.screen.blit(img,(0,0))
         
     def showUptime(self):
         # get uptime from the linux terminal command
@@ -311,6 +315,13 @@ class heaterControl(object):
         #self.display.make_label(self.lastMsg, self.display.xSize / 2, 70, 20, dc.nblue)
         self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
         self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 20, dc.nblue)
+        
+    def grabLog(self):
+        with open('heater.log','r') as f:
+            allLines = f.readlines()
+            return allLines[-1:-30:-1]
+        return []
+
 
 if __name__ == '__main__':
     try:

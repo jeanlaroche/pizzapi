@@ -4,6 +4,7 @@ import threading, time, os
 import re
 import heaterControl
 import numpy as np
+import schedule
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
@@ -67,7 +68,8 @@ def _pageUnload():
 def _getData():
     print "Get Data"
     roomTemp = np.round(hc.roomTemp,decimals=1)
-    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg)
+    stats = hc.grabLog()
+    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats)
 
 
 def GetUptime():

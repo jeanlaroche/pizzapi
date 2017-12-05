@@ -93,6 +93,7 @@ span {font-weight: bold;}
 				$("#humidity").text(data.humidity);
 				$("#upTime").text(data.upTime);
 				$("#heaterValue").text(data.heaterOn == 0 ? "OFF" : "ON");
+				$("#Stats").text(data.stats);
 				//$("#prevDay").text(data.prevDayStr);
 				//$("#nextDay").text(data.nextDayStr);
 				$("#lastMessage").text(data.lastMsg);
@@ -109,7 +110,7 @@ span {font-weight: bold;}
 				// document.getElementById("heaterValue").style="font-size:300%";
 				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
 				// various things in the console.
-				setTimeout(function(){getTemperature();},1000);
+				setTimeout(function(){getTemperature();},4000);
 			});
 	}
 	
@@ -215,7 +216,7 @@ span {font-weight: bold;}
     <div ><h2>Heater Usage:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
-<div id="Plots" style="width:auto;height:250px;"></div>
+<!-- <div id="Plots" style="width:auto;height:250px;"></div>
 <fieldset class="ui-grid-d">
 	<div class="ui-block-a">
 		<button id="prevDay"  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
@@ -233,7 +234,7 @@ span {font-weight: bold;}
 		<button id="plusWeek" onclick="onPlusWeek()" data-theme="d">+Week</button>
 	</div>
 </fieldset>
-<div ><h2>Stats Log:</h2></div>
+ --><div ><h2>Stats Log:</h2></div>
  <div>
  <pre id="Stats"></pre>
  </div>

@@ -39,7 +39,7 @@ def min(a,b):
 def printHours(hours):
     if hours < 1: return "{}'".format(int(hours*60))
     else: return "{}h{:02d}'".format(int(hours),int((hours*60)%60))
-
+    
 # Read the stat file, grabs the heater data, and returns what should be displayed.
 def computeGraphData():
     global heaterData, tempData
@@ -65,6 +65,7 @@ def computeGraphData():
         # In fact, go back 4 more hours in the past.
         if lineHour > startHour - 4 and lineHour < endHour:
             stats += ' '.join([allFields[6],allFields[0],allFields[2]]+allFields[8:])+'\n'
+    return stats
     
     A = [item for item  in heaterData if item[0] < endHour and item[0] > startHour]
     B = [];
