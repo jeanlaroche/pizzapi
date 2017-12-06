@@ -171,6 +171,12 @@ class displayControl(object):
         pygame.draw.circle(self.screen,colour,(xpo,ypo),radius,0)
         self.rectList.append(R)
 
+    def displayJPEG(self,imagePath):
+        img=pygame.image.load(imagePath)
+        imgsc = pygame.transform.smoothscale(img, (self.xSize, self.ySize))
+        self.screen.blit(imgsc,(0,0))
+        pygame.display.update()
+        
     def draw(self):
         # Set up the base menu you can customize your menu with the colors above
         # Background Color

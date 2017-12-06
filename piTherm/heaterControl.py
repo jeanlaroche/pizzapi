@@ -40,13 +40,15 @@ class heaterControl(object):
     maxContinuousOnTimeMin = 45
     timeBeforePauseMin = 15
     pauseLengthMin = 3
+    timeBeforeImage = 10
+    lastIdleTime = 0
     pauseTime = float('inf')
     lastTurnOnForPause = float('inf')
     lastTurnOnTime = float('inf')
     state = state_off
     lastMsg = ''
     imagePath = './image.jpg'
-    lastUpTime = 0
+    showImage = 0
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -61,8 +63,7 @@ class heaterControl(object):
         # Temp update thread.
         def updateTemp():
             while self.stopNow == 0:
-                if time.time()-self.lastUpTime > .5:
-                    self.updateTemp()
+                self.updateTemp()
                 time.sleep(self.updatePeriodS)
         self.updateTempThread = Thread(target=updateTemp, args=(), group=None)
         self.updateTempThread.daemon = True
@@ -76,6 +77,7 @@ class heaterControl(object):
         # self.touchThread.daemon = True
         # self.mprint("Starting display thread")
         # if doStart: self.touchThread.start()
+        self.mprint("Starting display thread")
         self.display.startLoop()
         
         # Schedule thread
@@ -85,7 +87,9 @@ class heaterControl(object):
         self.scheduleThread.daemon = True
         self.mprint("Starting schedule thread")
         if doStart: self.scheduleThread.start()
+        self.mprint("Drawing")
         self.draw()
+        self.mprint("Done")
         
     def updateState(self):
         tempLow = self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp 
@@ -130,6 +134,10 @@ class heaterControl(object):
                 self.lastTurnOnForPause = time.time()
         elif self.state == state_on_too_long:
             pass
+        if self.showImage == 0 and time.time() > self.lastIdleTime + self.timeBeforeImage:
+            self.showImage = 1
+            self.draw()
+
         self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
         self.mprint("pause time {:.0f}s ago -- last turn on for pause {:.0f}s ago".format(time.time()-self.pauseTime,time.time()-self.lastTurnOnForPause))
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
@@ -161,7 +169,7 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this,logit=0):
+    def mprint(self,this,logit=1):
         print(this)
         self.lastMsg = this
         if logit:
@@ -200,10 +208,13 @@ class heaterControl(object):
 
     def onTouch(self,s,down):
         # print s.x,s.y
-        if not down:
-            self.lastUpTime = time.time()
+        if self.showImage:
+            self.showImage = 0
+            self.draw()
         if down:
             self.buttonPressed = self.display.findHit(s)
+        else:
+            self.lastIdleTime = time.time()
             # if s.x < 60 and s.y < 60: self.close()
         if down and self.waitForUp: return
         if self.buttonPressed > -1 and down:
@@ -235,9 +246,11 @@ class heaterControl(object):
         if not down: self.waitForUp = 0
 
     def showTarget(self,target):
+        if self.showImage: return
         self.display.make_label("Target {}F".format(target), self.display.xSize / 2, 0, 40, dc.nblue)
 
     def drawButtons(self,highlightButton=-1):
+        if self.showImage: return
         buttX=80
         buttY=50
         margin=10
@@ -254,21 +267,27 @@ class heaterControl(object):
         self.display.make_button("66F",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[3])
 
     def showRoomTemp(self,):
+        if self.showImage: return
         X,Y,R=120,120,100
         # self.display.screen.fill(dc.black, rect=pygame.Rect(X-R, Y-R, 2*R, 2*R))
         self.display.make_circle("{:.1f}".format((self.roomTemp)), X, Y, R, dc.nred)
         self.display.make_label("Humidity {}".format(self.humidity),X-64,Y+40,30,dc.nteal)
 
     def draw(self,highlightButton=-1):
+        if self.showImage:
+            self.display.displayJPEG(self.imagePath)
+            self.display.update()
+            return
         self.display.screen.fill(dc.black)
         self.drawButtons(highlightButton)
         self.showRoomTemp()
         self.showTarget(self.targetTemp)
-        if self.imagePath: self.displayJPEG()
         print "Calling update"
+        self.display.rectList = [[0,0,self.display.xSize,self.display.ySize]]
         self.display.update()
 
     def showHeater(self):
+        if self.showImage: return
         self.display.make_disk(self.display.xSize-30,self.display.ySize-30,10,dc.nteal if not self.heaterOn else dc.nred)
         
     def updateTemp(self):
@@ -303,15 +322,9 @@ class heaterControl(object):
         self.stopNow = 0
         while self.stopNow == 0:
             time.sleep(1)
-            
-    def displayJPEG(self):
-        return
-        import pygame
-        if os.path.exists(self.imagePath):
-            img=pygame.image.load(self.imagePath)
-            self.display.screen.blit(img,(0,0))
-        
+                    
     def showUptime(self):
+        if self.showImage: return
         # get uptime from the linux terminal command
         from subprocess import check_output
         import re
