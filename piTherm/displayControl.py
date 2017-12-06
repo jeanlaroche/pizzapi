@@ -133,13 +133,15 @@ class displayControl(object):
 
     # define function for printing text in a specific place with a specific width and height with a specific colour and border
     def make_button(self, text, xpo, ypo, width, height, colour):
+        R = [xpo-10,ypo-10,width,height]
+        self.screen.fill(self.bckColor,R)
         font=pygame.font.Font(None,42)
         label=font.render(str(text), 1, (colour))
         self.screen.blit(label,(xpo,ypo))
-        pygame.draw.rect(self.screen, ngreen, (xpo-10,ypo-10,width,height),3)
+        pygame.draw.rect(self.screen, ngreen, R,3)
         button = {'x':xpo,'y':ypo,'dx':width,'dy':height}
         self.allButtons.append(button)
-        self.rectList.append([xpo,ypo,width,height])
+        self.rectList.append(R)
 
     def findHit(self,s):
         x,y=s.x,s.y
@@ -152,19 +154,21 @@ class displayControl(object):
     def make_label(self, text, xpo, ypo, fontSize, colour):
         font=pygame.font.Font(None,fontSize)
         label=font.render(str(text), 1, (colour))
-        R = label.get_rect().move(xpo,ypo)
-        self.screen.fill(self.bckColor,R)
-        self.screen.blit(label,(xpo,ypo))
-        self.rectList.append(R)
+        self.screen.fill(self.bckColor,label.get_rect().move(xpo,ypo))
+        self.rectList.append(self.screen.blit(label,(xpo,ypo)))
 
     def make_circle(self,text,xpo,ypo,radius,colour):
+        R = [xpo-radius,ypo-radius,2*radius,2*radius]
+        self.screen.fill(self.bckColor,R)
         self.make_label(text,xpo-78,ypo-54,120,ngreen)
         pygame.draw.circle(self.screen,nred,(xpo,ypo),100,10)
-        self.rectList.append([xpo-radius,ypo-radius,2*radius,2*radius])
+        self.rectList.append(R)
     
     def make_disk(self,xpo,ypo,radius,colour):
+        R = [xpo-radius,ypo-radius,2*radius,2*radius]
+        self.screen.fill(self.bckColor,R)
         pygame.draw.circle(self.screen,colour,(xpo,ypo),radius,0)
-        self.rectList.append([xpo-radius,ypo-radius,2*radius,2*radius])
+        self.rectList.append(R)
 
     def draw(self):
         # Set up the base menu you can customize your menu with the colors above
@@ -213,7 +217,7 @@ class displayControl(object):
         prevPress = 0
         lastT = 0
         off = ts_sample()
-        timeThresh = 0.010
+        timeThresh = 0.100
         self.down = 0
         A = [[]]*10
         while 1:
@@ -223,17 +227,18 @@ class displayControl(object):
                     a = self.getTSEvent()
                     if a: s=a
                     else: break
-                if s:
-                    #print s.x, s.y, s.pressure
+                if s and s.x >= 0 and s.y >= 0:
+                    print s.x, s.y, s.pressure
                     if self.down == 0:
                         self.firstDownPos = (s.x,s.y)
-                        print "FIRST {}".format(s.y)
+                        #print "FIRST {}".format(s.y)
                     self.down = 1
                     self.onTouch(s)
                     lastT = time.time()
                 elif time.time()-lastT > timeThresh and self.down == 1:
                     self.down = 0
                     self.onTouch(off)
+                    print "UP"
                 # print "{} {} ".format(lastT,time.time())
 
                 if self.stopNow: break

@@ -173,6 +173,8 @@ class heaterControl(object):
 
     def setTargetTemp(self,targetTemp):
         self.targetTemp = targetTemp
+        if self.targetTemp < 50: self.targetTemp = 50
+        if self.targetTemp > 74: self.targetTemp = 74
         self.heaterToggleCount = 0
         self.showTarget(self.targetTemp)
         
@@ -215,6 +217,7 @@ class heaterControl(object):
                 inc = 5 if s.x > self.display.xSize - 50 else 1
                 if s.y > self.display.ySize/2: self.incTargetTemp(-inc)
                 else: self.incTargetTemp(inc)
+                # self.setTargetTemp(int(65-.1*(s.y-self.display.ySize/2)))
             self.waitForUp = 1
             # if down:
                 # dx,dy=s.x-self.display.firstDownPos[0],s.y-self.display.firstDownPos[1]
@@ -227,7 +230,6 @@ class heaterControl(object):
         if not down: self.waitForUp = 0
 
     def showTarget(self,target):
-        # self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 0, 200, 40))
         self.display.make_label("Target {}F".format(target), self.display.xSize / 2, 0, 40, dc.nblue)
 
     def drawButtons(self,highlightButton=-1):
@@ -248,7 +250,7 @@ class heaterControl(object):
 
     def showRoomTemp(self,):
         X,Y,R=120,120,100
-        self.display.screen.fill(dc.black, rect=pygame.Rect(X-R, Y-R, 2*R, 2*R))
+        # self.display.screen.fill(dc.black, rect=pygame.Rect(X-R, Y-R, 2*R, 2*R))
         self.display.make_circle("{:.1f}".format((self.roomTemp)), X, Y, R, dc.nred)
         self.display.make_label("Humidity {}".format(self.humidity),X-64,Y+40,30,dc.nteal)
 
@@ -262,7 +264,7 @@ class heaterControl(object):
         self.display.update()
 
     def showHeater(self):
-        self.display.make_disk(self.display.xSize-50,self.display.ySize-50,40,dc.nteal if not self.heaterOn else dc.nred)
+        self.display.make_disk(self.display.xSize-30,self.display.ySize-30,10,dc.nteal if not self.heaterOn else dc.nred)
         
     def updateTemp(self):
         humidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
@@ -311,11 +313,11 @@ class heaterControl(object):
         import re
         uptime = check_output(["uptime"])
         uptime = re.sub('[\d]+ user[s]*,.*load(.*),.*,.*', 'load\\1', uptime).strip()
-        self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 50, 300, 40))
+        # self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 50, 300, 40))
         self.display.make_label(uptime, self.display.xSize / 2, 50, 20, dc.nblue)
         #self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 70, 300, 40))
         #self.display.make_label(self.lastMsg, self.display.xSize / 2, 70, 20, dc.nblue)
-        self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
+        #self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
         self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 20, dc.nblue)
         
     def grabLog(self):
