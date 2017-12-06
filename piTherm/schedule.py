@@ -188,15 +188,17 @@ def redoSchedule():
     thisDate = datetime.datetime.now()
     curTime = thisDate.strftime('%H:%M')
     allTimes = sorted([key for key in schedule.keys() if key <= curTime])
+    print "REDO SCHEDULE"
     if not allTimes:
         # curTime is before any of the schedule entries, redo the latest one.
         allTimes = sorted([key for key in schedule.keys() if key > curTime])
     if allTimes: 
-        key = allTimes[-1]
-        if len(schedule[key]) == 1 or (thisDate.weekday() in schedule[key][1]):        
-            hc.mprint("Redoing schedule for = {} setting target to {}F".format(key,schedule[key][0]))
-            if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))
-            todo[key] = 0
+        for key in allTimes[-1:0:-1]:
+            if len(schedule[key]) == 1 or (thisDate.weekday() in schedule[key][1]):        
+                hc.mprint("Redoing schedule for = {} setting target to {}F".format(key,schedule[key][0]))
+                if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))
+                todo[key] = 0
+                break
 
 def openAndRun(heaterControl):
     global hc

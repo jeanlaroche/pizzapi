@@ -1,4 +1,5 @@
 #!/usr/bin/python
+#!/usr/bin/python
 import RPi.GPIO as GPIO
 import numpy as np
 from threading import Timer, Thread
@@ -17,7 +18,7 @@ stateStr = ['Heater off','Heater on','Heater on too long','Heater paused']
 class heaterControl(object):
     roomTemp = 0
     roomTempAdjust = +2
-    targetTemp = 70
+    targetTemp = 0
     updatePeriodS = 5
     tempHistoryLengthS = 120
     relayGPIO = 12
@@ -67,13 +68,13 @@ class heaterControl(object):
         if doStart: self.updateTempThread.start()
         
         # Display event loop thread.
-        def eventLoop():
-            self.display.eventLoop()
-        self.touchThread = Thread(target=eventLoop, args=(), group=None)
-        self.touchThread.daemon = True
-        self.mprint("Starting display thread")
-        if doStart: self.touchThread.start()
-        self.draw()
+        # def eventLoop():
+            # self.display.eventLoop()
+        # self.touchThread = Thread(target=eventLoop, args=(), group=None)
+        # self.touchThread.daemon = True
+        # self.mprint("Starting display thread")
+        # if doStart: self.touchThread.start()
+        self.display.startLoop()
         
         # Schedule thread
         def doSchedule():
@@ -226,7 +227,7 @@ class heaterControl(object):
         if not down: self.waitForUp = 0
 
     def showTarget(self,target):
-        self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 0, 200, 40))
+        # self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 0, 200, 40))
         self.display.make_label("Target {}F".format(target), self.display.xSize / 2, 0, 40, dc.nblue)
 
     def drawButtons(self,highlightButton=-1):
@@ -257,6 +258,7 @@ class heaterControl(object):
         self.showRoomTemp()
         self.showTarget(self.targetTemp)
         if self.imagePath: self.displayJPEG()
+        print "Calling update"
         self.display.update()
 
     def showHeater(self):
@@ -324,12 +326,8 @@ class heaterControl(object):
 
 
 if __name__ == '__main__':
-    try:
-        print("Constructor")
-        hc = heaterControl()
-        print("STARTLOOP")
-        hc.startLoop()
-    except:
-        print("STOPPING due to interrupt!")
-        hc.close()
+    print("Constructor")
+    hc = heaterControl()
+    print("STARTLOOP")
+    hc.startLoop()
         
