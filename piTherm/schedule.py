@@ -191,9 +191,10 @@ def redoSchedule():
     print "REDO SCHEDULE"
     if not allTimes:
         # curTime is before any of the schedule entries, redo the latest one.
-        allTimes = sorted([key for key in schedule.keys() if key > curTime])
+        allTimes = sorted([key for key in schedule.keys() if key > curTime]).reverse()
+    print allTimes
     if allTimes: 
-        for key in allTimes[-1:0:-1]:
+        for key in allTimes:
             if len(schedule[key]) == 1 or (thisDate.weekday() in schedule[key][1]):        
                 hc.mprint("Redoing schedule for {} setting target to {}F".format(key,schedule[key][0]))
                 if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))

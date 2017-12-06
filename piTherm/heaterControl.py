@@ -135,7 +135,9 @@ class heaterControl(object):
                 self.state = state_on
                 self.lastTurnOnForPause = time.time()
         elif self.state == state_on_too_long:
-            pass
+            if tempHigh:
+                self.mprint("Temp high enough, resuming normal state",logit=1)
+                self.state = state_off
         if self.showImage == 0 and time.time() > self.lastIdleTime + self.timeBeforeImage:
             self.showImage = 1
             self.draw()
@@ -172,11 +174,15 @@ class heaterControl(object):
         GPIO.output(self.relayGPIO,self.heaterOn)
 
     def mprint(self,this,logit=0):
-        print(this)
-        self.lastMsg = this
+        import datetime
+        # date = datetime.datetime.now().strftime('%m/%d %Hh%M:%S')
+        date = datetime.datetime.now().strftime('%H:%M:%S')
+        msg = date + ' ' + this
+        print(msg)
+        self.lastMsg = msg
         if logit:
             with open('heater.log','a') as fd:
-                fd.write(this+'\n')
+                fd.write(msg+'\n')
 
     def close(self):
         self.mprint("Closing Heater Control")
@@ -308,7 +314,7 @@ class heaterControl(object):
         self.humidity = humidity
         if not self.celcius: self.roomTemp = self.roomTemp * 1.8 + 32
         #self.mprint("Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
-        print("Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
+        self.mprint("Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()
