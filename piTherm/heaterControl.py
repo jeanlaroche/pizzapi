@@ -46,6 +46,7 @@ class heaterControl(object):
     state = state_off
     lastMsg = ''
     imagePath = './image.jpg'
+    lastUpTime = 0
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -60,7 +61,8 @@ class heaterControl(object):
         # Temp update thread.
         def updateTemp():
             while self.stopNow == 0:
-                self.updateTemp()
+                if time.time()-self.lastUpTime > .5:
+                    self.updateTemp()
                 time.sleep(self.updatePeriodS)
         self.updateTempThread = Thread(target=updateTemp, args=(), group=None)
         self.updateTempThread.daemon = True
@@ -158,7 +160,7 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this,logit=1):
+    def mprint(self,this,logit=0):
         print(this)
         self.lastMsg = this
         if logit:
@@ -197,6 +199,8 @@ class heaterControl(object):
 
     def onTouch(self,s,down):
         # print s.x,s.y
+        if not down:
+            self.lastUpTime = time.time()
         if down:
             self.buttonPressed = self.display.findHit(s)
             if s.x < 60 and s.y < 60: self.close()

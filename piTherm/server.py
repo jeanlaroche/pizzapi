@@ -69,6 +69,7 @@ def _getData():
     print "Get Data"
     roomTemp = np.round(hc.roomTemp,decimals=1)
     stats = hc.grabLog()
+    stats = ''.join(stats)
     return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats)
 
 
@@ -87,6 +88,7 @@ def preStart():
     global hc
     print "RUNNING PRESTART"
     hc = heaterControl.heaterControl(doStart=1)
+    hc.startLoop()
 
 # rt.setup()
 # rt.init()

@@ -195,7 +195,7 @@ def redoSchedule():
     if allTimes: 
         for key in allTimes[-1:0:-1]:
             if len(schedule[key]) == 1 or (thisDate.weekday() in schedule[key][1]):        
-                hc.mprint("Redoing schedule for = {} setting target to {}F".format(key,schedule[key][0]))
+                hc.mprint("Redoing schedule for {} setting target to {}F".format(key,schedule[key][0]))
                 if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))
                 todo[key] = 0
                 break
