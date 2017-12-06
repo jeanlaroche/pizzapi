@@ -40,7 +40,7 @@ class heaterControl(object):
     maxContinuousOnTimeMin = 45
     timeBeforePauseMin = 15
     pauseLengthMin = 3
-    timeBeforeImage = 10
+    timeBeforeImage = 30
     lastIdleTime = 0
     pauseTime = float('inf')
     lastTurnOnForPause = float('inf')
@@ -89,6 +89,7 @@ class heaterControl(object):
         if doStart: self.scheduleThread.start()
         self.mprint("Drawing")
         self.draw()
+        lastIdleTime = time.time()
         self.mprint("Done")
         
     def updateState(self):
@@ -209,13 +210,16 @@ class heaterControl(object):
     def onTouch(self,s,down):
         # print s.x,s.y
         if self.showImage:
+            if down: return
             self.showImage = 0
             self.draw()
+            self.showUptime()
         if down:
             self.buttonPressed = self.display.findHit(s)
         else:
             self.lastIdleTime = time.time()
-            # if s.x < 60 and s.y < 60: self.close()
+        # if s.x < 20 and s.y < 20: 
+            # os.system('sudo reboot now')
         if down and self.waitForUp: return
         if self.buttonPressed > -1 and down:
             self.mprint("Heater control button: {}".format(self.buttonPressed))
