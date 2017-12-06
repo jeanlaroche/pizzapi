@@ -56,6 +56,8 @@ class heaterControl(object):
         GPIO.setup(self.relayGPIO, GPIO.OUT)
         self.tempHistory = np.zeros(self.tempHistoryLengthS/self.updatePeriodS)
         schedule.hc = self
+        self.lastIdleTime = time.time()
+
         def onTouch(s,down):
             self.onTouch(s,down)
         self.display = dc.displayControl(onTouch)
@@ -89,7 +91,6 @@ class heaterControl(object):
         if doStart: self.scheduleThread.start()
         self.mprint("Drawing")
         self.draw()
-        lastIdleTime = time.time()
         self.mprint("Done")
         
     def updateState(self):
@@ -170,7 +171,7 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this,logit=1):
+    def mprint(self,this,logit=0):
         print(this)
         self.lastMsg = this
         if logit:
