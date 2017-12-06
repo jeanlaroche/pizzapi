@@ -88,7 +88,7 @@ def preStart():
     global hc
     print "RUNNING PRESTART"
     hc = heaterControl.heaterControl(doStart=1)
-    hc.startLoop()
+    #hc.draw()
 
 # rt.setup()
 # rt.init()

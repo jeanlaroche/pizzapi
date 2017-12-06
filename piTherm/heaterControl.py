@@ -85,6 +85,7 @@ class heaterControl(object):
         self.scheduleThread.daemon = True
         self.mprint("Starting schedule thread")
         if doStart: self.scheduleThread.start()
+        self.draw()
         
     def updateState(self):
         tempLow = self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp 
@@ -203,7 +204,7 @@ class heaterControl(object):
             self.lastUpTime = time.time()
         if down:
             self.buttonPressed = self.display.findHit(s)
-            if s.x < 60 and s.y < 60: self.close()
+            # if s.x < 60 and s.y < 60: self.close()
         if down and self.waitForUp: return
         if self.buttonPressed > -1 and down:
             self.mprint("Heater control button: {}".format(self.buttonPressed))
@@ -300,7 +301,6 @@ class heaterControl(object):
 
     def startLoop(self):
         self.stopNow = 0
-        self.draw()
         while self.stopNow == 0:
             time.sleep(1)
             
