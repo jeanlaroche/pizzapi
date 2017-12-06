@@ -318,7 +318,7 @@ class heaterControl(object):
         #self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 70, 300, 40))
         #self.display.make_label(self.lastMsg, self.display.xSize / 2, 70, 20, dc.nblue)
         #self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
-        self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 20, dc.nblue)
+        self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 20, dc.nblue, fullLine=1)
         
     def grabLog(self):
         with open('heater.log','r') as f:

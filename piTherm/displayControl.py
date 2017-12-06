@@ -151,8 +151,9 @@ class displayControl(object):
         else: return -1
 
     # define function for printing text in a specific place with a specific colour
-    def make_label(self, text, xpo, ypo, fontSize, colour):
+    def make_label(self, text, xpo, ypo, fontSize, colour, fullLine = 0):
         font=pygame.font.Font(None,fontSize)
+        if fullLine: text += ' '*300
         label=font.render(str(text), 1, (colour))
         self.screen.fill(self.bckColor,label.get_rect().move(xpo,ypo))
         self.rectList.append(self.screen.blit(label,(xpo,ypo)))
@@ -189,11 +190,11 @@ class displayControl(object):
     def update(self):
         if len(self.rectList): 
             pygame.display.update(self.rectList)
-            print self.rectList
-        #pygame.display.update([[0,0,100,100]])
+            #print self.rectList
         self.rectList = []
         
     def startLoop(self):
+        # Start two loops in two different threads.
         def _eventLoop():
             self.eventLoop()
         self.touchThread = Thread(target=_eventLoop, args=(), group=None)
@@ -223,12 +224,14 @@ class displayControl(object):
         while 1:
             try:
                 s=None
-                for ii in range(2):
-                    a = self.getTSEvent()
-                    if a: s=a
-                    else: break
+                # I don't know that this is needed!
+                s = self.getTSEvent()
+                # for ii in range(2):
+                    # a = self.getTSEvent()
+                    # if a: s=a
+                    # else: break
                 if s and s.x >= 0 and s.y >= 0:
-                    print s.x, s.y, s.pressure
+                    #print s.x, s.y, s.pressure
                     if self.down == 0:
                         self.firstDownPos = (s.x,s.y)
                         #print "FIRST {}".format(s.y)
