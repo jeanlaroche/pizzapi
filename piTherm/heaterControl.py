@@ -40,7 +40,7 @@ class heaterControl(object):
     maxContinuousOnTimeMin = 45
     timeBeforePauseMin = 15
     pauseLengthMin = 3
-    timeBeforeImage = 30
+    timeBeforeImage = 10
     imageChangePeriodS = 5
     lastIdleTime = 0
     pauseTime = float('inf')
@@ -53,7 +53,7 @@ class heaterControl(object):
     imageDir = '/mnt/mainpc/images'
     imageIdx=0
     lastImageChangeTime = 0
-    showImage = 1
+    showImage = 0
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -106,6 +106,9 @@ class heaterControl(object):
         # First of, list all dirs!
         for dirpath, dirnames, filenames in os.walk(self.imageDir):
             break
+        else: 
+            self.mprint("NO IMAGE FOUND")
+            return
         np.random.shuffle(dirnames)
         allDirs = dirnames
         #print allDirs
@@ -163,7 +166,7 @@ class heaterControl(object):
             if tempHigh:
                 self.mprint("Temp high enough, resuming normal state",logit=1)
                 self.state = state_off
-        if self.showImage == 0 and time.time() > self.lastIdleTime + self.timeBeforeImage:
+        if self.showImage == 0 and time.time() > self.lastIdleTime + self.timeBeforeImage and len(self.allImages):
             self.showImage = 1
             self.draw()
 
