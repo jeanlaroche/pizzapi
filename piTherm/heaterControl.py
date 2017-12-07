@@ -55,6 +55,7 @@ class heaterControl(object):
     lastImageChangeTime = 0
     showImage = 0
     listImagePeriodS = 600
+    heaterLogFile = 'heater.log'
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -63,6 +64,8 @@ class heaterControl(object):
         self.tempHistory = np.zeros(self.tempHistoryLengthS/self.updatePeriodS)
         schedule.hc = self
         self.lastIdleTime = time.time()
+        with open(self.heaterLogFile,'w') as fd:
+            pass
 
         def onTouch(s,down):
             self.onTouch(s,down)
@@ -139,12 +142,17 @@ class heaterControl(object):
         
     def updateImage(self):
         if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages):
-            print "UPDATING IMAGE"
-            self.imagePath = self.allImages[self.imageIdx]
-            self.lastImageChangeTime = time.time()
-            if self.showImage: self.draw()
-            self.imageIdx += 1
-            if self.imageIdx >= len(self.allImages): self.imageIdx = 0
+            self.mprint("UPDATING IMAGE")
+            # This can fail because we have another thread that could update allImages from under us.
+            try:
+                if self.imageIdx >= len(self.allImages): self.imageIdx = 0
+                self.imagePath = self.allImages[self.imageIdx]
+                self.lastImageChangeTime = time.time()
+                if self.showImage: self.draw()
+            except:
+                self.mprint("EXCEPTION DURING IMAGE UPDATE",logit=1)
+                return
+            
         
     def updateState(self):
         tempLow = self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp 
@@ -235,7 +243,7 @@ class heaterControl(object):
         print(msg)
         self.lastMsg = msg
         if logit:
-            with open('heater.log','a') as fd:
+            with open(self.heaterLogFile,'a') as fd:
                 fd.write(msg+'\n')
 
     def close(self):
