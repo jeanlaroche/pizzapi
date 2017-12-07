@@ -41,14 +41,18 @@ class heaterControl(object):
     timeBeforePauseMin = 15
     pauseLengthMin = 3
     timeBeforeImage = 30
+    imageChangePeriodS = 5
     lastIdleTime = 0
     pauseTime = float('inf')
     lastTurnOnForPause = float('inf')
     lastTurnOnTime = float('inf')
     state = state_off
     lastMsg = ''
-    imagePath = './image.jpg'
-    showImage = 0
+    imagePath = ''
+    imageDir = '/mnt/mainpc/images'
+    imageIdx=0
+    lastImageChangeTime = 0
+    showImage = 1
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -89,9 +93,29 @@ class heaterControl(object):
         self.scheduleThread.daemon = True
         self.mprint("Starting schedule thread")
         if doStart: self.scheduleThread.start()
+        self.mprint("Listing images")
+        self.listAllImages()
+        self.imagePath = self.allImages[self.imageIdx]
         self.mprint("Drawing")
         self.draw()
         self.mprint("Done")
+    
+    def listAllImages(self):
+        self.allImages = []
+        # First of, list all dirs!
+        for dirpath, dirnames, filenames in os.walk(self.imageDir):
+            break
+        np.random.shuffle(dirnames)
+        allDirs = dirnames
+        #print allDirs
+        for dir in allDirs[0:10]:
+            for dirpath, dirnames, filenames in os.walk(os.path.join(self.imageDir,dir)):
+                for file in filenames:
+                    if not '.jpg' in file: continue
+                    self.allImages.append(os.path.join(dirpath,file))
+                    # print os.path.join(dirpath,file)
+        np.random.shuffle(self.allImages)
+        self.mprint("{} images found".format(len(self.allImages)))
         
     def updateState(self):
         tempLow = self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp 
@@ -147,6 +171,16 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
         self.showHeater()
+        self.updateImage()
+        
+    def updateImage(self):
+        if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages):
+            print "UPDATING IMAGE"
+            self.imageIdx += 1
+            self.imageIdx %= len(self.allImages)
+            self.imagePath = self.allImages[self.imageIdx]
+            self.lastImageChangeTime = time.time()
+            if self.showImage: self.draw()
         
     def controlHeater(self):
         # Todo: maybe we need a maximum length of time the furnace can be on.

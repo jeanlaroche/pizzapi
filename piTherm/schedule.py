@@ -192,7 +192,7 @@ def redoSchedule():
     if not allTimes:
         # curTime is before any of the schedule entries, redo the latest one.
         allTimes = sorted([key for key in schedule.keys() if key > curTime]).reverse()
-    print allTimes
+    #print allTimes
     if allTimes: 
         for key in allTimes:
             if len(schedule[key]) == 1 or (thisDate.weekday() in schedule[key][1]):        
