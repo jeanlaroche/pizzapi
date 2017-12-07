@@ -188,7 +188,7 @@ def redoSchedule():
     thisDate = datetime.datetime.now()
     curTime = thisDate.strftime('%H:%M')
     allTimes = sorted([key for key in schedule.keys() if key <= curTime])
-    print "REDO SCHEDULE"
+    # print "REDO SCHEDULE"
     if not allTimes:
         # curTime is before any of the schedule entries, redo the latest one.
         allTimes = sorted([key for key in schedule.keys() if key > curTime]).reverse()

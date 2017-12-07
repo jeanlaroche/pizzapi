@@ -54,6 +54,8 @@ class heaterControl(object):
     imageIdx=0
     lastImageChangeTime = 0
     showImage = 0
+    listImagesNow = 0
+    listImagePeriodS = 600
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -93,9 +95,17 @@ class heaterControl(object):
         self.scheduleThread = Thread(target=doSchedule, args=(), group=None)
         self.scheduleThread.daemon = True
         self.mprint("Starting schedule thread")
+        
+        # List image timer:
+        def doListImages():
+            self.mprint("TIMER: ListImages")
+            Timer(self.listImagePeriodS, doListImages, ()).start()
+            self.listImagesNow = 1
+        Timer(10, doListImages, ()).start()
+        
         if doStart: self.scheduleThread.start()
-        self.listAllImages()
-        self.updateImage()
+        # self.listAllImages()
+        # self.updateImage()
         self.mprint("Drawing")
         self.draw()
         self.mprint("Done")
@@ -104,22 +114,34 @@ class heaterControl(object):
         self.mprint("Listing images")
         self.allImages = []
         # First of, list all dirs!
-        for dirpath, dirnames, filenames in os.walk(self.imageDir):
-            break
-        else: 
-            self.mprint("NO IMAGE FOUND")
-            return
-        np.random.shuffle(dirnames)
-        allDirs = dirnames
-        #print allDirs
-        for dir in allDirs[0:20]:
-            for dirpath, dirnames, filenames in os.walk(os.path.join(self.imageDir,dir)):
-                for file in filenames:
-                    if not '.jpg' in file: continue
-                    self.allImages.append(os.path.join(dirpath,file))
-                    # print os.path.join(dirpath,file)
-        np.random.shuffle(self.allImages)
+        try:
+            for dirpath, dirnames, filenames in os.walk(self.imageDir):
+                break
+            else: 
+                self.mprint("NO IMAGE FOUND")
+                return
+            np.random.shuffle(dirnames)
+            allDirs = dirnames
+            #print allDirs
+            for dir in allDirs[0:20]:
+                for dirpath, dirnames, filenames in os.walk(os.path.join(self.imageDir,dir)):
+                    for file in filenames:
+                        if not '.jpg' in file: continue
+                        self.allImages.append(os.path.join(dirpath,file))
+                        # print os.path.join(dirpath,file)
+            np.random.shuffle(self.allImages)
+        except:
+            self.mprint("ERROR DURING SCANNING")
         self.mprint("{} images found".format(len(self.allImages)))
+        
+    def updateImage(self):
+        if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages):
+            print "UPDATING IMAGE"
+            self.imagePath = self.allImages[self.imageIdx]
+            self.lastImageChangeTime = time.time()
+            if self.showImage: self.draw()
+            self.imageIdx += 1
+            if self.imageIdx >= len(self.allImages): self.imageIdx = 0
         
     def updateState(self):
         tempLow = self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp 
@@ -169,25 +191,17 @@ class heaterControl(object):
         if self.showImage == 0 and time.time() > self.lastIdleTime + self.timeBeforeImage and len(self.allImages):
             self.showImage = 1
             self.draw()
-
-        self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
-        self.mprint("pause time {:.0f}s ago -- last turn on for pause {:.0f}s ago".format(time.time()-self.pauseTime,time.time()-self.lastTurnOnForPause))
+            
+        self.mprint("State: {}".format(stateStr[self.state]))
+        #self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
+        #self.mprint("pause time {:.0f}s ago -- last turn on for pause {:.0f}s ago".format(time.time()-self.pauseTime,time.time()-self.lastTurnOnForPause))
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
         self.showHeater()
+        if self.listImagesNow: 
+            self.listAllImages()
+            self.listImagesNow = 0
         self.updateImage()
-        
-    def updateImage(self):
-        if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages):
-            print "UPDATING IMAGE"
-            self.imagePath = self.allImages[self.imageIdx]
-            self.lastImageChangeTime = time.time()
-            if self.showImage: self.draw()
-            self.imageIdx += 1
-            if self.imageIdx >= len(self.allImages):
-                self.imageIdx = 0
-                self.listAllImages()
-                return
         
     def controlHeater(self):
         # Todo: maybe we need a maximum length of time the furnace can be on.
@@ -214,7 +228,7 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this,logit=0):
+    def mprint(self,this,logit=1):
         import datetime
         # date = datetime.datetime.now().strftime('%m/%d %Hh%M:%S')
         date = datetime.datetime.now().strftime('%H:%M:%S')
@@ -334,7 +348,6 @@ class heaterControl(object):
         self.drawButtons(highlightButton)
         self.showRoomTemp()
         self.showTarget(self.targetTemp)
-        print "Calling update"
         self.display.rectList = [[0,0,self.display.xSize,self.display.ySize]]
         self.display.update()
 

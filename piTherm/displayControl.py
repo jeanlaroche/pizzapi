@@ -6,6 +6,8 @@ import subprocess
 import os
 from subprocess import *
 from threading import Timer, Thread
+import numpy as np
+import exifread
 
 inputDev = "/dev/input/event0"
 os.environ["SDL_FBDEV"] = "/dev/fb1"
@@ -151,11 +153,11 @@ class displayControl(object):
         else: return -1
 
     # define function for printing text in a specific place with a specific colour
-    def make_label(self, text, xpo, ypo, fontSize, colour, fullLine = 0):
+    def make_label(self, text, xpo, ypo, fontSize, colour, fullLine = 0,noBack=0):
         font=pygame.font.Font(None,fontSize)
         if fullLine: text += ' '*300
         label=font.render(str(text), 1, (colour))
-        self.screen.fill(self.bckColor,label.get_rect().move(xpo,ypo))
+        if not noBack: self.screen.fill(self.bckColor,label.get_rect().move(xpo,ypo))
         self.rectList.append(self.screen.blit(label,(xpo,ypo)))
 
     def make_circle(self,text,xpo,ypo,radius,colour):
@@ -172,10 +174,28 @@ class displayControl(object):
         self.rectList.append(R)
 
     def displayJPEG(self,imagePath):
-        img=pygame.image.load(imagePath)
-        imgsc = pygame.transform.smoothscale(img, (self.xSize, self.ySize))
-        self.screen.blit(imgsc,(0,0))
-        pygame.display.update()
+        import pdb
+        if not imagePath: return
+        # pdb.set_trace()
+        dateTaken = ''
+        try:
+            with open(imagePath, 'rb') as fh:
+                tags = exifread.process_file(fh, stop_tag="EXIF DateTimeOriginal")
+                dateTaken = tags["EXIF DateTimeOriginal"]
+                dateTaken = str(dateTaken).split()[0]
+            print "{} : {}".format(imagePath,dateTaken)
+            img=pygame.image.load(imagePath)
+            # Rescale by the larger of the two x/y factors.
+            #fact = np.max(np.array(img.get_size())/np.array([self.xSize,self.ySize]))
+            fact = np.max([1.*self.xSize/img.get_size()[0],1.*self.ySize/img.get_size()[1]])
+            newSize = [int(fact*img.get_size()[0]),int(fact*img.get_size()[1])]
+            
+            imgsc = pygame.transform.smoothscale(img, newSize)
+            self.screen.blit(imgsc,(0,0))
+            self.make_label(dateTaken,10,self.ySize-40,30,nred,noBack = 1)
+            pygame.display.update()
+        except:
+            pass
         
     def draw(self):
         # Set up the base menu you can customize your menu with the colors above
