@@ -151,8 +151,7 @@ class heaterControl(object):
                 if self.showImage: self.draw()
             except:
                 self.mprint("EXCEPTION DURING IMAGE UPDATE",logit=1)
-                return
-            
+            self.imageIdx += 1
         
     def updateState(self):
         tempLow = self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp 
