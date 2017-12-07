@@ -97,7 +97,7 @@ class heaterControl(object):
         
         # List image timer:
         def doListImages():
-            self.mprint("TIMER: ListImages")
+            self.mprint("TIMER: ListImages",logit=1)
             self.listAllImages()
             if len(self.allImages): Timer(self.listImagePeriodS, doListImages, ()).start()
             else: Timer(30, doListImages, ()).start()
@@ -135,7 +135,7 @@ class heaterControl(object):
             np.random.shuffle(self.allImages)
         except:
             self.mprint("ERROR DURING SCANNING")
-        self.mprint("{} images found".format(len(self.allImages)))
+        self.mprint("{} images found".format(len(self.allImages)),logit=1)
         
     def updateImage(self):
         if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages):
@@ -195,7 +195,6 @@ class heaterControl(object):
             self.showImage = 1
             self.draw()
             
-        self.mprint("State: {}".format(stateStr[self.state]))
         #self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
         #self.mprint("pause time {:.0f}s ago -- last turn on for pause {:.0f}s ago".format(time.time()-self.pauseTime,time.time()-self.lastTurnOnForPause))
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
@@ -228,7 +227,7 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this,logit=1):
+    def mprint(self,this,logit=0):
         import datetime
         # date = datetime.datetime.now().strftime('%m/%d %Hh%M:%S')
         date = datetime.datetime.now().strftime('%H:%M:%S')
@@ -367,8 +366,7 @@ class heaterControl(object):
         self.roomTemp = np.mean(self.tempHistory[self.tempHistory>0])
         self.humidity = humidity
         if not self.celcius: self.roomTemp = self.roomTemp * 1.8 + 32
-        #self.mprint("Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
-        self.mprint("Room temp {} {} {} data points. Hum: {}".format(curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
+        self.mprint("State: {} -- Room temp {} {} {} data points. Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()
