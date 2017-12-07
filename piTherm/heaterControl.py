@@ -49,6 +49,7 @@ class heaterControl(object):
     state = state_off
     lastMsg = ''
     imagePath = ''
+    allImages = []
     imageDir = '/mnt/mainpc/images'
     imageIdx=0
     lastImageChangeTime = 0
@@ -93,14 +94,14 @@ class heaterControl(object):
         self.scheduleThread.daemon = True
         self.mprint("Starting schedule thread")
         if doStart: self.scheduleThread.start()
-        self.mprint("Listing images")
         self.listAllImages()
-        self.imagePath = self.allImages[self.imageIdx]
+        self.updateImage()
         self.mprint("Drawing")
         self.draw()
         self.mprint("Done")
     
     def listAllImages(self):
+        self.mprint("Listing images")
         self.allImages = []
         # First of, list all dirs!
         for dirpath, dirnames, filenames in os.walk(self.imageDir):
@@ -108,7 +109,7 @@ class heaterControl(object):
         np.random.shuffle(dirnames)
         allDirs = dirnames
         #print allDirs
-        for dir in allDirs[0:10]:
+        for dir in allDirs[0:20]:
             for dirpath, dirnames, filenames in os.walk(os.path.join(self.imageDir,dir)):
                 for file in filenames:
                     if not '.jpg' in file: continue
@@ -176,11 +177,14 @@ class heaterControl(object):
     def updateImage(self):
         if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages):
             print "UPDATING IMAGE"
-            self.imageIdx += 1
-            self.imageIdx %= len(self.allImages)
             self.imagePath = self.allImages[self.imageIdx]
             self.lastImageChangeTime = time.time()
             if self.showImage: self.draw()
+            self.imageIdx += 1
+            if self.imageIdx >= len(self.allImages):
+                self.imageIdx = 0
+                self.listAllImages()
+                return
         
     def controlHeater(self):
         # Todo: maybe we need a maximum length of time the furnace can be on.
