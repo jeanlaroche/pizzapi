@@ -54,7 +54,6 @@ class heaterControl(object):
     imageIdx=0
     lastImageChangeTime = 0
     showImage = 0
-    listImagesNow = 0
     listImagePeriodS = 600
 
     def __init__(self,doStart=1):
@@ -99,8 +98,9 @@ class heaterControl(object):
         # List image timer:
         def doListImages():
             self.mprint("TIMER: ListImages")
-            Timer(self.listImagePeriodS, doListImages, ()).start()
-            self.listImagesNow = 1
+            self.listAllImages()
+            if len(self.allImages): Timer(self.listImagePeriodS, doListImages, ()).start()
+            else: Timer(30, doListImages, ()).start()
         Timer(10, doListImages, ()).start()
         
         if doStart: self.scheduleThread.start()
@@ -115,6 +115,9 @@ class heaterControl(object):
         self.allImages = []
         # First of, list all dirs!
         try:
+            for ii in range(10):
+                self.mprint("TRYING LISTING OF IMAGES")
+                os.system('ls {}'.format(self.imageDir))
             for dirpath, dirnames, filenames in os.walk(self.imageDir):
                 break
             else: 
@@ -198,9 +201,6 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
         self.showHeater()
-        if self.listImagesNow: 
-            self.listAllImages()
-            self.listImagesNow = 0
         self.updateImage()
         
     def controlHeater(self):
