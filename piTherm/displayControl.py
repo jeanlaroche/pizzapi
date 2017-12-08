@@ -219,13 +219,13 @@ class displayControl(object):
             #print self.rectList
         self.rectList = []
         
-    def startLoop(self):
+    def startLoop(self,hc):
         # Start two loops in two different threads.
         def _eventLoop():
             self.eventLoop()
         self.touchThread = Thread(target=_eventLoop, args=(), group=None)
         self.touchThread.daemon = True
-        print("Starting touch thread")
+        hc.mprint("Starting touch thread")
         self.touchThread.start()
         def _displayLoop():
             while self.stopNow == 0:
@@ -234,8 +234,9 @@ class displayControl(object):
                 
         self.displayThread = Thread(target=_displayLoop, args=(), group=None)
         self.displayThread.daemon = True
-        print("Starting display thread")
+        hc.mprint("Starting display thread")
         self.displayThread.start()
+        hc.mprint("DisplayControl starting done")
 
     def eventLoop(self):
         import pdb
@@ -273,9 +274,8 @@ class displayControl(object):
                 if self.stopNow: break
                 time.sleep(0.001)
             except:
-                pygame.quit()
-                break
-        
+                pass
+                
 if __name__ == '__main__':
     dc = displayControl()
     import time

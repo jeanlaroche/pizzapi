@@ -89,7 +89,7 @@ class heaterControl(object):
         # self.mprint("Starting display thread")
         # if doStart: self.touchThread.start()
         self.mprint("Starting display thread")
-        self.display.startLoop()
+        self.display.startLoop(self)
         
         # Schedule thread
         def doSchedule():
@@ -234,7 +234,7 @@ class heaterControl(object):
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this,logit=0):
+    def mprint(self,this,logit=1):
         import datetime
         # date = datetime.datetime.now().strftime('%m/%d %Hh%M:%S')
         date = datetime.datetime.now().strftime('%H:%M:%S')
@@ -286,8 +286,8 @@ class heaterControl(object):
             self.buttonPressed = self.display.findHit(s)
         else:
             self.lastIdleTime = time.time()
-        # if s.x < 20 and s.y < 20: 
-            # os.system('sudo reboot now')
+        if s.x < 40 and s.y < 40 and s.x>0 and s.y > 0: 
+            os.system('sudo reboot now')
         if down and self.waitForUp: return
         if self.buttonPressed > -1 and down:
             self.mprint("Heater control button: {}".format(self.buttonPressed))
@@ -303,7 +303,7 @@ class heaterControl(object):
         if self.buttonPressed == -1:
             if down:
                 inc = 5 if s.x > self.display.xSize - 50 else 1
-                if s.y > self.display.ySize/2: self.incTargetTemp(-inc)
+                if s.y > .35* self.display.ySize: self.incTargetTemp(-inc)
                 else: self.incTargetTemp(inc)
                 # self.setTargetTemp(int(65-.1*(s.y-self.display.ySize/2)))
             self.waitForUp = 1
