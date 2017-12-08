@@ -118,9 +118,9 @@ class heaterControl(object):
         self.allImages = []
         # First of, list all dirs!
         try:
-            for ii in range(10):
-                self.mprint("TRYING LISTING OF IMAGES")
-                os.system('ls {}'.format(self.imageDir))
+            # for ii in range(10):
+                # self.mprint("TRYING LISTING OF IMAGES")
+                # os.system('ls {}'.format(self.imageDir))
             for dirpath, dirnames, filenames in os.walk(self.imageDir):
                 break
             else: 
