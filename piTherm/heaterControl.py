@@ -37,7 +37,7 @@ class heaterControl(object):
     heaterToggleDeltaTemp = .5
     heaterToggleCount = 0
     heaterToggleMinCount = 2
-    maxContinuousOnTimeMin = 45
+    maxContinuousOnTimeMin = 70
     timeBeforePauseMin = 15
     pauseLengthMin = 3
     timeBeforeImage = 10
@@ -141,7 +141,7 @@ class heaterControl(object):
         self.mprint("{} images found".format(len(self.allImages)),logit=1)
         
     def updateImage(self):
-        if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages):
+        if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages) and self.showImage:
             self.mprint("UPDATING IMAGE")
             # This can fail because we have another thread that could update allImages from under us.
             try:
