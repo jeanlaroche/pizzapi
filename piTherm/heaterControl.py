@@ -74,7 +74,9 @@ class heaterControl(object):
         # Temp update thread.
         def updateTemp():
             while self.stopNow == 0:
+                self.mprint("UPDATE TEMP THREAD 0")
                 self.updateTemp()
+                self.mprint("UPDATE TEMP THREAD 1")
                 time.sleep(self.updatePeriodS)
         self.updateTempThread = Thread(target=updateTemp, args=(), group=None)
         self.updateTempThread.daemon = True
@@ -82,12 +84,6 @@ class heaterControl(object):
         if doStart: self.updateTempThread.start()
         
         # Display event loop thread.
-        # def eventLoop():
-            # self.display.eventLoop()
-        # self.touchThread = Thread(target=eventLoop, args=(), group=None)
-        # self.touchThread.daemon = True
-        # self.mprint("Starting display thread")
-        # if doStart: self.touchThread.start()
         self.mprint("Starting display thread")
         self.display.startLoop(self)
         
@@ -157,6 +153,7 @@ class heaterControl(object):
         tempLow = self.roomTemp <= self.targetTemp - self.heaterToggleDeltaTemp 
         tempHigh = self.roomTemp >= self.targetTemp + self.heaterToggleDeltaTemp
         
+        self.mprint("UPDATE STATE 0")
         if self.state == state_off:
             if tempLow:
                 self.heaterToggleCount += 1
@@ -198,16 +195,23 @@ class heaterControl(object):
             if tempHigh:
                 self.mprint("Temp high enough, resuming normal state",logit=1)
                 self.state = state_off
+        self.mprint("UPDATE STATE 1")
         if self.showImage == 0 and time.time() > self.lastIdleTime + self.timeBeforeImage and len(self.allImages):
             self.showImage = 1
+            self.mprint("UPDATE STATE 1a")
             self.draw()
+            self.mprint("UPDATE STATE 1b")
             
         #self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
         #self.mprint("pause time {:.0f}s ago -- last turn on for pause {:.0f}s ago".format(time.time()-self.pauseTime,time.time()-self.lastTurnOnForPause))
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
+        self.mprint("UPDATE STATE 2")
         GPIO.output(self.relayGPIO,self.heaterOn)
+        self.mprint("UPDATE STATE 3")
         self.showHeater()
+        self.mprint("UPDATE STATE 4")
         self.updateImage()
+        self.mprint("UPDATE STATE 5")
         
     def controlHeater(self):
         # Todo: maybe we need a maximum length of time the furnace can be on.
@@ -346,16 +350,27 @@ class heaterControl(object):
         self.display.make_label("Humidity {}".format(self.humidity),X-64,Y+40,30,dc.nteal)
 
     def draw(self,highlightButton=-1):
+        self.mprint("SELF DRAW 0")
         if self.showImage:
+            self.mprint("SELF DRAW 1")
             self.display.displayJPEG(self.imagePath)
-            self.display.update()
+            self.mprint("SELF DRAW 2")
+            # JEAN: NOT NEEDED!
+            #self.display.update()
+            self.mprint("SELF DRAW 3")
             return
+        self.mprint("SELF DRAW 4")
         self.display.screen.fill(dc.black)
+        self.mprint("SELF DRAW 5")
         self.drawButtons(highlightButton)
+        self.mprint("SELF DRAW 6")
         self.showRoomTemp()
+        self.mprint("SELF DRAW 7")
         self.showTarget(self.targetTemp)
         self.display.rectList = [[0,0,self.display.xSize,self.display.ySize]]
-        self.display.update()
+        # JEAN NOT NEEDED
+        #self.display.update()
+        self.mprint("SELF DRAW END")
 
     def showHeater(self):
         if self.showImage: return
@@ -377,11 +392,16 @@ class heaterControl(object):
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()
+        self.mprint('UPDATE TEMP 03')
         self.showHeater()
+        self.mprint('UPDATE TEMP 04')
         #self.controlHeater()
         self.updateState()
+        self.mprint('UPDATE TEMP 05')
         self.printQueue()
+        self.mprint('UPDATE TEMP 06')
         schedule.logHeaterUse()
+        self.mprint('UPDATE TEMP END')
         
     def printQueue(self):
         with open('queue.txt','w') as fd:
@@ -394,18 +414,22 @@ class heaterControl(object):
             time.sleep(1)
                     
     def showUptime(self):
+        self.mprint('Uptime00')
         if self.showImage: return
         # get uptime from the linux terminal command
         from subprocess import check_output
         import re
         uptime = check_output(["uptime"])
         uptime = re.sub('[\d]+ user[s]*,.*load(.*),.*,.*', 'load\\1', uptime).strip()
+        self.mprint('Uptime01')
         # self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 50, 300, 40))
         self.display.make_label(uptime, self.display.xSize / 2, 50, 20, dc.nblue)
+        self.mprint('Uptime02')
         #self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 70, 300, 40))
         #self.display.make_label(self.lastMsg, self.display.xSize / 2, 70, 20, dc.nblue)
         #self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
         self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 20, dc.nblue, fullLine=1)
+        self.mprint('UptimeEnd')
         
     def grabLog(self):
         with open('heater.log','r') as f:

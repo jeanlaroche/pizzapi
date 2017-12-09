@@ -187,12 +187,13 @@ def readSchedule(file,verbose=0):
 def redoSchedule():
     thisDate = datetime.datetime.now()
     curTime = thisDate.strftime('%H:%M')
-    allTimes = sorted([key for key in schedule.keys() if key <= curTime])
-    # print "REDO SCHEDULE"
+    allTimes = sorted([key for key in schedule.keys() if key <= curTime]).reverse()
+    # if allTimes: hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
     if not allTimes:
         # curTime is before any of the schedule entries, redo the latest one.
-        allTimes = sorted([key for key in schedule.keys() if key > curTime]).reverse()
-    #print allTimes
+        allTimes = sorted(schedule.keys(),reverse=1)
+        print allTimes
+    # hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
     if allTimes: 
         for key in allTimes:
             if len(schedule[key]) == 1 or (thisDate.weekday() in schedule[key][1]):        

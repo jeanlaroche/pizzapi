@@ -8,13 +8,13 @@
 
 
 # Monday Friday
-06:55 65 M-F
+06:55 64 M-F
 09:00 60 M-F
 # Week ends
-08:15 65 WE
+08:15 64 WE
 10:00 60 WE
 # Evening and night.
-17:00 65
+17:00 64
 23:00 50
 
 

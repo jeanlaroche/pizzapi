@@ -92,9 +92,11 @@ class displayControl(object):
     down = 0
     rectList = []
     bckColor = black
+    hc = None
 
-    def __init__(self,touchCallback = None):
+    def __init__(self,touchCallback = None,heatercontrol=None):
         # Initialize pygame and hide mouse
+        self.hc = heatercontrol
         print "Initpygame"
         size = width, height = self.xSize, self.ySize
         print "set mode"
@@ -103,7 +105,7 @@ class displayControl(object):
         def alarm_handler(signum, frame):
             raise Alarm
         signal(SIGALRM, alarm_handler)
-        alarm(2)
+        alarm(5)
         try:
             pygame.init()
             self.screen = pygame.display.set_mode(size) 
@@ -193,7 +195,9 @@ class displayControl(object):
             imgsc = pygame.transform.smoothscale(img, newSize)
             self.screen.blit(imgsc,(0,0))
             self.make_label(dateTaken,10,self.ySize-40,30,nred,noBack = 1)
-            pygame.display.update()
+            self.rectList.append([0,0,self.xSize,self.ySize])
+            # JEAN: THIS SHOULD NOT BE CALLED HERE< I DON"T THINK.
+            #pygame.display.update()
         except:
             pass
         
@@ -274,6 +278,7 @@ class displayControl(object):
                 if self.stopNow: break
                 time.sleep(0.001)
             except:
+                self.hc.mprint("ERROR IN TOUCH LOOP")
                 pass
                 
 if __name__ == '__main__':
