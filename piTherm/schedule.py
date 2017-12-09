@@ -18,6 +18,7 @@ lastTempTime             =    0     # When the temp changes, time of the last me
 
 statLogFile             = '/home/pi/piTherm/Stats.txt'
 statLogF                = open(statLogFile,'a',0)
+vacation = 0       # Set to one to make the schedule act as if today is a WE no matter the day
 
 hc = None
 
@@ -195,8 +196,9 @@ def redoSchedule():
         print allTimes
     # hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
     if allTimes: 
+        weekDay = thisDate.weekday() if not vacation else 5
         for key in allTimes:
-            if len(schedule[key]) == 1 or (thisDate.weekday() in schedule[key][1]):        
+            if len(schedule[key]) == 1 or (weekday in schedule[key][1]):        
                 hc.mprint("Redoing schedule for {} setting target to {}F".format(key,schedule[key][0]))
                 if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))
                 todo[key] = 0
@@ -230,7 +232,8 @@ def openAndRun(heaterControl):
         if curTime in schedule.keys() and todo[curTime] == 1:
             # Execute the schedule if todo is 1 for this event.
             # Check the day of the week! Execute if there's no week day indication or the current week day is in!
-            if len(schedule[curTime]) == 1 or (thisDate.weekday() in schedule[curTime][1]):
+            weekDay = thisDate.weekday() if not vacation else 5
+            if len(schedule[curTime]) == 1 or (weekday in schedule[curTime][1]):
                 hc.mprint("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime][0]))
                 if not hc.holding: hc.setTargetTemp(int(schedule[curTime][0]))
                 todo[curTime] = 0

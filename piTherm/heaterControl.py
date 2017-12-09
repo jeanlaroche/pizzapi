@@ -33,6 +33,7 @@ class heaterControl(object):
     sensorPin = 5
     celcius = 0
     holding = 0
+    vacation = 0
     heaterOn = 0
     heaterToggleDeltaTemp = .5
     heaterToggleCount = 0
@@ -276,6 +277,12 @@ class heaterControl(object):
         self.drawButtons()
         self.mprint("HOLD")
 
+    def onVacation(self):
+        self.vacation = 1-self.vacation
+        schedule.vacation = self.vacation
+        self.drawButtons()
+        self.mprint("VACATION")
+
     def incTargetTemp(self,inc):
         self.setTargetTemp(self.targetTemp + inc)
 
@@ -302,7 +309,8 @@ class heaterControl(object):
             if self.buttonPressed == 0: self.onTempOff()
             if self.buttonPressed == 1: self.onRun()
             if self.buttonPressed == 2: self.onHold()
-            if self.buttonPressed == 3: self.setTargetTemp(66)
+            if self.buttonPressed == 3: self.setTargetTemp(64)
+            if self.buttonPressed == 4: self.onVacation()
             self.waitForUp = 1
         if self.buttonPressed == -1:
             if down:
@@ -331,8 +339,8 @@ class heaterControl(object):
         buttY=50
         margin=10
         startX = margin
-        colors = [dc.nocre]*4
-        if highlightButton > -1: colors[highlightButton] = dc.nred
+        colors = [dc.nocre]*5
+        if highlightButton != -1: colors[highlightButton] = dc.nred
         self.display.make_button("Off",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[0])
         startX += buttX+margin
         self.display.make_button("Run",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[1])
@@ -340,7 +348,10 @@ class heaterControl(object):
         if self.holding: colors[2] = dc.nred
         self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[2])
         startX += buttX+margin
-        self.display.make_button("66F",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[3])
+        self.display.make_button("64F",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[3])
+        if self.vacation: colors[4] = dc.nred
+        startX += buttX+margin
+        self.display.make_button("Vac",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[4])
 
     def showRoomTemp(self,):
         if self.showImage: return
@@ -374,7 +385,7 @@ class heaterControl(object):
 
     def showHeater(self):
         if self.showImage: return
-        self.display.make_disk(self.display.xSize-30,self.display.ySize-30,10,dc.nteal if not self.heaterOn else dc.nred)
+        self.display.make_disk(self.display.xSize-20,self.display.ySize-30,10,dc.nteal if not self.heaterOn else dc.nred)
         
     def updateTemp(self):
         humidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
