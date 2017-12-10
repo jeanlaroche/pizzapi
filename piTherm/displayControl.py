@@ -175,7 +175,7 @@ class displayControl(object):
         pygame.draw.circle(self.screen,colour,(xpo,ypo),radius,0)
         self.rectList.append(R)
 
-    def displayJPEG(self,imagePath):
+    def displayJPEG(self,imagePath,finalCheckFun):
         import pdb
         if not imagePath: return
         # pdb.set_trace()
@@ -193,9 +193,11 @@ class displayControl(object):
             newSize = [int(fact*img.get_size()[0]),int(fact*img.get_size()[1])]
             
             imgsc = pygame.transform.smoothscale(img, newSize)
-            self.screen.blit(imgsc,(0,0))
-            self.make_label(dateTaken,10,self.ySize-40,30,nred,noBack = 1)
-            self.rectList.append([0,0,self.xSize,self.ySize])
+            # This is a kludge
+            if finalCheckFun():
+                self.screen.blit(imgsc,(0,0))
+                self.make_label(dateTaken,10,self.ySize-40,30,nred,noBack = 1)
+                self.rectList.append([0,0,self.xSize,self.ySize])
             # JEAN: THIS SHOULD NOT BE CALLED HERE< I DON"T THINK.
             #pygame.display.update()
         except:

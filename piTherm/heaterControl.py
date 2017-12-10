@@ -363,8 +363,10 @@ class heaterControl(object):
     def draw(self,highlightButton=-1):
         self.mprint("SELF DRAW 0")
         if self.showImage:
+            def finalCheck():
+                return self.showImage
             self.mprint("SELF DRAW 1")
-            self.display.displayJPEG(self.imagePath)
+            self.display.displayJPEG(self.imagePath,finalCheck)
             self.mprint("SELF DRAW 2")
             # JEAN: NOT NEEDED!
             #self.display.update()
