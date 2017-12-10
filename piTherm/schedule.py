@@ -188,8 +188,8 @@ def readSchedule(file,verbose=0):
 def redoSchedule():
     thisDate = datetime.datetime.now()
     curTime = thisDate.strftime('%H:%M')
-    allTimes = sorted([key for key in schedule.keys() if key <= curTime]).reverse()
-    # if allTimes: hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
+    allTimes = sorted([key for key in schedule.keys() if key <= curTime],reverse=1)
+    #if allTimes: hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
     if not allTimes:
         # curTime is before any of the schedule entries, redo the latest one.
         allTimes = sorted(schedule.keys(),reverse=1)
@@ -198,7 +198,7 @@ def redoSchedule():
     if allTimes: 
         weekDay = thisDate.weekday() if not vacation else 5
         for key in allTimes:
-            if len(schedule[key]) == 1 or (weekday in schedule[key][1]):        
+            if len(schedule[key]) == 1 or (weekDay in schedule[key][1]):        
                 hc.mprint("Redoing schedule for {} setting target to {}F".format(key,schedule[key][0]))
                 if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))
                 todo[key] = 0
@@ -233,7 +233,7 @@ def openAndRun(heaterControl):
             # Execute the schedule if todo is 1 for this event.
             # Check the day of the week! Execute if there's no week day indication or the current week day is in!
             weekDay = thisDate.weekday() if not vacation else 5
-            if len(schedule[curTime]) == 1 or (weekday in schedule[curTime][1]):
+            if len(schedule[curTime]) == 1 or (weekDay in schedule[curTime][1]):
                 hc.mprint("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime][0]))
                 if not hc.holding: hc.setTargetTemp(int(schedule[curTime][0]))
                 todo[curTime] = 0
