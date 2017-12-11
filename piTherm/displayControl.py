@@ -191,11 +191,12 @@ class displayControl(object):
             #fact = np.max(np.array(img.get_size())/np.array([self.xSize,self.ySize]))
             fact = np.max([1.*self.xSize/img.get_size()[0],1.*self.ySize/img.get_size()[1]])
             newSize = [int(fact*img.get_size()[0]),int(fact*img.get_size()[1])]
-            
             imgsc = pygame.transform.smoothscale(img, newSize)
+            # Now, if imgsc.get_size() is a lot more vertical than the screen, let's scroll
+            vOffset = int((imgsc.get_size()[1]-self.ySize)*.3)
             # This is a kludge
             if finalCheckFun():
-                self.screen.blit(imgsc,(0,0))
+                self.screen.blit(imgsc,(0,0),area=[0,vOffset,self.xSize,self.ySize])
                 self.make_label(dateTaken,10,self.ySize-40,30,nred,noBack = 1)
                 self.rectList.append([0,0,self.xSize,self.ySize])
             # JEAN: THIS SHOULD NOT BE CALLED HERE< I DON"T THINK.
