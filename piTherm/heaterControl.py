@@ -97,7 +97,6 @@ class heaterControl(object):
         
         # List image timer:
         def doListImages():
-            self.mprint("TIMER: ListImages",logit=1)
             self.listAllImages()
             if len(self.allImages): Timer(self.listImagePeriodS, doListImages, ()).start()
             else: Timer(30, doListImages, ()).start()
@@ -111,13 +110,9 @@ class heaterControl(object):
         self.mprint("Done")
     
     def listAllImages(self):
-        self.mprint("Listing images")
         self.allImages = []
         # First of, list all dirs!
         try:
-            # for ii in range(10):
-                # self.mprint("TRYING LISTING OF IMAGES")
-                # os.system('ls {}'.format(self.imageDir))
             for dirpath, dirnames, filenames in os.walk(self.imageDir):
                 break
             else: 
@@ -139,7 +134,6 @@ class heaterControl(object):
         
     def updateImage(self):
         if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages) and self.showImage:
-            self.mprint("UPDATING IMAGE")
             # This can fail because we have another thread that could update allImages from under us.
             try:
                 if self.imageIdx >= len(self.allImages): self.imageIdx = 0
@@ -222,18 +216,15 @@ class heaterControl(object):
             self.showHeater()
         else:
             self.heaterToggleCount = 0
-        #self.mprint("Toggle count {}".format(self.heaterToggleCount))
         if self.heaterOn and time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60:
             self.heaterOn = 0
             self.state = state_on_too_long
-        self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime)),
-        # self.mprint(" Last turn on time: {:.0f}s ago".format(time.time()-self.lastTurnOnTime))
+        #self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime)),
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
     def mprint(self,this,logit=1):
         import datetime
-        # date = datetime.datetime.now().strftime('%m/%d %Hh%M:%S')
         date = datetime.datetime.now().strftime('%H:%M:%S')
         msg = date + ' ' + this
         print(msg)
@@ -293,7 +284,7 @@ class heaterControl(object):
             os.system('sudo reboot now')
         if down and self.waitForUp: return
         if self.buttonPressed > -1 and down:
-            self.mprint("Heater control button: {}".format(self.buttonPressed))
+            #self.mprint("Heater control button: {}".format(self.buttonPressed))
             self.drawButtons(highlightButton=self.buttonPressed)
             def foo():
                 self.drawButtons()
