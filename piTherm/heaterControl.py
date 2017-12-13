@@ -70,7 +70,7 @@ class heaterControl(object):
 
         def onTouch(s,down):
             self.onTouch(s,down)
-        self.display = dc.displayControl(onTouch)
+        self.display = dc.displayControl(onTouch,self)
 
         # Temp update thread.
         def updateTemp():
@@ -132,8 +132,8 @@ class heaterControl(object):
             self.mprint("ERROR DURING SCANNING")
         self.mprint("{} images found".format(len(self.allImages)),logit=1)
         
-    def updateImage(self):
-        if time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages) and self.showImage:
+    def updateImage(self,doit=0):
+        if (time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages) and self.showImage) or doit:
             # This can fail because we have another thread that could update allImages from under us.
             try:
                 if self.imageIdx >= len(self.allImages): self.imageIdx = 0
@@ -270,12 +270,21 @@ class heaterControl(object):
         self.setTargetTemp(self.targetTemp + inc)
 
     def onTouch(self,s,down):
-        # print s.x,s.y
+        # print s.x,s.y,down
         if self.showImage:
-            if down: return
-            self.showImage = 0
-            self.draw()
-            self.showUptime()
+            if down and self.waitForUp: return
+            if s.x < 100 and s.x > 0:
+                # print "PREVIOUS IMAGE"
+                self.imageIdx -= 2
+                self.updateImage(doit=1)
+                self.waitForUp = 1
+                return
+            elif s.x>0:
+                self.showImage = 0
+                self.draw()
+                self.showUptime()
+                self.waitForUp = 1
+                return
         if down:
             self.buttonPressed = self.display.findHit(s)
         else:
