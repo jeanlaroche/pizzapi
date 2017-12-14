@@ -8,6 +8,7 @@ import time, os
 import pygame
 import Adafruit_DHT
 import schedule
+import json
 
 state_off = 0
 state_on = 1
@@ -57,6 +58,7 @@ class heaterControl(object):
     showImage = 0
     listImagePeriodS = 600
     heaterLogFile = 'heater.log'
+    statusFile = 'heater.json'
 
     def __init__(self,doStart=1):
         # Init GPIO
@@ -101,10 +103,18 @@ class heaterControl(object):
             if len(self.allImages): Timer(self.listImagePeriodS, doListImages, ()).start()
             else: Timer(30, doListImages, ()).start()
         Timer(10, doListImages, ()).start()
-        
         if doStart: self.scheduleThread.start()
-        # self.listAllImages()
-        # self.updateImage()
+        
+        # Read the status file if there's one.
+        with open(self.statusFile,'r') as f:
+            try:
+                jsonStat = json.load(f)
+                if 'holding' in jsonStat and jsonStat['holding']:
+                    self.holding = 1
+                    self.setTargetTemp(jsonStat['targetTemp'])
+            except:
+                pass
+        
         self.mprint("Drawing")
         self.draw()
         self.mprint("Done")
@@ -249,16 +259,23 @@ class heaterControl(object):
     def onTempOff(self):
         self.setTargetTemp(50)
         self.mprint("TEMP OFF")
+        
+    def writeStatus(self):
+        with open(self.statusFile,'w') as f:
+            json.dump({'holding':self.holding,'targetTemp':self.targetTemp},f)
 
     def onRun(self):
         self.holding = 0
         schedule.redoSchedule()
         self.mprint("RUN")
+        self.writeStatus()
 
     def onHold(self):
         self.holding = 1-self.holding
         self.drawButtons()
         self.mprint("HOLD")
+        self.writeStatus()
+
 
     def onVacation(self):
         self.vacation = 1-self.vacation
