@@ -382,7 +382,7 @@ class heaterControl(object):
         self.roomTemp = np.mean(self.tempHistory[self.tempHistory>0])
         self.humidity = humidity
         if not self.celcius: self.roomTemp = self.roomTemp * 1.8 + 32
-        self.mprint("State: {} -- Room temp {} {} {} data points. Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,len(self.tempHistory[self.tempHistory>0]),humidity))
+        self.mprint("State: {} -- Room temp {} {}. Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,humidity))
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()

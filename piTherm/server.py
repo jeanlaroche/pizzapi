@@ -58,7 +58,13 @@ def _schedule():
     print "Schedule"
     hc.onRun()
     return ""
-        
+
+@app.route("/_hold")
+def _hold():
+    print "HOLD"
+    hc.onHold()
+    return jsonify(holding=hc.holding)
+    
 @app.route("/_pageUnload")
 def _pageUnload():
     print "PAGE UNLOADED"
@@ -70,7 +76,7 @@ def _getData():
     roomTemp = np.round(hc.roomTemp,decimals=1)
     stats = hc.grabLog()
     stats = ''.join(stats)
-    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats)
+    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats,holding=hc.holding)
 
 
 def GetUptime():

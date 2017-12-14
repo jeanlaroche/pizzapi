@@ -75,6 +75,13 @@ span {font-weight: bold;}
 		$.get('/_schedule');
 	}
 
+	function onHold() {
+		$.getJSON('/_hold', function(data)
+		{
+			$("#Hold").attr('style',data.holding == 0 ? 'color:white' : 'color:red');
+		});
+	}
+
 	// Read all temps, when the page is reloaded.
 	function getFullData() {
 		$.getJSON('/_getFullData');
@@ -100,6 +107,7 @@ span {font-weight: bold;}
 				//$("#heaterStats0").text(data.heaterStats[1]);
 				// To set a color, set the style to "color:red"
 				$("#heaterValue").attr('style',data.heaterOn == 0 ? 'color:white' : 'color:red');
+				$("#Hold").attr('style',data.holding == 0 ? 'color:white' : 'color:red');
 				//$("#Up").attr('disabled',data.allowControl ? false : true);
 				//$("#Down").attr('disabled',data.allowControl ? false : true);
 				//$("#Sche").attr('disabled',data.allowControl ? false : true);
@@ -202,10 +210,11 @@ span {font-weight: bold;}
     <p><h2>Target Temp: <span id="targetTemp"></span> F</h2></p>
     <p><h2>Humidity: <span id="humidity"></span> %</h2></p>
 	<div data-role="fieldcontain">
-		<fieldset class="ui-grid-b">
+		<fieldset class="ui-grid-c">
 			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>
 			<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">DOWN</button></div>
 			<div class="ui-block-c"><button name="Sched" id="Sche" onclick="onSchedule()" data-theme="d">SCHED</button></div>
+			<div class="ui-block-d"><button name="Hold" id="Hold" onclick="onHold()" data-theme="d">HOLD</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 	</div>
