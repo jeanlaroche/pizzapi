@@ -76,6 +76,8 @@ def _getData():
     roomTemp = np.round(hc.roomTemp,decimals=1)
     stats = hc.grabLog()
     stats = ''.join(stats)
+    stats = schedule.computeGraphData()
+    print stats
     return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats,holding=hc.holding)
 
 

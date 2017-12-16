@@ -18,7 +18,7 @@ stateStr = ['Heater off','Heater on','Heater on too long','Heater paused']
 
 class heaterControl(object):
     roomTemp = 0
-    roomTempAdjust = +2
+    roomTempAdjust = 0
     targetTemp = 0
     updatePeriodS = 5
     tempHistoryLengthS = 120
@@ -30,7 +30,7 @@ class heaterControl(object):
 
     tempHistory = []
     _targetTemp = 0
-    sensor = Adafruit_DHT.DHT11
+    sensor = Adafruit_DHT.DHT22
     sensorPin = 5
     celcius = 0
     holding = 0
@@ -367,7 +367,7 @@ class heaterControl(object):
         X,Y,R=120,120,100
         # self.display.screen.fill(dc.black, rect=pygame.Rect(X-R, Y-R, 2*R, 2*R))
         self.display.make_circle("{:.1f}".format((self.roomTemp)), X, Y, R, dc.nred)
-        self.display.make_label("Humidity {}".format(self.humidity),X-64,Y+40,30,dc.nteal)
+        self.display.make_label("Humidity {:.0f}%".format(self.humidity),X-65,Y+38,30,dc.nteal)
 
     def draw(self,highlightButton=-1):
         if self.showImage:
@@ -399,7 +399,7 @@ class heaterControl(object):
         self.roomTemp = np.mean(self.tempHistory[self.tempHistory>0])
         self.humidity = humidity
         if not self.celcius: self.roomTemp = self.roomTemp * 1.8 + 32
-        self.mprint("State: {} -- Room temp {} {}. Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,humidity))
+        self.mprint("State: {} -- Room temp {:.2f} {:.2f}. Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,humidity))
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()
