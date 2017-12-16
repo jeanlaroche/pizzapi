@@ -365,8 +365,10 @@ class heaterControl(object):
     def showRoomTemp(self,):
         if self.showImage: return
         X,Y,R=120,120,100
+        if self.celcius: roomTemp = (self.roomTemp - 32) / 1.8
+        else: roomTemp = self.roomTemp
         # self.display.screen.fill(dc.black, rect=pygame.Rect(X-R, Y-R, 2*R, 2*R))
-        self.display.make_circle("{:.1f}".format((self.roomTemp)), X, Y, R, dc.nred)
+        self.display.make_circle("{:.1f}".format((roomTemp)), X, Y, R, dc.nred)
         self.display.make_label("Humidity {:.0f}%".format(self.humidity),X-65,Y+38,30,dc.nteal)
 
     def draw(self,highlightButton=-1):
@@ -397,9 +399,9 @@ class heaterControl(object):
         self.tempHistory[0]=curTemp
         prevRoomTemp = round(self.roomTemp)
         self.roomTemp = np.mean(self.tempHistory[self.tempHistory>0])
-        self.humidity = humidity
-        if not self.celcius: self.roomTemp = self.roomTemp * 1.8 + 32
-        self.mprint("State: {} -- Room temp {:.2f} {:.2f}. Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,humidity))
+        self.humidity = np.round(humidity,decimals=1)
+        self.roomTemp = self.roomTemp * 1.8 + 32
+        self.mprint("State: {} -- Room temp {:.2f}C {:.2f}F Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,self.humidity))
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()

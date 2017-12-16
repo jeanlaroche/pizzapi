@@ -111,6 +111,7 @@ span {font-weight: bold;}
 				//$("#Up").attr('disabled',data.allowControl ? false : true);
 				//$("#Down").attr('disabled',data.allowControl ? false : true);
 				//$("#Sche").attr('disabled',data.allowControl ? false : true);
+				redraw()
 				//if (data.newHeaterData) redraw();
 				// These would also work!
 				// document.getElementById("heaterValue").style="color:green";
@@ -143,46 +144,42 @@ span {font-weight: bold;}
     );
 	
 	function redraw() {
-		$.getJSON('/_getTubStatus', function(data) {
+		$.getJSON('/_getData', function(data) {
 			Plots = document.getElementById('Plots');
 			//Plots.style = {width:window.innerWidth , height:150};
-			var X = data.heaterTime;
-			var Y = data.heaterValue;
-			var XLabels = data.heaterLabel;
-			var XTicks = data.heaterTicks;
+			var X = data.X;
+			var Y = data.Y;
+			//var XLabels = data.heaterLabel;
+			//var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
 			var layout = { margin: { t: 30, l:20, r:20 },
 			  xaxis: {
 				title: 'Hour',
-				showgrid: false,
-				zeroline: false,
+				showgrid: true,
+				showline: true,
 				color: 'rgba(256,256,0,1)',
-				tickvals: XTicks,
-				ticktext: XLabels,
-				tickangle: 0,
+				//tickvals: XTicks,
+				//ticktext: XLabels,
+				//tickangle: 0,
 			  },
 				paper_bgcolor : 'rgba(0,0,0,0)',
 				plot_bgcolor : 'rgba(0,0,0,0)',
 			yaxis: {
 				title: '',
 				showline: true,
-				showgrid: false,
-				tickvals: [0,1],
-				ticktext: ['0','1'],
+				showgrid: true,
+				//tickvals: [0,1],
+				//ticktext: ['0','1'],
 				color: 'rgba(256,256,0,1)'
 			  },
 			showlegend : false,
-			title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
+			//title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
 			titlefont: {color: 'yellow'},
 			  };
 			$("#Stats").text(data.stats);
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
-			Plotly.newPlot( Plots, [{x: X,y: Y, fill: 'tozeroy'}], layout );
-			//Plotly.plot( Plots, [{x: [0,0],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
-			Plotly.plot( Plots, [{x: [12,12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
-			Plotly.plot( Plots, [{x: [hours,hours],y: [0,1], mode: 'lines', line : {color : 'white', width : 2, dash : 'dash'}}], layout );
-			//Plotly.plot( Plots, [{x: [24,24],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
+			Plotly.newPlot( Plots, [{x: X,y: Y}], layout );
 			});
 	}
 	
@@ -192,7 +189,7 @@ span {font-weight: bold;}
 //		$.getJSON('/_tempUp');
 //		}
 		function() {
-			//redraw()
+			redraw()
 		}
     );
 	
@@ -222,11 +219,11 @@ span {font-weight: bold;}
  <div data-role="footer">
     <div ><h4><span id="lastMessage" ></span></h4></div>
     <div><h4><span id="upTime" ></span></h4></div>
-    <div ><h2>Heater Usage:</h2></div>
+    <div ><h2>Temperature:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
-<!-- <div id="Plots" style="width:auto;height:250px;"></div>
-<fieldset class="ui-grid-d">
+<div id="Plots" style="width:auto;height:250px;"></div>
+<!-- <fieldset class="ui-grid-d">
 	<div class="ui-block-a">
 		<button id="prevDay"  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
 	</div>

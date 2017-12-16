@@ -59,14 +59,19 @@ def computeGraphData():
     
     # Extract the part of the log that correspond to the period we're interested in.
     stats = ''
+    X = []
+    Y = []
     for line in allLines[-1:0:-1]:
         if not line: continue
+        if 'H' in line: continue
         allFields = line.split()
         lineHour = float(allFields[1])
         # In fact, go back 4 more hours in the past.
         if lineHour > startHour - 4 and lineHour < endHour:
             stats += ' '.join([allFields[6],allFields[0],allFields[2]]+allFields[8:])+'\n'
-    return stats
+            X.append(lineHour-startHour)
+            Y.append(float(allFields[2]))
+    return stats,X,Y
     
     A = [item for item  in heaterData if item[0] < endHour and item[0] > startHour]
     B = [];
@@ -123,19 +128,19 @@ def logHeaterUse():
     if not lastHeaterOn == hc.heaterOn and not lastHeaterOn == -1:
         fileUpdated = 1
         if lastHeaterOn == 0:
-            statLogF.write("H {:.1f} {} {}\n".format(curTime,hc.heaterOn,timeStr))
+            statLogF.write("H {:.2f} {} {}\n".format(curTime,hc.heaterOn,timeStr))
         else:
             elapsedTime = curTime - lastHeaterOnTime
-            statLogF.write("H {:.1f} {} {} -- {} Set: {}\n".format(curTime,hc.heaterOn,timeStr,printHours(elapsedTime),hc.targetTemp))
+            statLogF.write("H {:.2f} {} {} -- {} Set: {}\n".format(curTime,hc.heaterOn,timeStr,printHours(elapsedTime),hc.targetTemp))
         lastHeaterOnTime = curTime
     # To avoid logging the temp every time we start.
     if lastRoomTemp == -1 and hc.roomTemp: lastRoomTemp = hc.roomTemp
     
     # if not lastRoomTemp == hc.roomTemp and hc.roomTemp:
-    if np.abs(lastRoomTemp - hc.roomTemp) >= 0.5 and hc.roomTemp:
-        # Check that the last previous temps was at least 2 minutes ago: the temp has been different for 
+    if np.abs(lastRoomTemp - hc.roomTemp) >= 0.2 and hc.roomTemp:
+        # Check that the last previous temps was at least 1 minutes ago: the temp has been different for 
         # at least 4 minutes. Otherwise just wait.
-        if 60*(curTime - lastTempTime) > 2:
+        if 60*(curTime - lastTempTime) > 1:
             statLogF.write("T {:.1f} {:.1f} {}\n".format(curTime,hc.roomTemp,timeStr))
             lastRoomTemp = hc.roomTemp
     else:

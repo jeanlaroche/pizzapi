@@ -74,11 +74,11 @@ def _pageUnload():
 def _getData():
     print "Get Data"
     roomTemp = np.round(hc.roomTemp,decimals=1)
-    stats = hc.grabLog()
-    stats = ''.join(stats)
-    stats = schedule.computeGraphData()
+    # stats= hc.grabLog()
+    # stats = ''.join(stats)
+    stats,X,Y = schedule.computeGraphData()
     print stats
-    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats,holding=hc.holding)
+    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats,holding=hc.holding,X=X,Y=Y)
 
 
 def GetUptime():
@@ -107,6 +107,7 @@ preStart()
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
+    _getData()
     app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
     hc.close()
     print "TEARDOWN"
