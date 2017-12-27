@@ -18,69 +18,37 @@ span {font-weight: bold;}
 <script type=text/javascript>
 	
 	// Javascript function for up button
-	function onTempUp() {
-		$.getJSON('/_tempUp', function(data)
+	function onHumidityUp() {
+		$.getJSON('/_humidityUp', function(data)
 		{
-			$("#targetTemp").text(data.targetTemp);
+			$("#targetHumidity").text(data.targetHumidity);
 		});
 	}
 	
 	// Javascript function for down button
-	function onTempDown() {
-		$.getJSON('/_tempDown', function(data)
+	function onHumidityDown() {
+		$.getJSON('/_humidityDown', function(data)
 		{
-			$("#targetTemp").text(data.targetTemp);
+			$("#targetHumidity").text(data.targetHumidity);
+		});
+	}
+	
+	function onFanPlus() {
+		$.getJSON('/_fanPlus', function(data)
+		{
+			$("#targetHumidity").text(data.targetHumidity);
+		});
+	}
+	
+	function onFanDown() {
+		$.getJSON('/_fanDown', function(data)
+		{
+			$("#targetHumidity").text(data.targetHumidity);
 		});
 	}
 	
 	// Flask allows you to decode URLs like /_onDay_Prev and /_onDay_Next so they're sent to the same function.
 	// It would be a bit more succint on the python side.
-	function onNextDay() {
-		$.get('/_onNextDay', function(data)
-		{
-			redraw();
-		});
-	}
-
-	function onPrevDay() {
-		$.get('/_onPrevDay', function(data)
-		{
-			redraw();
-		});
-	}
-
-	function onToday() {
-		$.get('/_onToday', function(data)
-		{
-			redraw();
-		});
-	}
-
-	function onMinusWeek() {
-		$.get('/_onMinusWeek', function(data)
-		{
-			redraw();
-		});
-	}
-
-	function onPlusWeek() {
-		$.get('/_onPlusWeek', function(data)
-		{
-			redraw();
-		});
-	}
-
-	// Javascript function to run the schedule
-	function onSchedule() {
-		$.get('/_schedule');
-	}
-
-	function onHold() {
-		$.getJSON('/_hold', function(data)
-		{
-			$("#Hold").attr('style',data.holding == 0 ? 'color:white' : 'color:red');
-		});
-	}
 
 	// Read all temps, when the page is reloaded.
 	function getFullData() {
@@ -88,38 +56,40 @@ span {font-weight: bold;}
 	}
 	
 	// This is called at regular intervals when the page is loaded.
-	function getTemperature() 
+	function getHumidity() 
 	{
 		$.getJSON('/_getData', function(data)
 			{
 				// The text() is a method of the selector to set the text of the selected elements.
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
 				// Since many elements might match.
-				$("#roomTemp").text(data.roomTemp);
-				$("#targetTemp").text(data.targetTemp);
-				$("#humidity").text(data.humidity);
+				$("#curTemp").text(data.curTemp);
+				$("#targetHumidity").text(data.targetHumidity);
+				$("#curHumidity").text(data.curHumidity);
 				$("#upTime").text(data.upTime);
-				$("#heaterValue").text(data.heaterOn == 0 ? "OFF" : "ON");
-				$("#Stats").text(data.stats);
+				$("#fanStatus").text(data.fanStatus == 0 ? "OFF" : "ON");
+				$("#humStatus").text(data.humStatus == 0 ? "OFF" : "ON");
+				//$("#Stats").text(data.stats);
 				//$("#prevDay").text(data.prevDayStr);
 				//$("#nextDay").text(data.nextDayStr);
-				$("#lastMessage").text(data.lastMsg);
+				//$("#lastMessage").text(data.lastMsg);
 				//$("#heaterStats0").text(data.heaterStats[1]);
 				// To set a color, set the style to "color:red"
-				$("#heaterValue").attr('style',data.heaterOn == 0 ? 'color:white' : 'color:red');
-				$("#Hold").attr('style',data.holding == 0 ? 'color:white' : 'color:red');
+				$("#fanStatus").attr('style',data.fanStatus == 0 ? 'color:white' : 'color:red');
+				$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
+				//$("#Hold").attr('style',data.holding == 0 ? 'color:white' : 'color:red');
 				//$("#Up").attr('disabled',data.allowControl ? false : true);
 				//$("#Down").attr('disabled',data.allowControl ? false : true);
 				//$("#Sche").attr('disabled',data.allowControl ? false : true);
-				redraw()
-				//if (data.newHeaterData) redraw();
+				//redraw()
+				//if (data.newFanData) redraw();
 				// These would also work!
-				// document.getElementById("heaterValue").style="color:green";
-				// document.getElementById("heaterValue").style.color="green";
-				// document.getElementById("heaterValue").style="font-size:300%";
+				// document.getElementById("fanStatus").style="color:green";
+				// document.getElementById("fanStatus").style.color="green";
+				// document.getElementById("fanStatus").style="font-size:300%";
 				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
 				// various things in the console.
-				setTimeout(function(){getTemperature();},4000);
+				setTimeout(function(){getHumidity();},4000);
 			});
 	}
 	
@@ -138,7 +108,7 @@ span {font-weight: bold;}
 			//$.getJSON('/_getData');
 			
 			// You can also call a regular javascipt function:
-			getTemperature();
+			getHumidity();
 			window. addEventListener ( "resize" , function ( event ) {redraw();});
 		}
     );
@@ -186,32 +156,32 @@ span {font-weight: bold;}
     $(
 		// You can put more code to be executed at page loading in here but it has to be inside a function.
 //		function () {
-//		$.getJSON('/_tempUp');
+//		$.getJSON('/_humidityUp');
 //		}
-		function() {
-			redraw()
-		}
+//		function() {
+//			redraw()
+//		}
     );
 	
 </script>
-<!-- Simple JQuery Mobile page that display the getTemperature state on the breadoard -->
+<!-- Simple JQuery Mobile page that display the getHumidity state on the breadoard -->
 <!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
 
 <div data-role="page" data-theme="b">
   <div data-role="header">
-    <div><h2><center>THERMOSTAT CONTROL</center></h2></div>
+    <div><h2><center>HUMIDITY CONTROL</center></h2></div>
   </div>
   
   <div data-role="content">
-    <p><h2>Room temperature: <span id="roomTemp"></span> F<br>Heater: <span id="heaterValue" ></span> </h2></p>
-    <p><h2>Target Temp: <span id="targetTemp"></span> F</h2></p>
-    <p><h2>Humidity: <span id="humidity"></span> %</h2></p>
+    <p><h2>Temperature: <span id="curTemp"></span> F<br>Fan: <span id="fanStatus" ></span> <br>Humidifier: <span id="humStatus" ></span></h2></p>
+    <p><h2>Target Humidity: <span id="targetHumidity"></span> F</h2></p>
+    <p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-c">
-			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>
-			<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">DOWN</button></div>
-			<div class="ui-block-c"><button name="Sched" id="Sche" onclick="onSchedule()" data-theme="d">SCHED</button></div>
-			<div class="ui-block-d"><button name="Hold" id="Hold" onclick="onHold()" data-theme="d">HOLD</button></div>
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onHumidityUp()" data-theme="d">HUM UP</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onHumidityDown()" data-theme="d">HUM DOWN</button></div>
+			<div class="ui-block-c"><button name="FanP" id="FanP" onclick="onFanPlus()" data-theme="d">FAN+</button></div>
+			<div class="ui-block-d"><button name="FanM" id="FanM" onclick="onFanDown()" data-theme="d">FAN-</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 	</div>

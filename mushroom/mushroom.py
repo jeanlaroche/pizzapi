@@ -3,7 +3,7 @@ from threading import Timer, Thread
 import time, os
 import Adafruit_DHT
 import json
-#import numpy as np
+import numpy as np
 ON = 0
 OFF = 1
 
@@ -93,8 +93,8 @@ class mushroomControl(object):
             self.mprint("Failed to read temp")
             return
         self.curHumidity = curHumidity
-        self.curTemp = curTemp
-        self.mprint("Temp {:.2f} -- Humidity {:.2f}".format(curTemp,curHumidity))
+        self.curTemp = np.round(curTemp*1.8 + 32,decimals=2)
+        self.mprint("Temp {:.2f} -- Humidity {:.2f}".format(self.curTemp,curHumidity))
 
     def mprint(self,this,logit=1):
         import datetime
@@ -105,6 +105,9 @@ class mushroomControl(object):
         if logit:
             with open(self.logFile,'a') as fd:
                 fd.write(msg+'\n')
+                
+    def incTargetHumidity(self,inc):
+        self.targetHumidity += inc
         
 if __name__ == '__main__':
     print("Constructor")

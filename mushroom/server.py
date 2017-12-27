@@ -2,9 +2,8 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 import pdb
 import threading, time, os
 import re
-import heaterControl
+import mushroom
 import numpy as np
-import schedule
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
@@ -13,9 +12,9 @@ import schedule
 app = Flask(__name__)
 
 statsDay = 0  # 0 for today, -1 for yesterday, -2 etc
-allowControl = 0  # Allow or disallow control of temp
+allowControl = 0  # Allow or disallow control of humidity
 alwaysAllow = 0  # Ignore flag above.
-hc = None
+mush = None
 
 @app.route('/favicon.ico')
 def favicon():
@@ -30,40 +29,39 @@ def Index():
     return render_template("index.html", uptime=GetUptime())
 
 
-# special private page that allows changing the temp. For lack of a proper login thingy
+# special private page that allows changing the humidity. For lack of a proper login thingy
 @app.route("/Pook")
 def Index2():
     global alwaysAllow
     alwaysAllow = 1
     return render_template("index.html", uptime=GetUptime())
 
-@app.route("/_tempUp")
-def _tempUp():
-    print "TEMP UP"
-    hc.incTargetTemp(1)
-    return jsonify(targetTemp=int(hc.targetTemp))
-        # if allowControl or alwaysAllow: rt.incSetTemperature(1)
-        # return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
+@app.route("/_humidityUp")
+def _humidityUp():
+    print "HUMIDITY UP"
+    mush.incTargetHumidity(1)
+    return jsonify(targetHumidity=int(mush.targetHumidity))
+        # if allowControl or alwaysAllow: rt.incSetHumidityerature(1)
+        # return jsonify(targetHumidityeratureValue=rt.targetHumidityeratureVal)
 
-@app.route("/_tempDown")
-def _tempDown():
-    print "Temp Down"
-    hc.incTargetTemp(-1)
-    return jsonify(targetTemp=int(hc.targetTemp))
-    # if allowControl or alwaysAllow: rt.incSetTemperature(-1)
-        # return jsonify(targetTemperatureValue=rt.targetTemperatureVal)
+@app.route("/_humidityDown")
+def _humidityDown():
+    print "Humidity Down"
+    mush.incTargetHumidity(-1)
+    return jsonify(targetHumidity=int(mush.targetHumidity))
+    # if allowControl or alwaysAllow: rt.incSetHumidityerature(-1)
+        # return jsonify(targetHumidityeratureValue=rt.targetHumidityeratureVal)
 
-@app.route("/_schedule")
-def _schedule():
-    print "Schedule"
-    hc.onRun()
-    return ""
+@app.route("/_fanPlus")
+def _fanPlus():
+    print "FAN Plus"
+    return jsonify(targetHumidity=int(mush.targetHumidity))
 
-@app.route("/_hold")
-def _hold():
-    print "HOLD"
-    hc.onHold()
-    return jsonify(holding=hc.holding)
+@app.route("/_fanDown")
+def _fanDown():
+    print "FAN Down"
+    return jsonify(targetHumidity=int(mush.targetHumidity))
+
     
 @app.route("/_pageUnload")
 def _pageUnload():
@@ -73,12 +71,12 @@ def _pageUnload():
 @app.route("/_getData")
 def _getData():
     print "Get Data"
-    roomTemp = np.round(hc.roomTemp,decimals=1)
-    # stats= hc.grabLog()
+    curHumidity = np.round(mush.curHumidity,decimals=1)
+    # stats= mush.grabLog()
     # stats = ''.join(stats)
-    stats,X,Y = schedule.computeGraphData()
-    print stats
-    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats,holding=hc.holding,X=X,Y=Y)
+    # stats,X,Y = schedule.computeGraphData()
+    # print stats
+    return jsonify(curHumidity=curHumidity,targetHumidity=int(mush.targetHumidity),humidity=mush.curHumidity,upTime=GetUptime(),fanStatus=mush.fanStatus,humStatus=mush.humStatus,curTemp=mush.curTemp)
 
 
 def GetUptime():
@@ -93,10 +91,10 @@ def GetUptime():
 # if __name__ == "__main__":
 # Pins.Init()
 def preStart():
-    global hc
+    global mush
     print "RUNNING PRESTART"
-    hc = heaterControl.heaterControl(doStart=1)
-    #hc.draw()
+    mush = mushroom.mushroomControl()
+    #mush.draw()
 
 # rt.setup()
 # rt.init()
@@ -107,7 +105,7 @@ preStart()
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
-    _getData()
-    app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
-    hc.close()
+    #_getData()
+    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+    mush.close()
     print "TEARDOWN"
