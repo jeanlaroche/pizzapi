@@ -50,14 +50,14 @@ span {font-weight: bold;}
 	function onFanDurUp() {
 		$.getJSON('/_fanDurUp', function(data)
 		{
-			$("#fanOnLengthMin").text(data.fanOnLengthMin);
+			$("#fanOnLengthS").text(data.fanOnLengthS);
 		});
 	}
 	
 	function onFanDurDown() {
 		$.getJSON('/_fanDurDown', function(data)
 		{
-			$("#fanOnLengthMin").text(data.fanOnLengthMin);
+			$("#fanOnLengthS").text(data.fanOnLengthS);
 		});
 	}
 	
@@ -81,7 +81,7 @@ span {font-weight: bold;}
 				$("#targetHumidity").text(data.targetHumidity);
 				$("#curHumidity").text(data.curHumidity);
 				$("#fanOnPeriodMin").text(data.fanOnPeriodMin);				
-				$("#fanOnLengthMin").text(data.fanOnLengthMin);				
+				$("#fanOnLengthS").text(data.fanOnLengthS);				
 				$("#upTime").text(data.upTime);
 				$("#fanStatus").text(data.fanStatus == 0 ? "OFF" : "ON");
 				$("#humStatus").text(data.humStatus == 0 ? "OFF" : "ON");
@@ -97,7 +97,7 @@ span {font-weight: bold;}
 				//$("#Up").attr('disabled',data.allowControl ? false : true);
 				//$("#Down").attr('disabled',data.allowControl ? false : true);
 				//$("#Sche").attr('disabled',data.allowControl ? false : true);
-				//redraw()
+				redraw()
 				//if (data.newFanData) redraw();
 				// These would also work!
 				// document.getElementById("fanStatus").style="color:green";
@@ -174,9 +174,9 @@ span {font-weight: bold;}
 //		function () {
 //		$.getJSON('/_humidityUp');
 //		}
-//		function() {
-//			redraw()
-//		}
+		function() {
+			redraw()
+		}
     );
 	
 </script>
@@ -190,25 +190,25 @@ span {font-weight: bold;}
   
   <div data-role="content">
     <p><h2>Temperature: <span id="curTemp"></span> F<br>Fan: <span id="fanStatus" ></span> <br>Humidifier: <span id="humStatus" ></span></h2></p>
-    <p><h2>Target Humidity: <span id="targetHumidity"></span> F</h2></p>
-    <p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
-			<div class="ui-block-a"><button name="Up" id="Up" onclick="onHumidityUp()" data-theme="d">HUM UP</button></div>
-			<div class="ui-block-b"><button name="Down" id="Down" onclick="onHumidityDown()" data-theme="d">HUM DOWN</button></div>
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onHumidityUp()" data-theme="d">Humidity +</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onHumidityDown()" data-theme="d">Humidity -</button></div>
 	    </fieldset>
+		<p><h2>Target Humidity: <span id="targetHumidity"></span> %</h2></p>
+		<p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
 		<fieldset class="ui-grid-a">
 			<div class="ui-block-a"><button name="FanP" id="FanP" onclick="onFanUp()" data-theme="d">FAN Interval +</button></div>
 			<div class="ui-block-b"><button name="FanM" id="FanM" onclick="onFanDown()" data-theme="d">FAN Interval -</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
-		<p><h2>Fan Period: <span id="fanOnPeriodMin"></span> min</h2></p>
+		<p><h2>Fan is on every: <span id="fanOnPeriodMin"></span> min</h2></p>
 		<fieldset class="ui-grid-a">
 			<div class="ui-block-a"><button name="FanDP" id="FanDP" onclick="onFanDurUp()" data-theme="d">FAN On Dur. +</button></div>
 			<div class="ui-block-b"><button name="FanDM" id="FanDM" onclick="onFanDurDown()" data-theme="d">FAN On Dur. -</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
-		<p><h2>Fan Duration: <span id="fanOnLengthMin"></span> min</h2></p>
+		<p><h2>Fan is on for: <span id="fanOnLengthS"></span> seconds</h2></p>
 	</div>
   </div>
  <div data-role="footer">

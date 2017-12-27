@@ -67,14 +67,14 @@ def _fanDown():
 @app.route("/_fanDurUp")
 def _fanDurUp():
     print "FAN DurPlus"
-    mush.incFanFreqDur(incDurMin=.1)
-    return jsonify(fanOnLengthMin = mush.fanOnLengthMin)
+    mush.incFanFreqDur(incDurS=10)
+    return jsonify(fanOnLengthS = mush.fanOnLengthS)
 
 @app.route("/_fanDurDown")
 def _fanDurDown():
     print "FAN DurDown"
-    mush.incFanFreqDur(incDurMin=-.1)
-    return jsonify(fanOnLengthMin = mush.fanOnLengthMin)
+    mush.incFanFreqDur(incDurS=-10)
+    return jsonify(fanOnLengthS = mush.fanOnLengthS)
 
     
 @app.route("/_pageUnload")
@@ -86,11 +86,12 @@ def _pageUnload():
 def _getData():
     print "Get Data"
     curHumidity = np.round(mush.curHumidity,decimals=1)
+    X,Y = mush.getHumidityData(12)
     # stats= mush.grabLog()
     # stats = ''.join(stats)
     # stats,X,Y = schedule.computeGraphData()
     # print stats
-    return jsonify(curHumidity=curHumidity,targetHumidity=int(mush.targetHumidity),humidity=mush.curHumidity,upTime=GetUptime(),fanStatus=mush.fanStatus,humStatus=mush.humStatus,curTemp=mush.curTemp,fanOnPeriodMin=mush.fanOnPeriodMin,fanOnLengthMin=mush.fanOnLengthMin)
+    return jsonify(curHumidity=curHumidity,targetHumidity=int(mush.targetHumidity),humidity=mush.curHumidity,upTime=GetUptime(),fanStatus=mush.fanStatus,humStatus=mush.humStatus,curTemp=mush.curTemp,fanOnPeriodMin=mush.fanOnPeriodMin,fanOnLengthS=mush.fanOnLengthS,X=X,Y=Y)
 
 
 def GetUptime():
