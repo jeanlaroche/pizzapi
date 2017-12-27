@@ -20,6 +20,7 @@ class mushroomControl(object):
     stopNow = 0
     targetHumidity = 60
     curHumidity = 100
+    curTemp = 0
     humidityTrigger = 2
     logFile = './log.txt'
     jsonFile = './mushroom.json'
@@ -116,7 +117,7 @@ class mushroomControl(object):
 
     def incFanFreqDur(self,incFreqMin=0,incDurMin=0):
         self.fanOnPeriodMin += incFreqMin
-        self.fanOnPeriodMin = max(.2,self.fanOnPeriodMin)
+        self.fanOnPeriodMin = max(.5,self.fanOnPeriodMin)
         self.fanOnPeriodMin = max(self.fanOnPeriodMin,self.fanOnLengthMin+.1)
         
         self.fanOnLengthMin += incDurMin
