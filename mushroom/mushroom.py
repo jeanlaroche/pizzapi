@@ -22,6 +22,7 @@ class mushroomControl(object):
     curHumidity = 100
     humidityTrigger = 2
     logFile = './log.txt'
+    jsonFile = './mushroom.json'
     fanStatus = 0
     humStatus = 0
 
@@ -33,6 +34,9 @@ class mushroomControl(object):
         
         GPIO.output(self.fanRelayGPIO,OFF)
         GPIO.output(self.humRelayGPIO,OFF)
+        
+        self.readJson()
+        
         # Temp update thread.
         def updateTemp():
             while self.stopNow == 0:
@@ -108,10 +112,34 @@ class mushroomControl(object):
                 
     def incTargetHumidity(self,inc):
         self.targetHumidity += inc
+        self.writeJson()
 
     def incFanFreqDur(self,incFreqMin=0,incDurMin=0):
         self.fanOnPeriodMin += incFreqMin
+        self.fanOnPeriodMin = max(.2,self.fanOnPeriodMin)
+        self.fanOnPeriodMin = max(self.fanOnPeriodMin,self.fanOnLengthMin+.1)
+        
         self.fanOnLengthMin += incDurMin
+        self.fanOnLengthMin = max(.1,self.fanOnLengthMin)
+        self.fanOnLengthMin = min(self.fanOnPeriodMin-.1,self.fanOnLengthMin)
+        
+        self.fanOnLengthMin = np.round(self.fanOnLengthMin,decimals=1)
+        self.fanOnPeriodMin = np.round(self.fanOnPeriodMin,decimals=1)
+        self.writeJson()
+        
+    def writeJson(self):
+        with open(self.jsonFile,'w') as f:
+            json.dump({'fanOnPeriodMin':self.fanOnPeriodMin,'fanOnLengthMin':self.fanOnLengthMin,'targetHumidity':self.targetHumidity},f)
+        
+    def readJson(self):
+        try:
+            with open(self.jsonFile,'r') as f:
+                A = json.load(f)
+                self.fanOnPeriodMin = A['fanOnPeriodMin']
+                self.fanOnLengthMin = A['fanOnLengthMin']
+                self.targetHumidity = A['targetHumidity']
+        except:
+            pass
         
 if __name__ == '__main__':
     print("Constructor")
