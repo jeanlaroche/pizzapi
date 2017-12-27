@@ -52,15 +52,29 @@ def _humidityDown():
     # if allowControl or alwaysAllow: rt.incSetHumidityerature(-1)
         # return jsonify(targetHumidityeratureValue=rt.targetHumidityeratureVal)
 
-@app.route("/_fanPlus")
-def _fanPlus():
+@app.route("/_fanUp")
+def _fanUp():
     print "FAN Plus"
-    return jsonify(targetHumidity=int(mush.targetHumidity))
+    mush.incFanFreqDur(incFreqMin=.5)
+    return jsonify(fanOnPeriodMin = mush.fanOnPeriodMin)
 
 @app.route("/_fanDown")
 def _fanDown():
     print "FAN Down"
-    return jsonify(targetHumidity=int(mush.targetHumidity))
+    mush.incFanFreqDur(incFreqMin=-.5)
+    return jsonify(fanOnPeriodMin = mush.fanOnPeriodMin)
+
+@app.route("/_fanDurUp")
+def _fanDurUp():
+    print "FAN DurPlus"
+    mush.incFanFreqDur(incDurMin=.1)
+    return jsonify(fanOnLengthMin = mush.fanOnLengthMin)
+
+@app.route("/_fanDurDown")
+def _fanDurDown():
+    print "FAN DurDown"
+    mush.incFanFreqDur(incDurMin=-.1)
+    return jsonify(fanOnLengthMin = mush.fanOnLengthMin)
 
     
 @app.route("/_pageUnload")
@@ -76,7 +90,7 @@ def _getData():
     # stats = ''.join(stats)
     # stats,X,Y = schedule.computeGraphData()
     # print stats
-    return jsonify(curHumidity=curHumidity,targetHumidity=int(mush.targetHumidity),humidity=mush.curHumidity,upTime=GetUptime(),fanStatus=mush.fanStatus,humStatus=mush.humStatus,curTemp=mush.curTemp)
+    return jsonify(curHumidity=curHumidity,targetHumidity=int(mush.targetHumidity),humidity=mush.curHumidity,upTime=GetUptime(),fanStatus=mush.fanStatus,humStatus=mush.humStatus,curTemp=mush.curTemp,fanOnPeriodMin=mush.fanOnPeriodMin,fanOnLengthMin=mush.fanOnLengthMin)
 
 
 def GetUptime():

@@ -108,6 +108,10 @@ class mushroomControl(object):
                 
     def incTargetHumidity(self,inc):
         self.targetHumidity += inc
+
+    def incFanFreqDur(self,incFreqMin=0,incDurMin=0):
+        self.fanOnPeriodMin += incFreqMin
+        self.fanOnLengthMin += incDurMin
         
 if __name__ == '__main__':
     print("Constructor")
