@@ -104,7 +104,7 @@ class mushroomControl(object):
 
     def updateTemp(self):
         curHumidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
-        if curTemp is None or curHumidity >= 100:
+        if curTemp is None or curHumidity >= 100 or curTemp == 0:
             self.mprint("Failed to read temp")
             return
         self.curHumidity = curHumidity
