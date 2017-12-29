@@ -171,7 +171,10 @@ class mushroomControl(object):
             Y.append(float(line.split()[-1]))
             hour = float(line.split()[1])
             X.append(hour)
-        return X,Y
+        # Subtract 24 from data whose hour is later than the most recent one
+        X = np.array(X)
+        X[X > X[-1]] -= 24
+        return X.tolist(),Y
             
         
 if __name__ == '__main__':
