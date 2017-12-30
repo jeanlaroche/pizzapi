@@ -108,11 +108,14 @@ class heaterControl(object):
         if doStart: self.scheduleThread.start()
         
         def readOutsideTemp():
-            while 1:
-                Str = urllib2.urlopen("http://hottub.mooo.com/airTemp").read()
-                Dict = json.loads(Str)
-                self.outsideTemp = Dict['outsideTemperature']
-                time.sleep(10)
+            while self.stopNow == 0:
+                try:
+                    Str = urllib2.urlopen("http://hottub.mooo.com/airTemp").read()
+                    Dict = json.loads(Str)
+                    self.outsideTemp = Dict['outsideTemperature']
+                    time.sleep(10)
+                except:
+                    pass
         self.outsideTempThread = Thread(target=readOutsideTemp, args=(), group=None)
         self.outsideTempThread.daemon = True
         self.outsideTempThread.start()
