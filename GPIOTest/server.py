@@ -27,13 +27,15 @@ def getTemp():
 	hum, air = Adafruit_DHT.read_retry(sensor, 2)
 	if hum is not None and air is not None and air is not 0:
 		humidity = hum
-		airTemp = 32+1.8*air
+		if airTemp == 0: airTemp = 32+1.8*air
+		else: airTemp = .95*airTemp + 0.05*(32+1.8*air)
+		airTemp = round(airTemp,1)
 		maxAirTemp = max(airTemp,maxAirTemp)
 		minAirTemp = min(airTemp,minAirTemp)
 	return humidity,airTemp
 
 @app.route('/airTemp')
-def airTemp():
+def _airTemp():
 	getTemp()
 	return jsonify(humidity=humidity,outsideTemperature=airTemp,minAirTemp=minAirTemp,maxAirTemp=maxAirTemp)
 
