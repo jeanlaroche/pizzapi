@@ -19,19 +19,23 @@ alwaysAllow 		= 	0	# Ignore flag above.
 
 humidity = 0
 airTemp = 0
+minAirTemp = 200
+maxAirTemp = -100
 
 def getTemp():
-	global humidity, airTemp
+	global humidity, airTemp, maxAirTemp, minAirTemp
 	hum, air = Adafruit_DHT.read_retry(sensor, 2)
 	if hum is not None and air is not None and air is not 0:
 		humidity = hum
 		airTemp = 32+1.8*air
+		maxAirTemp = max(airTemp,maxAirTemp)
+		minAirTemp = min(airTemp,minAirTemp)
 	return humidity,airTemp
 
 @app.route('/airTemp')
 def airTemp():
 	getTemp()
-	return jsonify(humidity=humidity,outsideTemperature=airTemp)
+	return jsonify(humidity=humidity,outsideTemperature=airTemp,minAirTemp=minAirTemp,maxAirTemp=maxAirTemp)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -73,7 +77,7 @@ def _getTubStatus():
 	fileUpdated = sc.fileUpdated
 	sc.fileUpdated = 0
 	getTemp()
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow,outsideTemperature=airTemp)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow,outsideTemperature=airTemp,minAirTemp=minAirTemp,maxAirTemp=maxAirTemp)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -132,11 +136,16 @@ def GetUptime():
 	return uptime
 	
 def showHeartBeat():
+	global minAirTemp, maxAirTemp
 	if rt.fakeIt: return
 	# Don't read the temperature if the tub is in the process of adjusting it.
 	if not rt.isAdjustingTemp:  rt.readTemperature(updateTempVal=1)
 	sc.logHeaterUse()
 	os.system('touch ' + rt.logFile)
+	locTime = time.localtime()
+	if locTime.tm_hour == 2 and locTime.tm_min == 0: 
+		minAirTemp,maxAirTemp = airTemp,airTemp
+	
 	#rt.mprint("HeartBeat")
 	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
