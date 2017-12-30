@@ -92,6 +92,7 @@ span {font-weight: bold;}
 				$("#heaterValue").text(data.heaterValueStr);
 				$("#setTemperatureValue").text(data.setTemperatureValue);
 				$("#targetTemperatureValue").text(data.targetTemperatureValue);
+				$("#outsideTemperature").text(data.outsideTemperature);
 				$("#upTime").text(data.upTime);
 				$("#prevDay").text(data.prevDayStr);
 				$("#nextDay").text(data.nextDayStr);
@@ -200,6 +201,7 @@ span {font-weight: bold;}
     <p><h2>Hot Tub temperature: <span id="temperatureValue"></span> F<br>Heater: <span id="heaterValue" ></span> </h2></p>
     <p><h2>Hot Tub Set Temp: <span id="setTemperatureValue"></span> F</h2></p>
     <p><h2>Hot Tub Target Temp: <span id="targetTemperatureValue"></span> F</h2></p>
+    <p><h2>Outside Temp: <span id="outsideTemperature"></span> F</h2></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-b">
 			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>

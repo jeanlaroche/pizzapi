@@ -98,6 +98,7 @@ span {font-weight: bold;}
 				$("#roomTemp").text(data.roomTemp);
 				$("#targetTemp").text(data.targetTemp);
 				$("#humidity").text(data.humidity);
+				$("#outsideTemp").text(data.outsideTemp);
 				$("#upTime").text(data.upTime);
 				$("#heaterValue").text(data.heaterOn == 0 ? "OFF" : "ON");
 				$("#Stats").text(data.stats);
@@ -206,6 +207,7 @@ span {font-weight: bold;}
     <p><h2>Room temperature: <span id="roomTemp"></span> F<br>Heater: <span id="heaterValue" ></span> </h2></p>
     <p><h2>Target Temp: <span id="targetTemp"></span> F</h2></p>
     <p><h2>Humidity: <span id="humidity"></span> %</h2></p>
+    <p><h2>Outside Temp: <span id="outsideTemp"></span> F</h2></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-c">
 			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">UP</button></div>

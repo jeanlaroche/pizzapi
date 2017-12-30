@@ -9,6 +9,7 @@ import pygame
 import Adafruit_DHT
 import schedule
 import json
+import urllib2
 
 state_off = 0
 state_on = 1
@@ -19,6 +20,7 @@ stateStr = ['Heater off','Heater on','Heater on too long','Heater paused']
 class heaterControl(object):
     roomTemp = 0
     roomTempAdjust = 0
+    outsideTemp = 0
     targetTemp = 0
     updatePeriodS = 5
     tempHistoryLengthS = 120
@@ -104,6 +106,17 @@ class heaterControl(object):
             else: Timer(30, doListImages, ()).start()
         Timer(10, doListImages, ()).start()
         if doStart: self.scheduleThread.start()
+        
+        def readOutsideTemp():
+            while 1:
+                Str = urllib2.urlopen("http://hottub.mooo.com/airTemp").read()
+                Dict = json.loads(Str)
+                self.outsideTemp = Dict['outsideTemperature']
+                time.sleep(10)
+        self.outsideTempThread = Thread(target=readOutsideTemp, args=(), group=None)
+        self.outsideTempThread.daemon = True
+        self.outsideTempThread.start()
+        self.mprint("Starting outside temp thread")
         
         # Read the status file if there's one.
         with open(self.statusFile,'r') as f:
@@ -254,7 +267,7 @@ class heaterControl(object):
         if self.targetTemp < 50: self.targetTemp = 50
         if self.targetTemp > 74: self.targetTemp = 74
         self.heaterToggleCount = 0
-        self.showTarget(self.targetTemp)
+        self.showTarget()
         
     def onTempOff(self):
         self.setTargetTemp(50)
@@ -338,9 +351,10 @@ class heaterControl(object):
                 # #self.draw()
         if not down: self.waitForUp = 0
 
-    def showTarget(self,target):
+    def showTarget(self):
         if self.showImage: return
-        self.display.make_label("Target {}F".format(target), self.display.xSize / 2, 0, 40, dc.nblue)
+        self.display.make_label("Target  {}F".format(self.targetTemp), self.display.xSize / 2, 0, 40, dc.nblue)
+        self.display.make_label("Outside {}F".format(self.outsideTemp), self.display.xSize / 2, 35, 40, dc.nblue)
 
     def drawButtons(self,highlightButton=-1):
         if self.showImage: return
@@ -380,7 +394,7 @@ class heaterControl(object):
         self.display.screen.fill(dc.black)
         self.drawButtons(highlightButton)
         self.showRoomTemp()
-        self.showTarget(self.targetTemp)
+        self.showTarget()
         self.display.rectList = [[0,0,self.display.xSize,self.display.ySize]]
         # JEAN NOT NEEDED
         #self.display.update()
@@ -428,7 +442,7 @@ class heaterControl(object):
         uptime = check_output(["uptime"])
         uptime = re.sub('[\d]+ user[s]*,.*load(.*),.*,.*', 'load\\1', uptime).strip()
         # self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 50, 300, 40))
-        self.display.make_label(uptime, self.display.xSize / 2, 50, 20, dc.nblue)
+        self.display.make_label(uptime, self.display.xSize / 2, 70, 20, dc.nblue)
         #self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 70, 300, 40))
         #self.display.make_label(self.lastMsg, self.display.xSize / 2, 70, 20, dc.nblue)
         #self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
