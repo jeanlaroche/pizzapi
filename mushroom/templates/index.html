@@ -1,0 +1,242 @@
+<!doctype html>
+<head>
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+
+<style>
+h3 {text-align: center;}
+h4 {text-align: left; color: green}
+span {font-weight: bold;}
+</style>
+
+<script type=text/javascript>
+	
+	// Javascript function for up button
+	function onHumidityUp() {
+		$.getJSON('/_humidityUp', function(data)
+		{
+			$("#targetHumidity").text(data.targetHumidity);
+		});
+	}
+	
+	// Javascript function for down button
+	function onHumidityDown() {
+		$.getJSON('/_humidityDown', function(data)
+		{
+			$("#targetHumidity").text(data.targetHumidity);
+		});
+	}
+	
+	function onFanUp() {
+		$.getJSON('/_fanUp', function(data)
+		{
+			$("#fanOnPeriodMin").text(data.fanOnPeriodMin);
+		});
+	}
+	
+	function onFanDown() {
+		$.getJSON('/_fanDown', function(data)
+		{
+			$("#fanOnPeriodMin").text(data.fanOnPeriodMin);
+		});
+	}
+	
+	function onFanDurUp() {
+		$.getJSON('/_fanDurUp', function(data)
+		{
+			$("#fanOnLengthS").text(data.fanOnLengthS);
+		});
+	}
+	
+	function onFanDurDown() {
+		$.getJSON('/_fanDurDown', function(data)
+		{
+			$("#fanOnLengthS").text(data.fanOnLengthS);
+		});
+	}
+	
+	// Flask allows you to decode URLs like /_onDay_Prev and /_onDay_Next so they're sent to the same function.
+	// It would be a bit more succint on the python side.
+
+	// Read all temps, when the page is reloaded.
+	function getFullData() {
+		$.getJSON('/_getFullData');
+	}
+	
+	// This is called at regular intervals when the page is loaded.
+	function getHumidity() 
+	{
+		$.getJSON('/_getData', function(data)
+			{
+				// The text() is a method of the selector to set the text of the selected elements.
+				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
+				// Since many elements might match.
+				$("#curTemp").text(data.curTemp);
+				$("#targetHumidity").text(data.targetHumidity);
+				$("#curHumidity").text(data.curHumidity);
+				$("#fanOnPeriodMin").text(data.fanOnPeriodMin);				
+				$("#fanOnLengthS").text(data.fanOnLengthS);				
+				$("#upTime").text(data.upTime);
+				$("#fanStatus").text(data.fanStatus == 0 ? "OFF" : "ON");
+				$("#humStatus").text(data.humStatus == 0 ? "OFF" : "ON");
+				//$("#Stats").text(data.stats);
+				//$("#prevDay").text(data.prevDayStr);
+				//$("#nextDay").text(data.nextDayStr);
+				//$("#lastMessage").text(data.lastMsg);
+				//$("#heaterStats0").text(data.heaterStats[1]);
+				// To set a color, set the style to "color:red"
+				$("#fanStatus").attr('style',data.fanStatus == 0 ? 'color:white' : 'color:red');
+				$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
+				//$("#Hold").attr('style',data.holding == 0 ? 'color:white' : 'color:red');
+				//$("#Up").attr('disabled',data.allowControl ? false : true);
+				//$("#Down").attr('disabled',data.allowControl ? false : true);
+				//$("#Sche").attr('disabled',data.allowControl ? false : true);
+				redraw()
+				//if (data.newFanData) redraw();
+				// These would also work!
+				// document.getElementById("fanStatus").style="color:green";
+				// document.getElementById("fanStatus").style.color="green";
+				// document.getElementById("fanStatus").style="font-size:300%";
+				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
+				// various things in the console.
+				setTimeout(function(){getHumidity();},4000);
+			});
+	}
+	
+
+	// This is a JQuery shorthand to define a function that's called when the page is loaded.
+    $(
+		function() 
+		{
+			// Binds the ajax request _pageUnload to onbeforeunload of the window.
+			window.onbeforeunload = function(){
+				// The ajax request must return something, but it's OK to ignore it.
+				$.get('/_pageUnload');
+			};
+
+			// This does an Ajax request for /_getFullData.
+			//$.getJSON('/_getData');
+			
+			// You can also call a regular javascipt function:
+			getHumidity();
+			window. addEventListener ( "resize" , function ( event ) {redraw();});
+		}
+    );
+	
+	function redraw() {
+		$.getJSON('/_getData', function(data) {
+			Plots = document.getElementById('Plots');
+			//Plots.style = {width:window.innerWidth , height:150};
+			var X = data.X;
+			var Y = data.Y;
+			//var XLabels = data.heaterLabel;
+			//var XTicks = data.heaterTicks;
+			// second arg is data, third arg is layout.
+			var layout = { margin: { t: 30, l:20, r:20 },
+			  xaxis: {
+				title: 'Hour',
+				showgrid: true,
+				showline: true,
+				color: 'rgba(256,256,0,1)',
+				//tickvals: XTicks,
+				//ticktext: XLabels,
+				//tickangle: 0,
+			  },
+				paper_bgcolor : 'rgba(0,0,0,0)',
+				plot_bgcolor : 'rgba(0,0,0,0)',
+			yaxis: {
+				title: '',
+				showline: true,
+				showgrid: true,
+				//tickvals: [0,1],
+				//ticktext: ['0','1'],
+				color: 'rgba(256,256,0,1)'
+			  },
+			showlegend : false,
+			//title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
+			titlefont: {color: 'yellow'},
+			  };
+			$("#Stats").text(data.stats);
+			var d = new Date()
+			var hours = d.getHours() + d.getMinutes()/60.0
+			Plotly.newPlot( Plots, [{x: X,y: Y}], layout );
+			});
+	}
+	
+    $(
+		// You can put more code to be executed at page loading in here but it has to be inside a function.
+//		function () {
+//		$.getJSON('/_humidityUp');
+//		}
+		function() {
+			redraw()
+		}
+    );
+	
+</script>
+<!-- Simple JQuery Mobile page that display the getHumidity state on the breadoard -->
+<!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
+
+<div data-role="page" data-theme="b">
+  <div data-role="header">
+    <div><h2><center>HUMIDITY CONTROL</center></h2></div>
+  </div>
+  
+  <div data-role="content">
+    <p><h2>Temperature: <span id="curTemp"></span> F<br>Fan: <span id="fanStatus" ></span> <br>Humidifier: <span id="humStatus" ></span></h2></p>
+	<div data-role="fieldcontain">
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onHumidityUp()" data-theme="d">Humidity +</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onHumidityDown()" data-theme="d">Humidity -</button></div>
+	    </fieldset>
+		<p><h2>Target Humidity: <span id="targetHumidity"></span> %</h2></p>
+		<p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="FanP" id="FanP" onclick="onFanUp()" data-theme="d">FAN Interval +</button></div>
+			<div class="ui-block-b"><button name="FanM" id="FanM" onclick="onFanDown()" data-theme="d">FAN Interval -</button></div>
+				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
+	    </fieldset>
+		<p><h2>Fan is on every: <span id="fanOnPeriodMin"></span> min</h2></p>
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="FanDP" id="FanDP" onclick="onFanDurUp()" data-theme="d">FAN On Dur. +</button></div>
+			<div class="ui-block-b"><button name="FanDM" id="FanDM" onclick="onFanDurDown()" data-theme="d">FAN On Dur. -</button></div>
+				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
+	    </fieldset>
+		<p><h2>Fan is on for: <span id="fanOnLengthS"></span> seconds</h2></p>
+	</div>
+  </div>
+ <div data-role="footer">
+    <div ><h4><span id="lastMessage" ></span></h4></div>
+    <div><h4><span id="upTime" ></span></h4></div>
+    <div ><h2>Temperature:</h2></div>
+    <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
+  </div>
+<div id="Plots" style="width:auto;height:250px;"></div>
+<!-- <fieldset class="ui-grid-d">
+	<div class="ui-block-a">
+		<button id="prevDay"  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
+	</div>
+	<div class="ui-block-b">
+		<button id="nextDay" onclick="onNextDay()" data-theme="d">Next Day</button>
+	</div>
+	<div class="ui-block-c">
+		<button id="today" onclick="onToday()" data-theme="d">Today</button>
+	</div>
+	<div class="ui-block-d">
+		<button id="minusWeek" onclick="onMinusWeek()" data-theme="d">-Week</button>
+	</div>
+	<div class="ui-block-e">
+		<button id="plusWeek" onclick="onPlusWeek()" data-theme="d">+Week</button>
+	</div>
+</fieldset>
+ --><div ><h2>Stats Log:</h2></div>
+ <div>
+ <pre id="Stats"></pre>
+ </div>
+ </div>
