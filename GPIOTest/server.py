@@ -4,6 +4,8 @@ import pdb
 import threading, time, os
 import schedule as sc
 import re
+import Adafruit_DHT
+sensor = Adafruit_DHT.DHT11
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
@@ -15,9 +17,25 @@ statsDay			= 	0	# 0 for today, -1 for yesterday, -2 etc
 allowControl 		= 	0	# Allow or disallow control of temp
 alwaysAllow 		= 	0	# Ignore flag above.
 
+humidity = 0
+airTemp = 0
+
+def getTemp():
+	global humidity, airTemp
+	hum, air = Adafruit_DHT.read_retry(sensor, 2)
+	if hum is not None and air is not None and air is not 0:
+		humidity = hum
+		airTemp = 32+1.8*air
+	return humidity,airTemp
+
+@app.route('/airTemp')
+def airTemp():
+	getTemp()
+	return jsonify(humidity=humidity,outsideTemperature=airTemp)
+
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(app.root_path,'favicon.ico', mimetype='image/vnd.microsoft.icon')
+	return send_from_directory(app.root_path,'favicon.ico', mimetype='image/vnd.microsoft.icon')
 	
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
@@ -54,7 +72,8 @@ def _getTubStatus():
 	heaterLabel = ["{:}".format(ii) for ii in range(0,25)]
 	fileUpdated = sc.fileUpdated
 	sc.fileUpdated = 0
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow)
+	getTemp()
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow,outsideTemperature=airTemp)
 
 @app.route("/_getFullData")
 def _getFullData():
