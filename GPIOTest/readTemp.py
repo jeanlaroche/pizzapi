@@ -17,6 +17,7 @@ def mprint(thisString):
 	
 '''
 '''
+airTempGPIO 	= 2		# GPIO used to read the temp sensor outside
 clockGPIO 		= 3		# GPIO used to read the clock line
 dataGPIO 		= 4		# GPIO used to read the data line
 buttonGPIO		= 17	# GPIO used to control the temperature button.
@@ -52,8 +53,30 @@ else:
 	logF			= open(logFile,'a',0)
 GPIO.setmode(GPIO.BCM)
 
+humidity = 0
+airTemp = 0
+minAirTemp = 200
+maxAirTemp = -100
+
+import Adafruit_DHT
+sensor = Adafruit_DHT.DHT11
+def readOutsideTemp():
+	global humidity, airTemp, maxAirTemp, minAirTemp
+	hum, air = Adafruit_DHT.read_retry(sensor, airTempGPIO)
+	if hum is not None and air is not None and air is not 0:
+		humidity = hum
+		if airTemp == 0: airTemp = 32+1.8*air
+		else: airTemp = .95*airTemp + 0.05*(32+1.8*air)
+		airTemp = round(airTemp,1)
+		maxAirTemp = max(airTemp,maxAirTemp)
+		minAirTemp = min(airTemp,minAirTemp)
+
+	locTime = time.localtime()
+	if locTime.tm_hour == 2 and locTime.tm_min == 0: 
+		minAirTemp,maxAirTemp = airTemp,airTemp
 
 def setup():
+	GPIO.setup(airTempGPIO, GPIO.IN)
 	GPIO.setup(clockGPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 	GPIO.setup(dataGPIO, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 	GPIO.setup(buttonGPIO, GPIO.OUT)
@@ -178,6 +201,8 @@ def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 	isReadingTemp = 1
 	# Blink the heartbeat LED
 	GPIO.output(heartBeatGPIO,buttonOn)
+	# Read outside temp
+	readOutsideTemp()
 	if fakeIt:
 		time.sleep(0.05)
 		GPIO.output(heartBeatGPIO,buttonOff)

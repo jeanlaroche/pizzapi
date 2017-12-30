@@ -4,8 +4,6 @@ import pdb
 import threading, time, os
 import schedule as sc
 import re
-import Adafruit_DHT
-sensor = Adafruit_DHT.DHT11
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
@@ -17,27 +15,11 @@ statsDay			= 	0	# 0 for today, -1 for yesterday, -2 etc
 allowControl 		= 	0	# Allow or disallow control of temp
 alwaysAllow 		= 	0	# Ignore flag above.
 
-humidity = 0
-airTemp = 0
-minAirTemp = 200
-maxAirTemp = -100
-
-def getTemp():
-	global humidity, airTemp, maxAirTemp, minAirTemp
-	hum, air = Adafruit_DHT.read_retry(sensor, 2)
-	if hum is not None and air is not None and air is not 0:
-		humidity = hum
-		if airTemp == 0: airTemp = 32+1.8*air
-		else: airTemp = .95*airTemp + 0.05*(32+1.8*air)
-		airTemp = round(airTemp,1)
-		maxAirTemp = max(airTemp,maxAirTemp)
-		minAirTemp = min(airTemp,minAirTemp)
-	return humidity,airTemp
 
 @app.route('/airTemp')
 def _airTemp():
-	getTemp()
-	return jsonify(humidity=humidity,outsideTemperature=airTemp,minAirTemp=minAirTemp,maxAirTemp=maxAirTemp)
+	rt.readOutsideTemp()
+	return jsonify(humidity=rt.humidity,outsideTemperature=rt.airTemp,minAirTemp=rt.minAirTemp,maxAirTemp=rt.maxAirTemp)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -78,8 +60,7 @@ def _getTubStatus():
 	heaterLabel = ["{:}".format(ii) for ii in range(0,25)]
 	fileUpdated = sc.fileUpdated
 	sc.fileUpdated = 0
-	getTemp()
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow,outsideTemperature=airTemp,minAirTemp=minAirTemp,maxAirTemp=maxAirTemp)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow,outsideTemperature=rt.airTemp,minAirTemp=rt.minAirTemp,maxAirTemp=rt.maxAirTemp)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -138,16 +119,11 @@ def GetUptime():
 	return uptime
 	
 def showHeartBeat():
-	global minAirTemp, maxAirTemp
 	if rt.fakeIt: return
 	# Don't read the temperature if the tub is in the process of adjusting it.
 	if not rt.isAdjustingTemp:  rt.readTemperature(updateTempVal=1)
 	sc.logHeaterUse()
 	os.system('touch ' + rt.logFile)
-	locTime = time.localtime()
-	if locTime.tm_hour == 2 and locTime.tm_min == 0: 
-		minAirTemp,maxAirTemp = airTemp,airTemp
-	
 	#rt.mprint("HeartBeat")
 	tim = threading.Timer(4, showHeartBeat)
 	tim.start()
