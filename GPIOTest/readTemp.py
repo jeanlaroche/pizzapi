@@ -104,6 +104,15 @@ def init():
 		mprint("Full Temp Read: Temp {} Set {} ".format(temperatureVal,setTemperatureVal))
 		# Reset flag after a while.
 		resetFlag()
+		
+def startOutsideTempReading():
+	def doReadOutside():
+		while 1:
+			readOutsideTemp()
+			time.sleep(10)
+	thr = threading.Thread(target=doReadOutside, args=(), group=None)
+	thr.daemon = True
+	thr.start()	
 	
 def tearDown():
 	GPIO.cleanup(clockGPIO)
@@ -202,7 +211,6 @@ def readTemperature(waitForNonZeroTemp = 0, updateTempVal = 0):
 	# Blink the heartbeat LED
 	GPIO.output(heartBeatGPIO,buttonOn)
 	# Read outside temp
-	readOutsideTemp()
 	if fakeIt:
 		time.sleep(0.05)
 		GPIO.output(heartBeatGPIO,buttonOff)

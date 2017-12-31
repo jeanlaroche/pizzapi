@@ -18,7 +18,6 @@ alwaysAllow 		= 	0	# Ignore flag above.
 
 @app.route('/airTemp')
 def _airTemp():
-	rt.readOutsideTemp()
 	return jsonify(humidity=rt.humidity,outsideTemperature=rt.airTemp,minAirTemp=rt.minAirTemp,maxAirTemp=rt.maxAirTemp)
 
 @app.route('/favicon.ico')
@@ -141,6 +140,8 @@ def preStart():
 	# Start scheduler after a while
 	tim = threading.Timer(8, sc.openAndRun)
 	tim.start()
+	# Start thread to read outside temp
+	rt.startOutsideTempReading()
 
 preStart()
 
