@@ -15,9 +15,14 @@ statsDay			= 	0	# 0 for today, -1 for yesterday, -2 etc
 allowControl 		= 	0	# Allow or disallow control of temp
 alwaysAllow 		= 	0	# Ignore flag above.
 
+
+@app.route('/airTemp')
+def _airTemp():
+	return jsonify(humidity=rt.humidity,outsideTemperature=rt.airTemp,minAirTemp=rt.minAirTemp,maxAirTemp=rt.maxAirTemp)
+
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(app.root_path,'favicon.ico', mimetype='image/vnd.microsoft.icon')
+	return send_from_directory(app.root_path,'favicon.ico', mimetype='image/vnd.microsoft.icon')
 	
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
@@ -54,7 +59,7 @@ def _getTubStatus():
 	heaterLabel = ["{:}".format(ii) for ii in range(0,25)]
 	fileUpdated = sc.fileUpdated
 	sc.fileUpdated = 0
- 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow)
+ 	return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow,outsideTemperature=rt.airTemp,minAirTemp=rt.minAirTemp,maxAirTemp=rt.maxAirTemp)
 
 @app.route("/_getFullData")
 def _getFullData():
@@ -135,6 +140,8 @@ def preStart():
 	# Start scheduler after a while
 	tim = threading.Timer(8, sc.openAndRun)
 	tim.start()
+	# Start thread to read outside temp
+	rt.startOutsideTempReading()
 
 preStart()
 
