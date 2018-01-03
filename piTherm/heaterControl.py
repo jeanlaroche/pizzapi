@@ -115,6 +115,7 @@ class heaterControl(object):
                     self.outsideTemp = Dict['outsideTemperature']
                     time.sleep(10)
                 except:
+                    self.mprint("Error in readoutsideTemp()")
                     pass
         self.outsideTempThread = Thread(target=readOutsideTemp, args=(), group=None)
         self.outsideTempThread.daemon = True
@@ -128,6 +129,7 @@ class heaterControl(object):
                 if 'holding' in jsonStat and jsonStat['holding']:
                     self.holding = 1
                     self.setTargetTemp(jsonStat['targetTemp'])
+                self.vacation = jsonStat['vacation']
             except:
                 pass
         
@@ -278,7 +280,7 @@ class heaterControl(object):
         
     def writeStatus(self):
         with open(self.statusFile,'w') as f:
-            json.dump({'holding':self.holding,'targetTemp':self.targetTemp},f)
+            json.dump({'holding':self.holding,'targetTemp':self.targetTemp,'vacation':self.vacation},f)
 
     def onRun(self):
         self.holding = 0
@@ -298,6 +300,7 @@ class heaterControl(object):
         schedule.vacation = self.vacation
         self.drawButtons()
         self.mprint("VACATION")
+        self.writeStatus()
 
     def incTargetTemp(self,inc):
         self.setTargetTemp(self.targetTemp + inc)

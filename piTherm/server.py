@@ -77,7 +77,6 @@ def _getData():
     # stats= hc.grabLog()
     # stats = ''.join(stats)
     stats,X,Y = schedule.computeGraphData()
-    print stats
     return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats,holding=hc.holding,X=X,Y=Y,outsideTemp=hc.outsideTemp)
 
 
