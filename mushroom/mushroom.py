@@ -104,7 +104,7 @@ class mushroomControl(object):
 
     def updateTemp(self):
         curHumidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
-        if curTemp is None or curHumidity >= 100:
+        if curTemp is None or curHumidity >= 100 or curTemp == 0:
             self.mprint("Failed to read temp")
             return
         self.curHumidity = curHumidity
@@ -153,8 +153,10 @@ class mushroomControl(object):
             pass
             
     def logData(self):
+        localTime = time.localtime()
+        if self.curTemp == 0: return
         with open(self.logFile,'a') as f:
-            f.write("{} Temp {:.2f} -- Humidity {:.2f}\n".format(time.time(),self.curTemp,self.curHumidity))
+            f.write("{} {} Temp {:.2f} -- Humidity {:.2f}\n".format(time.time(),localTime.tm_hour+localTime.tm_min/60.+localTime.tm_sec/3600.,self.curTemp,self.curHumidity))
             
     def getHumidityData(self,pastTimesH):
         with open(self.logFile,'r') as f:
@@ -167,8 +169,12 @@ class mushroomControl(object):
             thisTime = float(line.split()[0])-cutoffTime
             if thisTime < 0: continue
             Y.append(float(line.split()[-1]))
-            X.append(thisTime/3600.)
-        return X,Y
+            hour = float(line.split()[1])
+            X.append(hour)
+        # Subtract 24 from data whose hour is later than the most recent one
+        X = np.array(X)
+        X[X > X[-1]] -= 24
+        return X.tolist(),Y
             
         
 if __name__ == '__main__':
