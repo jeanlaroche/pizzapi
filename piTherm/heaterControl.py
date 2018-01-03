@@ -76,12 +76,23 @@ class heaterControl(object):
             self.onTouch(s,down)
         self.display = dc.displayControl(onTouch,self)
 
+        # Read the status file if there's one.
+        with open(self.statusFile,'r') as f:
+            try:
+                jsonStat = json.load(f)
+                if 'holding' in jsonStat and jsonStat['holding']:
+                    self.holding = 1
+                    self.setTargetTemp(jsonStat['targetTemp'])
+                self.vacation = jsonStat['vacation']
+                schedule.vacation = self.vacation
+                self.mprint("jsonStat read: vacation {}".format(self.vacation))
+            except:
+                pass
+        
         # Temp update thread.
         def updateTemp():
             while self.stopNow == 0:
-
                 self.updateTemp()
-
                 time.sleep(self.updatePeriodS)
         self.updateTempThread = Thread(target=updateTemp, args=(), group=None)
         self.updateTempThread.daemon = True
@@ -121,17 +132,6 @@ class heaterControl(object):
         self.outsideTempThread.daemon = True
         self.outsideTempThread.start()
         self.mprint("Starting outside temp thread")
-        
-        # Read the status file if there's one.
-        with open(self.statusFile,'r') as f:
-            try:
-                jsonStat = json.load(f)
-                if 'holding' in jsonStat and jsonStat['holding']:
-                    self.holding = 1
-                    self.setTargetTemp(jsonStat['targetTemp'])
-                self.vacation = jsonStat['vacation']
-            except:
-                pass
         
         self.mprint("Drawing")
         self.draw()

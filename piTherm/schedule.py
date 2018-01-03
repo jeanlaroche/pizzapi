@@ -193,18 +193,20 @@ def readSchedule(file,verbose=0):
 def redoSchedule():
     thisDate = datetime.datetime.now()
     curTime = thisDate.strftime('%H:%M')
+    # Reorder the schedule times in decreasing time, putting the ones that are later than curTime last.
     allTimes = sorted([key for key in schedule.keys() if key <= curTime],reverse=1)
+    allTimes += sorted([key for key in schedule.keys() if key > curTime],reverse=1)
     #if allTimes: hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
-    if not allTimes:
-        # curTime is before any of the schedule entries, redo the latest one.
-        allTimes = sorted(schedule.keys(),reverse=1)
-        print allTimes
-    # hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
+    # if not allTimes:
+        # # curTime is before any of the schedule entries, redo the latest one.
+        # allTimes = sorted(schedule.keys(),reverse=1)
+        # print allTimes
+    hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
     if allTimes: 
         weekDay = thisDate.weekday() if not vacation else 5
         for key in allTimes:
             if len(schedule[key]) == 1 or (weekDay in schedule[key][1]):        
-                hc.mprint("Redoing schedule for {} setting target to {}F".format(key,schedule[key][0]))
+                hc.mprint("Redoing schedule for {} setting target to {}F -- day {} vacation {}".format(key,schedule[key][0],weekDay,vacation))
                 if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))
                 todo[key] = 0
                 break
