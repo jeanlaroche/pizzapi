@@ -21,6 +21,7 @@ class heaterControl(object):
     roomTemp = 0
     roomTempAdjust = 0
     outsideTemp = 0
+    outsideHum = 0
     targetTemp = 0
     updatePeriodS = 5
     tempHistoryLengthS = 120
@@ -124,6 +125,7 @@ class heaterControl(object):
                     Str = urllib2.urlopen("http://hottub.mooo.com/airTemp").read()
                     Dict = json.loads(Str)
                     self.outsideTemp = Dict['outsideTemperature']
+                    self.outsideHum = Dict['humidity']
                     time.sleep(10)
                 except:
                     self.mprint("Error in readoutsideTemp()")
@@ -360,7 +362,7 @@ class heaterControl(object):
     def showTarget(self):
         if self.showImage: return
         self.display.make_label("Target  {}F".format(self.targetTemp), self.display.xSize / 2, 0, 40, dc.nblue)
-        self.display.make_label("Outside {}F".format(self.outsideTemp), self.display.xSize / 2, 35, 40, dc.nblue)
+        self.display.make_label("Out. {}F ({:.0f}%)".format(self.outsideTemp,self.outsideHum), self.display.xSize / 2, 35, 40, dc.nblue)
 
     def drawButtons(self,highlightButton=-1):
         if self.showImage: return
