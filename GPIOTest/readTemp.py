@@ -59,7 +59,7 @@ minAirTemp = 200
 maxAirTemp = -100
 
 import Adafruit_DHT
-sensor = Adafruit_DHT.DHT11
+sensor = Adafruit_DHT.DHT22
 def readOutsideTemp():
 	global humidity, airTemp, maxAirTemp, minAirTemp
 	hum, air = Adafruit_DHT.read_retry(sensor, airTempGPIO)
