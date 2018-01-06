@@ -16,7 +16,7 @@ class mushroomControl(object):
     updatePeriodS = 4   # How often do we read the temp and humidity
     fanOnPeriodMin = 1      # How often does the fan come on, in minutes.
     fanOnLengthS = 15    # How long does it stay on, in minutes
-    fanLastOn = 0
+    fanLastOn = time.time()
     stopNow = 0
     targetHumidity = 60
     curHumidity = 100
@@ -126,6 +126,10 @@ class mushroomControl(object):
         self.targetHumidity += inc
         self.writeJson()
 
+    def fanTest(self):
+        # Trigger the fan
+        self.fanLastOn = 0
+    
     def incFanFreqDur(self,incFreqMin=0,incDurS=0):
         self.fanOnPeriodMin += incFreqMin
         self.fanOnPeriodMin = max(.5,self.fanOnPeriodMin)

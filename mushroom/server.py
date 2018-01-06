@@ -52,6 +52,11 @@ def _humidityDown():
     # if allowControl or alwaysAllow: rt.incSetHumidityerature(-1)
         # return jsonify(targetHumidityeratureValue=rt.targetHumidityeratureVal)
 
+@app.route("/_fanTest")
+def _fanTest():
+    print "FAN Test"
+    mush.fanTest()
+
 @app.route("/_fanUp")
 def _fanUp():
     print "FAN Plus"

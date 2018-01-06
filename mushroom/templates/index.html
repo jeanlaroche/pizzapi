@@ -33,6 +33,10 @@ span {font-weight: bold;}
 		});
 	}
 	
+	function onFanTest() {
+		$.getJSON('/_fanTest');
+	}
+
 	function onFanUp() {
 		$.getJSON('/_fanUp', function(data)
 		{
@@ -197,9 +201,10 @@ span {font-weight: bold;}
 	    </fieldset>
 		<p><h2>Target Humidity: <span id="targetHumidity"></span> %</h2></p>
 		<p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
-		<fieldset class="ui-grid-a">
+		<fieldset class="ui-grid-b">
 			<div class="ui-block-a"><button name="FanP" id="FanP" onclick="onFanUp()" data-theme="d">FAN Interval +</button></div>
 			<div class="ui-block-b"><button name="FanM" id="FanM" onclick="onFanDown()" data-theme="d">FAN Interval -</button></div>
+			<div class="ui-block-c"><button name="Test" id="Test" onclick="onFanTest()" data-theme="d">Test FAN</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 		<p><h2>Fan is on every: <span id="fanOnPeriodMin"></span> min</h2></p>
