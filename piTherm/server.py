@@ -39,7 +39,7 @@ def Index2():
 
 @app.route("/_tempUp")
 def _tempUp():
-    print "TEMP UP"
+    #print "TEMP UP"
     hc.incTargetTemp(1)
     return jsonify(targetTemp=int(hc.targetTemp))
         # if allowControl or alwaysAllow: rt.incSetTemperature(1)
@@ -47,7 +47,7 @@ def _tempUp():
 
 @app.route("/_tempDown")
 def _tempDown():
-    print "Temp Down"
+    #print "Temp Down"
     hc.incTargetTemp(-1)
     return jsonify(targetTemp=int(hc.targetTemp))
     # if allowControl or alwaysAllow: rt.incSetTemperature(-1)
@@ -55,29 +55,29 @@ def _tempDown():
 
 @app.route("/_schedule")
 def _schedule():
-    print "Schedule"
+    #print "Schedule"
     hc.onRun()
     return ""
 
 @app.route("/_hold")
 def _hold():
-    print "HOLD"
+    #print "HOLD"
     hc.onHold()
     return jsonify(holding=hc.holding)
     
 @app.route("/_pageUnload")
 def _pageUnload():
-    print "PAGE UNLOADED"
+    #print "PAGE UNLOADED"
     return ""
 
 @app.route("/_getData")
 def _getData():
-    print "Get Data"
+    #print "Get Data"
     roomTemp = np.round(hc.roomTemp,decimals=1)
     # stats= hc.grabLog()
     # stats = ''.join(stats)
     stats,X,Y = schedule.computeGraphData()
-    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats,holding=hc.holding,X=X,Y=Y,outsideTemp=hc.outsideTemp)
+    return jsonify(roomTemp=roomTemp,targetTemp=int(hc.targetTemp),humidity=hc.humidity,upTime=GetUptime(),heaterOn=hc.heaterOn,lastMsg=hc.lastMsg,stats=stats,holding=hc.holding,X=X,Y=Y,outsideTemp=hc.outsideTemp,outsideHum=round(hc.outsideHum,0))
 
 
 def GetUptime():
@@ -93,7 +93,7 @@ def GetUptime():
 # Pins.Init()
 def preStart():
     global hc
-    print "RUNNING PRESTART"
+    #print "RUNNING PRESTART"
     hc = heaterControl.heaterControl(doStart=1)
     #hc.draw()
 
@@ -109,4 +109,4 @@ if __name__ == "__main__":
     _getData()
     app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
     hc.close()
-    print "TEARDOWN"
+    #print "TEARDOWN"

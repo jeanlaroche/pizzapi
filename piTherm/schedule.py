@@ -26,7 +26,8 @@ def getCtime():
     # Subtracting a multiple of 24 because time.time() starts at 00:00.
     # timezone is to get the local time. I wasn't careful: 412992 isn't a whole number of weeks. Perhaps I should have use just time.time()-time.timezone() to get the dates. Actually you have to use altzone to get the DST time.
     # right.
-    return (time.time()-time.altzone)/3600 - 412992 
+    offset = time.altzone if time.localtime().tm_isdst > 0 else time.timezone
+    return (time.time()-offset)/3600 - 412992 
     
 def getToday():
     return(24*int(getCtime() / 24))
