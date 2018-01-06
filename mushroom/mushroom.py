@@ -69,6 +69,7 @@ class mushroomControl(object):
         
         def logLoop():
             while self.stopNow == 0:
+                self.purgeLogFile()
                 self.logData()
                 time.sleep(self.logPeriodS)
         self.logThread = Thread(target=logLoop, args=(), group=None)
@@ -151,6 +152,13 @@ class mushroomControl(object):
                 self.targetHumidity = A['targetHumidity']
         except:
             pass
+            
+    def purgeLogFile(self):
+        localTime = time.localtime()
+        # Every so often, cut the log file.
+        if localTime.tm_hour == 0 and localTime.tm_min == 0 and localTime.tm_sec < 40:
+            os.system('tail -n 10000 {} | sponge {} '.format(self.logFile,self.logFile))
+            self.mprint('Purged log file')
             
     def logData(self):
         localTime = time.localtime()
