@@ -21,6 +21,8 @@ class heaterControl(object):
     roomTemp = 0
     roomTempAdjust = 0
     outsideTemp = 0
+    maxAirTemp = 0
+    minAirTemp = 0
     outsideHum = 0
     targetTemp = 0
     updatePeriodS = 5
@@ -126,6 +128,8 @@ class heaterControl(object):
                     Dict = json.loads(Str)
                     self.outsideTemp = Dict['outsideTemperature']
                     self.outsideHum = Dict['humidity']
+                    self.maxAirTemp = Dict['maxAirTemp']
+                    self.minAirTemp = Dict['minAirTemp']
                     time.sleep(10)
                 except:
                     self.mprint("Error in readoutsideTemp()")
@@ -361,8 +365,9 @@ class heaterControl(object):
 
     def showTarget(self):
         if self.showImage: return
-        self.display.make_label("Target  {}F".format(self.targetTemp), self.display.xSize / 2, 0, 40, dc.nblue)
-        self.display.make_label("Out. {}F ({:.0f}%)".format(self.outsideTemp,self.outsideHum), self.display.xSize / 2, 35, 40, dc.nblue)
+        self.display.make_label("Target  {}F".format(self.targetTemp), self.display.xSize / 2, 0, 40, dc.ngreen)
+        self.display.make_label("Out. {}F ({:.0f}%)".format(self.outsideTemp,self.outsideHum), self.display.xSize / 2, 40, 30, dc.nblue)
+        self.display.make_label("Max {}F Min {}F".format(self.maxAirTemp,self.minAirTemp), self.display.xSize / 2, 65, 30, dc.nblue)
 
     def drawButtons(self,highlightButton=-1):
         if self.showImage: return
@@ -450,11 +455,11 @@ class heaterControl(object):
         uptime = check_output(["uptime"])
         uptime = re.sub('[\d]+ user[s]*,.*load(.*),.*,.*', 'load\\1', uptime).strip()
         # self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 50, 300, 40))
-        self.display.make_label(uptime, self.display.xSize / 2, 70, 20, dc.nblue)
+        self.display.make_label(uptime, self.display.xSize / 2, 95, 16, dc.nblue)
         #self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 70, 300, 40))
         #self.display.make_label(self.lastMsg, self.display.xSize / 2, 70, 20, dc.nblue)
         #self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
-        self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 20, dc.nblue, fullLine=1)
+        self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 16, dc.nblue, fullLine=1)
         
     def grabLog(self):
         with open('heater.log','r') as f:
