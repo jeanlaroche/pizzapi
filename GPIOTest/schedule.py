@@ -37,7 +37,8 @@ def getCtime():
 	# Subtracting a multiple of 24 because time.time() starts at 00:00.
 	# timezone is to get the local time. I wasn't careful: 412992 isn't a whole number of weeks. Perhaps I should have use just time.time()-time.timezone() to get the dates. Actually you have to use altzone to get the DST time.
 	# right.
-	return (time.time()-time.altzone)/3600 - 412992 
+	offset = time.altzone if time.localtime().tm_isdst > 0 else time.timezone
+	return (time.time()-offset)/3600 - 412992 
 	
 def getToday():
 	return(24*int(getCtime() / 24))
@@ -95,7 +96,7 @@ def computeGraphData():
 		B.append(item[:])		# Careful! If you use item you'll get a reference, not a copy.
 		B[-1][1] = 1-B[-1][1]	# Flip value.
 		B.append(item[:])
-	heaterTime = [item[0]-startHour for item in B]
+	heaterTime = [item[0]-startHour for item in B] # Annoying I'm not sure why I need this -1...
 	heaterValue = [item[1] for item in B]
 	heaterUsage = 0
 	heaterCost = 0
@@ -111,7 +112,7 @@ def computeGraphData():
 		prevTime = heaterData[ii-1][0]
 		# This should not happen since we only log heater changes.
 		if heaterData[ii-1][1] == 0 : 
-			print "Weird, two consecutive heater entry with heater=0"
+			#print "Weird, two consecutive heater entry with heater=0"
 			continue
 		# max(prevTime,startHour - 1) is useful because we only want to count the time within the past hour, not since
 		# the last log.

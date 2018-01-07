@@ -52,16 +52,21 @@ def _humidityDown():
     # if allowControl or alwaysAllow: rt.incSetHumidityerature(-1)
         # return jsonify(targetHumidityeratureValue=rt.targetHumidityeratureVal)
 
+@app.route("/_fanTest")
+def _fanTest():
+    print "FAN Test"
+    mush.fanTest()
+
 @app.route("/_fanUp")
 def _fanUp():
     print "FAN Plus"
-    mush.incFanFreqDur(incFreqMin=.5)
+    mush.incFanFreqDur(incFreqMin= .5 if mush.fanOnPeriodMin < 5 else 1)
     return jsonify(fanOnPeriodMin = mush.fanOnPeriodMin)
 
 @app.route("/_fanDown")
 def _fanDown():
     print "FAN Down"
-    mush.incFanFreqDur(incFreqMin=-.5)
+    mush.incFanFreqDur(incFreqMin= -.5 if mush.fanOnPeriodMin < 5 else -1)
     return jsonify(fanOnPeriodMin = mush.fanOnPeriodMin)
 
 @app.route("/_fanDurUp")

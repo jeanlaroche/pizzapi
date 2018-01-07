@@ -16,7 +16,7 @@ class mushroomControl(object):
     updatePeriodS = 4   # How often do we read the temp and humidity
     fanOnPeriodMin = 1      # How often does the fan come on, in minutes.
     fanOnLengthS = 15    # How long does it stay on, in minutes
-    fanLastOn = 0
+    fanLastOn = time.time()
     stopNow = 0
     targetHumidity = 60
     curHumidity = 100
@@ -69,6 +69,7 @@ class mushroomControl(object):
         
         def logLoop():
             while self.stopNow == 0:
+                self.purgeLogFile()
                 self.logData()
                 time.sleep(self.logPeriodS)
         self.logThread = Thread(target=logLoop, args=(), group=None)
@@ -125,6 +126,10 @@ class mushroomControl(object):
         self.targetHumidity += inc
         self.writeJson()
 
+    def fanTest(self):
+        # Trigger the fan
+        self.fanLastOn = 0
+    
     def incFanFreqDur(self,incFreqMin=0,incDurS=0):
         self.fanOnPeriodMin += incFreqMin
         self.fanOnPeriodMin = max(.5,self.fanOnPeriodMin)
@@ -151,6 +156,13 @@ class mushroomControl(object):
                 self.targetHumidity = A['targetHumidity']
         except:
             pass
+            
+    def purgeLogFile(self):
+        localTime = time.localtime()
+        # Every so often, cut the log file.
+        if localTime.tm_hour == 0 and localTime.tm_min == 0 and localTime.tm_sec < 40:
+            os.system('tail -n 10000 {} | sponge {} '.format(self.logFile,self.logFile))
+            self.mprint('Purged log file')
             
     def logData(self):
         localTime = time.localtime()
