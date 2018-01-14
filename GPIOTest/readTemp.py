@@ -38,6 +38,7 @@ heaterVal 				=   0   # Current status of tub heater
 
 isAdjustingTemp			=   0   # Flag indicating the tub is in temp adjusting mode.
 isReadingTemp			= 	0 	# Flag indicating that we're reading the temp.
+setTempThread           =   None # Thread used to adjust the target temp
 
 dataLength 		= 1000		# How many samples we're reading each time we want to read the temp.
 wordLength		= 21		# How many bits are expected in a message. 21 bits: 7 bits for each display.
@@ -100,8 +101,10 @@ def init():
 		isAdjustingTemp = 1 # To prevent anybody from reading the temp during this
 		temperatureVal,heaterVal = readTemperature()[1:3]
 		setTemperatureVal = readSetTemperature()
-		targetTemperatureVal = setTemperatureVal
-		mprint("Full Temp Read: Temp {} Set {} ".format(temperatureVal,setTemperatureVal))
+        # If the set temp thread is alive at this point do not overwrite the target temp. 
+		if setTempThread == None or not setTempThread.isAlive():
+			targetTemperatureVal = setTemperatureVal
+		mprint("Full Temp Read: Temp {} Set {} Target {}".format(temperatureVal,setTemperatureVal,targetTemperatureVal))
 		# Reset flag after a while.
 		resetFlag()
 		
@@ -267,9 +270,9 @@ def readSetTemperature():
 		return -1
 	setTemperatureVal = tempValue;
 	return tempValue
-	
+
 def incSetTemperature(delta):
-	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal
+	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, setTempThread
 	prevTargetTemperatureVal = targetTemperatureVal
 	if targetTemperatureVal < maxTemp and delta > 0: 
 		targetTemperatureVal += delta
@@ -278,16 +281,18 @@ def incSetTemperature(delta):
 	# The problem here is that if isAdjustingTemp hasn't been reset yet, this won't have any effect.
 	# Ideally, I should wait in setTemperature() for the flag to go low. Ah but then, if you call the function
 	# several time in a row, things would be bad...
-	if not prevTargetTemperatureVal == targetTemperatureVal and isAdjustingTemp == 0:
-		t = threading.Thread(target=setTemperature)
-		t.daemon = True
-		t.start()
+	if not prevTargetTemperatureVal == targetTemperatureVal and (setTempThread == None or not setTempThread.isAlive()):
+		print "Starting setTemperature thread"
+		setTempThread = threading.Thread(target=setTemperature)
+		setTempThread.daemon = True
+		setTempThread.start()
 	return
 	
 def setTemperature():
 # Set the hot tub temperature, by pressing the button repeatedly while reading the set temp.
 	global temperatureVal, setTemperatureVal, targetTemperatureVal, heaterVal, isAdjustingTemp
-	if isAdjustingTemp: return
+	while isAdjustingTemp:
+		time.sleep(0.5)
 	mprint ("Setting the temperature to {}F".format(targetTemperatureVal))
 	# First of, get into blinking mode
 	isAdjustingTemp = 1
