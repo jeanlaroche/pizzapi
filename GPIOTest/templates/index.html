@@ -102,7 +102,8 @@ span {font-weight: bold;}
 				$("#heaterStats0").text(data.heaterStats[1]);
 				// To set a color, set the style to "color:red"
 				$("#heaterValue").attr('style',data.heaterValueStr == "OFF" ? 'color:white' : 'color:red');
-				$("#setTemperatureValue").attr('style',data.tempAdjust ? 'color:green' : 'color:white');
+				$("#setTemperatureValue").attr('style',data.tempAdjust ? 'color:yellow' : 'color:white');
+				$("#temperatureValue").attr('style',data.isAdjustingTemp ? 'color:yellow' : 'color:white');
 				$("#Up").attr('disabled',data.allowControl ? false : true);
 				$("#Down").attr('disabled',data.allowControl ? false : true);
 				$("#Sche").attr('disabled',data.allowControl ? false : true);
