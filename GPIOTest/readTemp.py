@@ -64,7 +64,7 @@ sensor = Adafruit_DHT.DHT22
 def readOutsideTemp():
 	global humidity, airTemp, maxAirTemp, minAirTemp
 	hum, air = Adafruit_DHT.read_retry(sensor, airTempGPIO)
-	if hum is not None and air is not None and air is not 0:
+	if hum is not None and air is not None and air is not 0 and hum <= 100:
 		humidity = hum
 		if airTemp == 0: airTemp = 32+1.8*air
 		else: airTemp = .95*airTemp + 0.05*(32+1.8*air)
