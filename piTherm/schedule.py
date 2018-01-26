@@ -142,7 +142,7 @@ def logHeaterUse():
         # Check that the last previous temps was at least 1 minutes ago: the temp has been different for 
         # at least 4 minutes. Otherwise just wait.
         if 60*(curTime - lastTempTime) > 1:
-            statLogF.write("T {:.1f} {:.1f} {}\n".format(curTime,hc.roomTemp,timeStr))
+            statLogF.write("T {:.3f} {:.1f} {}\n".format(curTime,hc.roomTemp,timeStr))
             lastRoomTemp = hc.roomTemp
     else:
         lastTempTime = curTime
