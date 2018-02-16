@@ -1,0 +1,104 @@
+<!doctype html>
+<head>
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+
+<style>
+h3 {text-align: center;}
+h4 {text-align: left; color: green}
+span {font-weight: bold;}
+</style>
+
+<script type=text/javascript>
+	
+	// Javascript function for up button
+	function onOn() {
+		$.getJSON('/_On', function(data)
+		{
+		});
+	}
+	
+	// Javascript function for down button
+	function onOff() {
+		$.getJSON('/_Off', function(data)
+		{
+			//$("#targetTemp").text(data.targetTemp);
+		});
+	}
+	
+
+	// Read all temps, when the page is reloaded.
+	function getData() {
+		$.getJSON('/_getData', function(data)
+		{
+			$("#sunrise").text(data.sunrise);
+			$("#sunset").text(data.sunset);
+		});
+	}
+	
+
+	// This is a JQuery shorthand to define a function that's called when the page is loaded.
+    $(
+		function() 
+		{
+			// Binds the ajax request _pageUnload to onbeforeunload of the window.
+			window.onbeforeunload = function(){
+				// The ajax request must return something, but it's OK to ignore it.
+				//$.get('/_pageUnload');
+			};
+
+			// This does an Ajax request for /_getFullData.
+			getData();
+			
+			// You can also call a regular javascipt function:
+			//getTemperature();
+			//window. addEventListener ( "resize" , function ( event ) {redraw();});
+		}
+    );
+	
+	
+	
+    $(
+		// You can put more code to be executed at page loading in here but it has to be inside a function.
+//		function () {
+//		$.getJSON('/_tempUp');
+//		}
+		function() {
+			//redraw()
+		}
+    );
+	
+</script>
+<!-- Simple JQuery Mobile page that display the getTemperature state on the breadoard -->
+<!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
+
+<div data-role="page" data-theme="b">
+  <div data-role="header">
+    <div><h2><center>LIGHT CONTROL</center></h2></div>
+  </div>
+  
+  <div data-role="content">
+    <p><h2>Humidity: <span id="humidity"></span> %</h2></p>
+    <p><h2>Outside Temp: <span id="outsideTemp"></span> F (Hum <span id="outsideHum"></span> %)</h2></p>
+	<div data-role="fieldcontain">
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="On" id="On" onclick="onOn()" data-theme="d">ON</button></div>
+			<div class="ui-block-b"><button name="Off" id="Off" onclick="onOff()" data-theme="d">OFF</button></div>
+				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
+	    </fieldset>
+	</div>
+  </div>
+ <div data-role="footer">
+    <div ><h4><span id="sunrise" ></span></h4></div>
+    <div ><h4><span id="sunset" ></span></h4></div>
+    <div ><h4><span id="lastMessage" ></span></h4></div>
+    <div><h4><span id="upTime" ></span></h4></div>
+    <div ><h2>Temperature:</h2></div>
+    <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
+  </div>
