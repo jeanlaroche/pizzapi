@@ -39,6 +39,8 @@ span {font-weight: bold;}
 		{
 			$("#sunrise").text(data.sunrise);
 			$("#sunset").text(data.sunset);
+			$("#upTime").text(data.uptime);
+			setTimeout(function(){getData();},4000);
 		});
 	}
 	
@@ -55,7 +57,7 @@ span {font-weight: bold;}
 
 			// This does an Ajax request for /_getFullData.
 			getData();
-			
+			setTimeout(function(){getData();},4000);			
 			// You can also call a regular javascipt function:
 			//getTemperature();
 			//window. addEventListener ( "resize" , function ( event ) {redraw();});
@@ -84,9 +86,9 @@ span {font-weight: bold;}
   </div>
   
   <div data-role="content">
-    <p><h2>Humidity: <span id="humidity"></span> %</h2></p>
+<!--     <p><h2>Humidity: <span id="humidity"></span> %</h2></p>
     <p><h2>Outside Temp: <span id="outsideTemp"></span> F (Hum <span id="outsideHum"></span> %)</h2></p>
-	<div data-role="fieldcontain">
+ -->	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
 			<div class="ui-block-a"><button name="On" id="On" onclick="onOn()" data-theme="d">ON</button></div>
 			<div class="ui-block-b"><button name="Off" id="Off" onclick="onOff()" data-theme="d">OFF</button></div>
@@ -97,8 +99,5 @@ span {font-weight: bold;}
  <div data-role="footer">
     <div ><h4><span id="sunrise" ></span></h4></div>
     <div ><h4><span id="sunset" ></span></h4></div>
-    <div ><h4><span id="lastMessage" ></span></h4></div>
     <div><h4><span id="upTime" ></span></h4></div>
-    <div ><h2>Temperature:</h2></div>
-    <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>

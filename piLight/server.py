@@ -4,7 +4,7 @@ import re
 import threading, time, os
 import RPi.GPIO as GPIO
 
-relayGPIO=4 # Pins 4 from SDcard on the inside. 5 is GND
+relayGPIO = 17 # Pins 4 from SDcard on the inside. 5 is GND
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(relayGPIO, GPIO.OUT)
 
@@ -66,7 +66,7 @@ def _getData():
         str = re.sub(':\d\d\..*','',str)
         print str
         return str
-    return jsonify(sunrise=cleanup(sunrise),sunset=cleanup(sunset))
+    return jsonify(sunrise=cleanup(sunrise),sunset=cleanup(sunset),uptime=GetUptime())
 
 def GetUptime():
     # get uptime from the linux terminal command
@@ -129,5 +129,5 @@ preStart()
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
-    # app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
-    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+    app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
+    #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
