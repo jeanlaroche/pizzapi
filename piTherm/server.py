@@ -31,6 +31,10 @@ def Index():
 
 
 # special private page that allows changing the temp. For lack of a proper login thingy
+@app.route("/reboot")
+def reboot():
+    os.system('sudo reboot now')
+
 @app.route("/Pook")
 def Index2():
     global alwaysAllow
