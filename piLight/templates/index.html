@@ -18,20 +18,31 @@ span {font-weight: bold;}
 <script type=text/javascript>
 	
 	// Javascript function for up button
-	function onOn() {
-		$.getJSON('/_On', function(data)
+	function onPathOn() {
+		$.getJSON('/_PathOn', function(data)
 		{
 		});
 	}
 	
 	// Javascript function for down button
-	function onOff() {
-		$.getJSON('/_Off', function(data)
+	function onPathOff() {
+		$.getJSON('/_PathOff', function(data)
 		{
 			//$("#targetTemp").text(data.targetTemp);
 		});
 	}
 	
+	function onLightOn() {
+		$.getJSON('/_LightOn', function(data)
+		{
+		});
+	}
+	
+	function onLightOff() {
+		$.getJSON('/_LightOff', function(data)
+		{
+		});
+	}
 
 	// Read all temps, when the page is reloaded.
 	function getData() {
@@ -90,8 +101,13 @@ span {font-weight: bold;}
     <p><h2>Outside Temp: <span id="outsideTemp"></span> F (Hum <span id="outsideHum"></span> %)</h2></p>
  -->	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
-			<div class="ui-block-a"><button name="On" id="On" onclick="onOn()" data-theme="d">ON</button></div>
-			<div class="ui-block-b"><button name="Off" id="Off" onclick="onOff()" data-theme="d">OFF</button></div>
+			<div class="ui-block-a"><button name="On" id="On" onclick="onPathOn()" data-theme="d">Path ON</button></div>
+			<div class="ui-block-b"><button name="Off" id="Off" onclick="onPathOff()" data-theme="d">Path OFF</button></div>
+				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
+	    </fieldset>
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="On" id="On" onclick="onLightOn()" data-theme="d">Lights ON</button></div>
+			<div class="ui-block-b"><button name="Off" id="Off" onclick="onLightOff()" data-theme="d">Lights OFF</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 	</div>

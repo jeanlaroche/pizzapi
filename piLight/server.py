@@ -4,9 +4,11 @@ import re
 import threading, time, os
 import RPi.GPIO as GPIO
 
-relayGPIO = 17 # Pins 4 from SDcard on the inside. 5 is GND
+pathLightGPIO = 17 # Pins 4 from SDcard on the inside. 5 is GND
+lightGPIO = 18 # Pins 4 from SDcard on the inside. 5 is GND
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(relayGPIO, GPIO.OUT)
+GPIO.setup(pathLightGPIO, GPIO.OUT)
+GPIO.setup(lightGPIO, GPIO.OUT)
 
 # Can use this for the sunset time: https://en.wikipedia.org/wiki/Sunrise_equation
 
@@ -18,20 +20,26 @@ statsDay = 0  # 0 for today, -1 for yesterday, -2 etc
 allowControl = 0  # Allow or disallow control of temp
 alwaysAllow = 0  # Ignore flag above.
 
+pathLightStatus = 0
 lightStatus = 0
-GPIO.output(relayGPIO,lightStatus)
+GPIO.output(pathLightGPIO,pathLightStatus)
+GPIO.output(lightGPIO,lightStatus)
 canTurnOn = 1
 canTurnOff = 1
 
-onHour = 22
-onMin  = 46
-offHour = 22
-offMin  = onMin+1
+onHour = 0
+onMin  = 0
+offHour = 21
+offMin  = 04
 
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
+
+@app.route("/reboot")
+def reboot():
+    os.system('sudo reboot now')
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
@@ -40,31 +48,47 @@ def Index():
     alwaysAllow = 0
     return render_template("index.html", uptime=GetUptime())
 
-@app.route("/_On")
-def _On():
+@app.route("/_PathOn")
+def _PathOn():
+    global pathLightStatus
+    print "PATH ON"
+    pathLightStatus = 1
+    GPIO.output(pathLightGPIO,pathLightStatus)
+    return jsonify(pathLightStatus=int(pathLightStatus))
+
+@app.route("/_PathOff")
+def _PathOff():
+    global pathLightStatus
+    print "PATH OFF"
+    pathLightStatus = 0
+    GPIO.output(pathLightGPIO,pathLightStatus)
+    return jsonify(pathLightStatus=int(pathLightStatus))
+
+@app.route("/_LightOn")
+def _LightOn():
     global lightStatus
-    print "ON"
+    print "LIGHT ON"
     lightStatus = 1
-    GPIO.output(relayGPIO,lightStatus)
+    GPIO.output(lightGPIO,lightStatus)
     return jsonify(lightStatus=int(lightStatus))
 
-@app.route("/_Off")
-def _Off():
+@app.route("/_LightOff")
+def _LightOff():
     global lightStatus
-    print "OFF"
-    lightStatus = 0
-    GPIO.output(relayGPIO,lightStatus)
+    print "LIGHT OFF"
+    lightStatus = 1
+    GPIO.output(lightGPIO,lightStatus)
     return jsonify(lightStatus=int(lightStatus))
 
 @app.route("/_getData")
 def _getData():
-    print "GET DATA"
+    #print "GET DATA"
     sunrise,sunset = getSunsetTime()[2:]
     def cleanup(str):
-        print str
+        #print str
         str = re.sub('\d+\-\d+\-\d+ ','',str)
         str = re.sub(':\d\d\..*','',str)
-        print str
+        #print str
         return str
     return jsonify(sunrise=cleanup(sunrise),sunset=cleanup(sunset),uptime=GetUptime())
 
@@ -73,7 +97,7 @@ def GetUptime():
     from subprocess import check_output
     uptime = check_output(["uptime"])
     uptime = re.sub('[\d]+ user[s]*,.*load(.*),.*,.*', 'load\\1', uptime)
-    return uptime
+    return uptime+" Path is {} Lights are {}".format('on' if pathLightStatus else 'off','on' if lightStatus else 'off')
 
 def getSunsetTime():
     import ephem  
@@ -89,30 +113,32 @@ def getSunsetTime():
     
 
 def timerLoop():
-    global lightStatus, canTurnOn, canTurnOff, onHour,onMin,offHour,offMin
+    global pathLightStatus, lightStatus, canTurnOn, canTurnOff, onHour,onMin,offHour,offMin
     while 1:
         try:
             # Get the time of day. Find out if the light should be on. 
             locTime = time.localtime()
             if locTime.tm_hour == onHour and locTime.tm_min == onMin and canTurnOn == 1:
                 print "TIMER ON"
-                lightStatus = 1
-                GPIO.output(relayGPIO,lightStatus)
+                pathLightStatus = 1
+                GPIO.output(pathLightGPIO,pathLightStatus)
                 canTurnOn = 0
                 canTurnOff = 1
             if locTime.tm_hour == offHour and locTime.tm_min == offMin and canTurnOff == 1:
                 print "TIMER OFF"
+                pathLightStatus = 0
                 lightStatus = 0
-                GPIO.output(relayGPIO,lightStatus)
+                GPIO.output(pathLightGPIO,pathLightStatus)
+                GPIO.output(lightGPIO,lightStatus)
                 canTurnOn = 1
                 canTurnOff = 0
             pass
         except:
             print "Exception"
-        print "Timer"
+        print "Timer {} {}".format(locTime.tm_hour,locTime.tm_min)
         onHour,onMin=getSunsetTime()[0:2]
-        offHour = 23
-        offMin = 30
+        offHour = 21
+        offMin = 25
         time.sleep(4)
 
 # run the webserver on standard port 80, requires sudo
