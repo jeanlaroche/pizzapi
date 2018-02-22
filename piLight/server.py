@@ -29,8 +29,10 @@ canTurnOff = 1
 
 onHour = 0
 onMin  = 0
-offHour = 21
-offMin  = 04
+offHour = 23
+offMin  = 30
+
+fd = open('./lights.log','w',0)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -51,7 +53,7 @@ def Index():
 @app.route("/_PathOn")
 def _PathOn():
     global pathLightStatus
-    print "PATH ON"
+    mprint("PATH ON")
     pathLightStatus = 1
     GPIO.output(pathLightGPIO,pathLightStatus)
     return jsonify(pathLightStatus=int(pathLightStatus))
@@ -59,7 +61,7 @@ def _PathOn():
 @app.route("/_PathOff")
 def _PathOff():
     global pathLightStatus
-    print "PATH OFF"
+    mprint("PATH OFF")
     pathLightStatus = 0
     GPIO.output(pathLightGPIO,pathLightStatus)
     return jsonify(pathLightStatus=int(pathLightStatus))
@@ -67,7 +69,7 @@ def _PathOff():
 @app.route("/_LightOn")
 def _LightOn():
     global lightStatus
-    print "LIGHT ON"
+    mprint("LIGHT ON")
     lightStatus = 1
     GPIO.output(lightGPIO,lightStatus)
     return jsonify(lightStatus=int(lightStatus))
@@ -75,23 +77,27 @@ def _LightOn():
 @app.route("/_LightOff")
 def _LightOff():
     global lightStatus
-    print "LIGHT OFF"
-    lightStatus = 1
+    mprint("LIGHT OFF")
+    lightStatus = 0
     GPIO.output(lightGPIO,lightStatus)
     return jsonify(lightStatus=int(lightStatus))
 
 @app.route("/_getData")
 def _getData():
-    #print "GET DATA"
+    #mprint("GET DATA")
     sunrise,sunset = getSunsetTime()[2:]
     def cleanup(str):
-        #print str
+        #mprint(str)
         str = re.sub('\d+\-\d+\-\d+ ','',str)
         str = re.sub(':\d\d\..*','',str)
-        #print str
+        #mprint(str)
         return str
     return jsonify(sunrise=cleanup(sunrise),sunset=cleanup(sunset),uptime=GetUptime())
 
+def mprint(aString):
+    print(aString)
+    fd.write(aString+'\n')
+    
 def GetUptime():
     # get uptime from the linux terminal command
     from subprocess import check_output
@@ -119,13 +125,13 @@ def timerLoop():
             # Get the time of day. Find out if the light should be on. 
             locTime = time.localtime()
             if locTime.tm_hour == onHour and locTime.tm_min == onMin and canTurnOn == 1:
-                print "TIMER ON"
+                mprint("TIMER ON")
                 pathLightStatus = 1
                 GPIO.output(pathLightGPIO,pathLightStatus)
                 canTurnOn = 0
                 canTurnOff = 1
             if locTime.tm_hour == offHour and locTime.tm_min == offMin and canTurnOff == 1:
-                print "TIMER OFF"
+                mprint("TIMER OFF")
                 pathLightStatus = 0
                 lightStatus = 0
                 GPIO.output(pathLightGPIO,pathLightStatus)
@@ -134,11 +140,10 @@ def timerLoop():
                 canTurnOff = 0
             pass
         except:
-            print "Exception"
-        print "Timer {} {}".format(locTime.tm_hour,locTime.tm_min)
+            mprint("Exception")
         onHour,onMin=getSunsetTime()[0:2]
-        offHour = 21
-        offMin = 25
+        onHour += 5
+        mprint("Timer, time: {}:{} -- onTime {}:{} -- offTime {}:{}".format(locTime.tm_hour,locTime.tm_min,onHour,onMin,offHour,offMin))
         time.sleep(4)
 
 # run the webserver on standard port 80, requires sudo
