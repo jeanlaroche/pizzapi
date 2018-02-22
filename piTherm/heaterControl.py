@@ -116,8 +116,10 @@ class heaterControl(object):
         # List image timer:
         def doListImages():
             self.listAllImages()
+            # If successful: redo it in self.listImagePeriodS seconds
+            # If not, try again very soon!
             if len(self.allImages): Timer(self.listImagePeriodS, doListImages, ()).start()
-            else: Timer(30, doListImages, ()).start()
+            else: Timer(60, doListImages, ()).start()
         Timer(10, doListImages, ()).start()
         if doStart: self.scheduleThread.start()
         
@@ -152,6 +154,10 @@ class heaterControl(object):
             else: 
                 self.mprint("NO IMAGE FOUND")
                 return
+            if len(dirnames) == 0:
+                # try to mount the image directory.
+                self.mprint('Attemping to mount {}'.format(self.imageDir))
+                os.system('mount -t cifs -o password='' //192.168.1.110/Images {}'.format(self.imageDir))
             np.random.shuffle(dirnames)
             allDirs = dirnames
             #print allDirs
