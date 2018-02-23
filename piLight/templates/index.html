@@ -21,6 +21,7 @@ span {font-weight: bold;}
 	function onPathOn() {
 		$.getJSON('/_PathOn', function(data)
 		{
+			$("#PathOn")[0].style.color = data.pathLightStatus ? 'red' : 'white';
 		});
 	}
 	
@@ -28,19 +29,21 @@ span {font-weight: bold;}
 	function onPathOff() {
 		$.getJSON('/_PathOff', function(data)
 		{
-			//$("#targetTemp").text(data.targetTemp);
+			$("#PathOn")[0].style.color = data.pathLightStatus ? 'red' : 'white';
 		});
 	}
 	
 	function onLightOn() {
 		$.getJSON('/_LightOn', function(data)
 		{
+			$("#LightOn")[0].style.color = data.lightStatus ? 'red' : 'white';
 		});
 	}
 	
 	function onLightOff() {
 		$.getJSON('/_LightOff', function(data)
 		{
+			$("#LightOn")[0].style.color = data.lightStatus ? 'red' : 'white';
 		});
 	}
 
@@ -51,6 +54,8 @@ span {font-weight: bold;}
 			$("#sunrise").text(data.sunrise);
 			$("#sunset").text(data.sunset);
 			$("#upTime").text(data.uptime);
+			$("#PathOn")[0].style.color = data.pathLightStatus ? 'red' : 'white';
+			$("#LightOn")[0].style.color = data.lightStatus ? 'red' : 'white';
 			setTimeout(function(){getData();},4000);
 		});
 	}
@@ -101,13 +106,13 @@ span {font-weight: bold;}
     <p><h2>Outside Temp: <span id="outsideTemp"></span> F (Hum <span id="outsideHum"></span> %)</h2></p>
  -->	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
-			<div class="ui-block-a"><button name="On" id="On" onclick="onPathOn()" data-theme="d">Path ON</button></div>
-			<div class="ui-block-b"><button name="Off" id="Off" onclick="onPathOff()" data-theme="d">Path OFF</button></div>
+			<div class="ui-block-a"><button name="PathOn" id="PathOn" onclick="onPathOn()" data-theme="d">Path ON</button></div>
+			<div class="ui-block-b"><button name="PathOff" id="PathOff" onclick="onPathOff()" data-theme="d">Path OFF</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 		<fieldset class="ui-grid-a">
-			<div class="ui-block-a"><button name="On" id="On" onclick="onLightOn()" data-theme="d">Lights ON</button></div>
-			<div class="ui-block-b"><button name="Off" id="Off" onclick="onLightOff()" data-theme="d">Lights OFF</button></div>
+			<div class="ui-block-a"><button name="LightOn" id="LightOn" onclick="onLightOn()" data-theme="d">Lights ON</button></div>
+			<div class="ui-block-b"><button name="LightOff" id="LightOff" onclick="onLightOff()" data-theme="d">Lights OFF</button></div>
 				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
 	    </fieldset>
 	</div>

@@ -30,7 +30,7 @@ canTurnOff = 1
 onHour = 0
 onMin  = 0
 offHour = 23
-offMin  = 30
+offMin  = 15
 
 fd = open('./lights.log','w',0)
 
@@ -92,7 +92,7 @@ def _getData():
         str = re.sub(':\d\d\..*','',str)
         #mprint(str)
         return str
-    return jsonify(sunrise=cleanup(sunrise),sunset=cleanup(sunset),uptime=GetUptime())
+    return jsonify(sunrise=cleanup(sunrise),sunset=cleanup(sunset),uptime=GetUptime(),pathLightStatus=pathLightStatus,lightStatus=lightStatus)
 
 def mprint(aString):
     print(aString)
@@ -142,9 +142,8 @@ def timerLoop():
         except:
             mprint("Exception")
         onHour,onMin=getSunsetTime()[0:2]
-        onHour += 5
         mprint("Timer, time: {}:{} -- onTime {}:{} -- offTime {}:{}".format(locTime.tm_hour,locTime.tm_min,onHour,onMin,offHour,offMin))
-        time.sleep(4)
+        time.sleep(15)
 
 # run the webserver on standard port 80, requires sudo
 # if __name__ == "__main__":
