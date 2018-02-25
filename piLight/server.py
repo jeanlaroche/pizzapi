@@ -23,6 +23,7 @@ class Server(object):
     canTurnOff = 1
     onHour = 0
     onMin  = 0
+    
     offHour = 23
     offMin  = 15
 
@@ -100,8 +101,10 @@ class Server(object):
             self.mprint("Turning off from timer")
             self.setPathLightOnOff(0)
             self.setLightOnOff(0)
-        self.mprint("Starting off timer {}mn".format(delayMin))
-        Timer(delayMin*60, offWithYourHead, ()).start()    
+        locTime = time.localtime()
+        if locTime.tm_hour < self.onHour or locTime.tm_hour >= self.offHour:
+            self.mprint("Starting off timer {}mn".format(delayMin))
+            Timer(delayMin*60, offWithYourHead, ()).start()    
         
     def GetUptime(self):
         # get uptime from the linux terminal command
@@ -128,7 +131,7 @@ class Server(object):
             try:
                 # Get the time of day. Find out if the light should be on. 
                 locTime = time.localtime()
-                if locTime.tm_hour == onHour and locTime.tm_min == onMin and self.canTurnOn == 1:
+                if locTime.tm_hour == self.onHour and locTime.tm_min == self.onMin and self.canTurnOn == 1:
                     self.mprint("TIMER ON")
                     self.setPathLightOnOff(1)
                     self.canTurnOn = 0
