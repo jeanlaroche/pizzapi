@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
+from threading import Timer
 import pdb
 import re
 import threading, time, os
@@ -31,6 +32,8 @@ class Server(object):
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.pathLightGPIO, GPIO.OUT)
         GPIO.setup(self.lightGPIO, GPIO.OUT)
+        # This is so self.offTimer exists!
+        self.offTimer = Timer(600, lambda x: x, (0))
         self.setPathLightOnOff(0)
         self.setLightOnOff(0)
         self.fd = open('./lights.log','w',0)
@@ -61,23 +64,25 @@ class Server(object):
     def _PathOn(self):
         self.mprint("PATH ON")
         self.setPathLightOnOff(1)
-        self.turnOffInMin(1)
+        self.turnOffInMin(60)
         return jsonify(pathLightStatus=int(self.pathLightStatus))
 
     def _PathOff(self):
         self.mprint("PATH OFF")
         self.setPathLightOnOff(0)
+        self.offTimer.cancel()
         return jsonify(pathLightStatus=int(self.pathLightStatus))
 
     def _LightOn(self):
         self.mprint("LIGHT ON")
         self.setLightOnOff(1)
-        self.turnOffInMin(1)
+        self.turnOffInMin(60)
         return jsonify(lightStatus=int(self.lightStatus))
 
     def _LightOff(self):
         self.mprint("LIGHT OFF")
         self.setLightOnOff(0)
+        self.offTimer.cancel()
         return jsonify(lightStatus=int(self.lightStatus))
 
     def _getData(self):
@@ -96,15 +101,16 @@ class Server(object):
         self.fd.write(aString+'\n')
         
     def turnOffInMin(self,delayMin):
-        from threading import Timer
         def offWithYourHead():
             self.mprint("Turning off from timer")
             self.setPathLightOnOff(0)
             self.setLightOnOff(0)
-        locTime = time.localtime()
-        if locTime.tm_hour < self.onHour or locTime.tm_hour >= self.offHour:
+        if self.canTurnOn:
+            # This means we're outside of the time period where the schedule will turn the lights off. 
             self.mprint("Starting off timer {}mn".format(delayMin))
-            Timer(delayMin*60, offWithYourHead, ()).start()    
+            self.offTimer.cancel()
+            self.offTimer = Timer(delayMin*60, offWithYourHead, ())
+            self.offTimer.start()
         
     def GetUptime(self):
         # get uptime from the linux terminal command
@@ -136,12 +142,14 @@ class Server(object):
                     self.setPathLightOnOff(1)
                     self.canTurnOn = 0
                     self.canTurnOff = 1
+                    self.offTimer.cancel()
                 if locTime.tm_hour == self.offHour and locTime.tm_min == self.offMin and self.canTurnOff == 1:
                     self.mprint("TIMER OFF")
                     self.setPathLightOnOff(0)
                     self.setLightOnOff(0)
                     self.canTurnOn = 1
                     self.canTurnOff = 0
+                    self.offTimer.cancel()
                 pass
             except:
                 self.mprint("Exception")
