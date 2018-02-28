@@ -4,13 +4,14 @@ import pdb
 import re
 import threading, time, os
 import RPi.GPIO as GPIO
+import myLogger
 
 # Can use this for the sunset time: https://en.wikipedia.org/wiki/Sunrise_equation
 
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
 app = Flask(__name__)
-
+log = None
 
 class Server(object):
     pathLightGPIO = 4 # Pins 4 from SDcard on the inside. 5 is GND
@@ -29,6 +30,7 @@ class Server(object):
     offMin  = 15
 
     def  __init__(self):
+        global log
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.pathLightGPIO, GPIO.OUT)
         GPIO.setup(self.lightGPIO, GPIO.OUT)
@@ -36,7 +38,9 @@ class Server(object):
         self.offTimer = Timer(600, lambda x: x, (0))
         self.setPathLightOnOff(0)
         self.setLightOnOff(0)
-        self.fd = open('./lights.log','w',0)
+        LL = myLogger.myLogger('./lights.log')
+        log=LL.getLogger()
+        
         def timerLoop():
             return self.timerLoop()
         T = threading.Thread(target=timerLoop, args = ())
@@ -62,52 +66,46 @@ class Server(object):
         GPIO.output(self.lightGPIO,1-self.lightStatus)
 
     def _PathOn(self):
-        self.mprint("PATH ON")
+        log.info("PATH ON")
         self.setPathLightOnOff(1)
         self.turnOffInMin(60)
         return jsonify(pathLightStatus=int(self.pathLightStatus))
 
     def _PathOff(self):
-        self.mprint("PATH OFF")
+        log.info("PATH OFF")
         self.setPathLightOnOff(0)
-        self.offTimer.cancel()
         return jsonify(pathLightStatus=int(self.pathLightStatus))
 
     def _LightOn(self):
-        self.mprint("LIGHT ON")
+        log.info("LIGHT ON")
         self.setLightOnOff(1)
         self.turnOffInMin(60)
         return jsonify(lightStatus=int(self.lightStatus))
 
     def _LightOff(self):
-        self.mprint("LIGHT OFF")
+        log.info("LIGHT OFF")
         self.setLightOnOff(0)
-        self.offTimer.cancel()
         return jsonify(lightStatus=int(self.lightStatus))
 
     def _getData(self):
-        #self.mprint("GET DATA")
+        #log.info("GET DATA")
         sunrise,sunset = self.getSunsetTime()[2:]
         def cleanup(str):
-            #self.mprint(str)
+            #log.info(str)
             str = re.sub('\d+\-\d+\-\d+ ','',str)
             str = re.sub(':\d\d\..*','',str)
-            #self.mprint(str)
+            #log.info(str)
             return str
         return jsonify(sunrise=cleanup(sunrise),sunset=cleanup(sunset),uptime=self.GetUptime(),pathLightStatus=self.pathLightStatus,lightStatus=self.lightStatus)
 
-    def mprint(self,aString):
-        print(aString)
-        self.fd.write(aString+'\n')
-        
     def turnOffInMin(self,delayMin):
         def offWithYourHead():
-            self.mprint("Turning off from timer")
+            log.info("Turning off from timer")
             self.setPathLightOnOff(0)
             self.setLightOnOff(0)
         if self.canTurnOn:
             # This means we're outside of the time period where the schedule will turn the lights off. 
-            self.mprint("Starting off timer {}mn".format(delayMin))
+            log.info("Starting off timer %d mn",delayMin)
             self.offTimer.cancel()
             self.offTimer = Timer(delayMin*60, offWithYourHead, ())
             self.offTimer.start()
@@ -138,13 +136,13 @@ class Server(object):
                 # Get the time of day. Find out if the light should be on. 
                 locTime = time.localtime()
                 if locTime.tm_hour == self.onHour and locTime.tm_min == self.onMin and self.canTurnOn == 1:
-                    self.mprint("TIMER ON")
+                    log.info("TIMER ON")
                     self.setPathLightOnOff(1)
                     self.canTurnOn = 0
                     self.canTurnOff = 1
                     self.offTimer.cancel()
                 if locTime.tm_hour == self.offHour and locTime.tm_min == self.offMin and self.canTurnOff == 1:
-                    self.mprint("TIMER OFF")
+                    log.info("TIMER OFF")
                     self.setPathLightOnOff(0)
                     self.setLightOnOff(0)
                     self.canTurnOn = 1
@@ -152,9 +150,9 @@ class Server(object):
                     self.offTimer.cancel()
                 pass
             except:
-                self.mprint("Exception")
+                log.errir("Exception")
             self.onHour,self.onMin=self.getSunsetTime()[0:2]
-            self.mprint("Timer, time: {}:{} -- onTime {}:{} -- offTime {}:{}".format(locTime.tm_hour,locTime.tm_min,self.onHour,self.onMin,self.offHour,self.offMin))
+            log.info("Timer, time: %d:%d -- onTime %d:%d -- offTime %d:%d",locTime.tm_hour,locTime.tm_min,self.onHour,self.onMin,self.offHour,self.offMin)
             time.sleep(15)
 
 @app.route('/favicon.ico')
