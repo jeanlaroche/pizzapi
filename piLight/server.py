@@ -25,6 +25,7 @@ class Server(object):
     canTurnOff = 1
     onHour = 0
     onMin  = 0
+    onTimeOffsetMin = 30
     
     offHour = 23
     offMin  = 15
@@ -127,6 +128,8 @@ class Server(object):
         sunrise = "Next sunrise: {}".format(ephem.localtime(o.next_rising(s)))
         sunset = "Next sunset: {}".format(ephem.localtime(o.next_setting(s)))
         LT = ephem.localtime(o.next_setting(s))
+        import datetime
+        LT = LT+datetime.timedelta(minutes=self.onTimeOffsetMin)
         return LT.hour,LT.minute,sunrise,sunset
         
 
