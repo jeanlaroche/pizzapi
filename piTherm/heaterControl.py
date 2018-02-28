@@ -41,7 +41,7 @@ class heaterControl(object):
     holding = 0
     vacation = 0
     heaterOn = 0
-    heaterToggleDeltaTemp = .5
+    heaterToggleDeltaTemp = .25
     heaterToggleCount = 0
     heaterToggleMinCount = 2
     maxContinuousOnTimeMin = 70
