@@ -1,8 +1,10 @@
+
 import time
 import re
 import datetime
 import pdb
 import numpy as np
+import heaterControl
 
 schedule = {}
 todo = {}
@@ -197,17 +199,17 @@ def redoSchedule():
     # Reorder the schedule times in decreasing time, putting the ones that are later than curTime last.
     allTimes = sorted([key for key in schedule.keys() if key <= curTime],reverse=1)
     allTimes += sorted([key for key in schedule.keys() if key > curTime],reverse=1)
-    #if allTimes: hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
+    #if allTimes: heaterControl.log.info("REDO SCHEDULE {}".format(len(allTimes)))
     # if not allTimes:
         # # curTime is before any of the schedule entries, redo the latest one.
         # allTimes = sorted(schedule.keys(),reverse=1)
         # print allTimes
-    hc.mprint("REDO SCHEDULE {}".format(len(allTimes)))
+    heaterControl.log.info("REDO SCHEDULE {}".format(len(allTimes)))
     if allTimes: 
         weekDay = thisDate.weekday() if not vacation else 5
         for key in allTimes:
             if len(schedule[key]) == 1 or (weekDay in schedule[key][1]):        
-                hc.mprint("Redoing schedule for {} setting target to {}F -- day {} vacation {}".format(key,schedule[key][0],weekDay,vacation))
+                heaterControl.log.info("Redoing schedule for {} setting target to {}F -- day {} vacation {}".format(key,schedule[key][0],weekDay,vacation))
                 if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))
                 todo[key] = 0
                 break
@@ -242,7 +244,7 @@ def openAndRun(heaterControl):
             # Check the day of the week! Execute if there's no week day indication or the current week day is in!
             weekDay = thisDate.weekday() if not vacation else 5
             if len(schedule[curTime]) == 1 or (weekDay in schedule[curTime][1]):
-                hc.mprint("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime][0]))
+                heaterControl.log.info("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime][0]))
                 if not hc.holding: hc.setTargetTemp(int(schedule[curTime][0]))
                 todo[curTime] = 0
         time.sleep(30)

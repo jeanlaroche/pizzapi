@@ -10,6 +10,9 @@ import Adafruit_DHT
 import schedule
 import json
 import urllib2
+from piLight import myLogger
+
+log = None
 
 state_off = 0
 state_on = 1
@@ -67,13 +70,14 @@ class heaterControl(object):
 
     def __init__(self,doStart=1):
         # Init GPIO
+        global log
+        LL = myLogger.myLogger(self.heaterLogFile,mode='w',format='%(asctime)s -- %(levelname)s: %(message)s')
+        log = LL.getLogger()
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.relayGPIO, GPIO.OUT)
         self.tempHistory = np.zeros(self.tempHistoryLengthS/self.updatePeriodS)
         schedule.hc = self
         self.lastIdleTime = time.time()
-        with open(self.heaterLogFile,'w') as fd:
-            pass
 
         def onTouch(s,down):
             self.onTouch(s,down)
@@ -88,7 +92,7 @@ class heaterControl(object):
                     self.setTargetTemp(jsonStat['targetTemp'])
                 self.vacation = jsonStat['vacation']
                 schedule.vacation = self.vacation
-                self.mprint("jsonStat read: vacation {}".format(self.vacation))
+                log.info("jsonStat read: vacation {}".format(self.vacation))
             except:
                 pass
         
@@ -99,11 +103,11 @@ class heaterControl(object):
                 time.sleep(self.updatePeriodS)
         self.updateTempThread = Thread(target=updateTemp, args=(), group=None)
         self.updateTempThread.daemon = True
-        self.mprint("Starting temp update thread")
+        log.info("Starting temp update thread")
         if doStart: self.updateTempThread.start()
         
         # Display event loop thread.
-        self.mprint("Starting display thread")
+        log.info("Starting display thread")
         self.display.startLoop(self)
         
         # Schedule thread
@@ -111,7 +115,7 @@ class heaterControl(object):
             schedule.openAndRun(self)
         self.scheduleThread = Thread(target=doSchedule, args=(), group=None)
         self.scheduleThread.daemon = True
-        self.mprint("Starting schedule thread")
+        log.info("Starting schedule thread")
         
         # List image timer:
         def doListImages():
@@ -134,16 +138,16 @@ class heaterControl(object):
                     self.minAirTemp = Dict['minAirTemp']
                     time.sleep(10)
                 except:
-                    self.mprint("Error in readoutsideTemp()")
+                    log.warning("Error in readoutsideTemp()")
                     pass
         self.outsideTempThread = Thread(target=readOutsideTemp, args=(), group=None)
         self.outsideTempThread.daemon = True
         self.outsideTempThread.start()
-        self.mprint("Starting outside temp thread")
+        log.info("Starting outside temp thread")
         
-        self.mprint("Drawing")
+        log.info("Drawing")
         self.draw()
-        self.mprint("Done")
+        log.info("Done")
     
     def listAllImages(self):
         self.allImages = []
@@ -152,11 +156,11 @@ class heaterControl(object):
             for dirpath, dirnames, filenames in os.walk(self.imageDir):
                 break
             else: 
-                self.mprint("NO IMAGE FOUND")
+                log.info("NO IMAGE FOUND")
                 return
             if len(dirnames) == 0:
                 # try to mount the image directory.
-                self.mprint('Attemping to mount {}'.format(self.imageDir))
+                log.info('Attemping to mount {}'.format(self.imageDir))
                 os.system('mount -t cifs -o password='' //192.168.1.110/Images {}'.format(self.imageDir))
             np.random.shuffle(dirnames)
             allDirs = dirnames
@@ -169,8 +173,8 @@ class heaterControl(object):
                         # print os.path.join(dirpath,file)
             np.random.shuffle(self.allImages)
         except:
-            self.mprint("ERROR DURING SCANNING")
-        self.mprint("{} images found".format(len(self.allImages)),logit=1)
+            log.error("ERROR DURING SCANNING")
+        log.info("{} images found".format(len(self.allImages)))
         
     def updateImage(self,doit=0):
         if (time.time() - self.lastImageChangeTime > self.imageChangePeriodS and len(self.allImages) and self.showImage) or doit:
@@ -181,7 +185,7 @@ class heaterControl(object):
                 self.lastImageChangeTime = time.time()
                 if self.showImage: self.draw()
             except:
-                self.mprint("EXCEPTION DURING IMAGE UPDATE",logit=1)
+                log.warning("EXCEPTION DURING IMAGE UPDATE")
             self.imageIdx += 1
         
     def updateState(self):
@@ -192,7 +196,7 @@ class heaterControl(object):
             if tempLow:
                 self.heaterToggleCount += 1
                 if self.heaterToggleCount >= self.heaterToggleMinCount:
-                    self.mprint("Turning heater on",logit=1)
+                    log.info("Turning heater on")
                     # Temp low, turn heater on.
                     self.lastTurnOnTime = time.time()
                     self.lastTurnOnForPause = time.time()
@@ -203,38 +207,38 @@ class heaterControl(object):
             if tempHigh:
                 self.heaterToggleCount += 1
                 if self.heaterToggleCount >= self.heaterToggleMinCount: 
-                    self.mprint("Turning heater off",logit=1)
+                    log.info("Turning heater off")
                     # Temp reached turn heater off
                     self.heaterOn = 0
                     self.state = state_off
                     self.heaterToggleCount = 0
             if time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60:
                 # Heater on for too long
-                self.mprint("Turning heater off, too long",logit=1)
+                log.info("Turning heater off, too long")
                 self.heaterOn = 0
                 self.state = state_on_too_long
             if time.time()-self.lastTurnOnForPause  > self.timeBeforePauseMin*60:
                 # Take a break
-                self.mprint("Turning heater off, Taking a break",logit=1)
+                log.info("Turning heater off, Taking a break")
                 self.heaterOn = 0
                 self.state = state_pausing
                 self.pauseTime = time.time()
         elif self.state == state_pausing:
             if time.time()-self.pauseTime > self.pauseLengthMin*60:
-                self.mprint("Turning heater on, from break",logit=1)
+                log.info("Turning heater on, from break")
                 self.heaterOn = 1
                 self.state = state_on
                 self.lastTurnOnForPause = time.time()
         elif self.state == state_on_too_long:
             if tempHigh:
-                self.mprint("Temp high enough, resuming normal state",logit=1)
+                log.info("Temp high enough, resuming normal state")
                 self.state = state_off
         if self.showImage == 0 and time.time() > self.lastIdleTime + self.timeBeforeImage and len(self.allImages):
             self.showImage = 1
             self.draw()
             
-        #self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
-        #self.mprint("pause time {:.0f}s ago -- last turn on for pause {:.0f}s ago".format(time.time()-self.pauseTime,time.time()-self.lastTurnOnForPause))
+        #log.info("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
+        #log.info("pause time {:.0f}s ago -- last turn on for pause {:.0f}s ago".format(time.time()-self.pauseTime,time.time()-self.lastTurnOnForPause))
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
         self.showHeater()
@@ -259,22 +263,12 @@ class heaterControl(object):
         if self.heaterOn and time.time()-self.lastTurnOnTime > self.maxContinuousOnTimeMin*60:
             self.heaterOn = 0
             self.state = state_on_too_long
-        #self.mprint("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime)),
+        #log.info("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime)),
         if self.heaterToggleCount >= self.heaterToggleMinCount: self.heaterToggleCount = self.heaterToggleMinCount
         GPIO.output(self.relayGPIO,self.heaterOn)
 
-    def mprint(self,this,logit=1):
-        import datetime
-        date = datetime.datetime.now().strftime('%H:%M:%S')
-        msg = date + ' ' + this
-        print(msg)
-        self.lastMsg = msg
-        if logit:
-            with open(self.heaterLogFile,'a') as fd:
-                fd.write(msg+'\n')
-
     def close(self):
-        self.mprint("Closing Heater Control")
+        log.info("Closing Heater Control")
         GPIO.output(self.relayGPIO,0)
         self.stopNow = 1
         self.display.close()
@@ -288,7 +282,7 @@ class heaterControl(object):
         
     def onTempOff(self):
         self.setTargetTemp(50)
-        self.mprint("TEMP OFF")
+        log.info("TEMP OFF")
         
     def writeStatus(self):
         with open(self.statusFile,'w') as f:
@@ -297,13 +291,13 @@ class heaterControl(object):
     def onRun(self):
         self.holding = 0
         schedule.redoSchedule()
-        self.mprint("RUN")
+        log.info("RUN")
         self.writeStatus()
 
     def onHold(self):
         self.holding = 1-self.holding
         self.drawButtons()
-        self.mprint("HOLD")
+        log.info("HOLD")
         self.writeStatus()
 
 
@@ -311,7 +305,7 @@ class heaterControl(object):
         self.vacation = 1-self.vacation
         schedule.vacation = self.vacation
         self.drawButtons()
-        self.mprint("VACATION")
+        log.info("VACATION")
         self.writeStatus()
 
     def incTargetTemp(self,inc):
@@ -341,7 +335,7 @@ class heaterControl(object):
             os.system('sudo reboot now')
         if down and self.waitForUp: return
         if self.buttonPressed > -1 and down:
-            #self.mprint("Heater control button: {}".format(self.buttonPressed))
+            #log.info("Heater control button: {}".format(self.buttonPressed))
             self.drawButtons(highlightButton=self.buttonPressed)
             def foo():
                 self.drawButtons()
@@ -425,7 +419,7 @@ class heaterControl(object):
     def updateTemp(self):
         humidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
         if curTemp is None or humidity >= 100:
-            self.mprint("Failed to read temp")
+            log.info("Failed to read temp")
             return
         curTemp += self.roomTempAdjust
         self.tempHistory = np.roll(self.tempHistory,1)
@@ -434,7 +428,7 @@ class heaterControl(object):
         self.roomTemp = np.mean(self.tempHistory[self.tempHistory>0])
         self.humidity = np.round(humidity,decimals=1)
         self.roomTemp = self.roomTemp * 1.8 + 32
-        self.mprint("State: {} -- Room temp {:.2f}C {:.2f}F Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,self.humidity))
+        log.info("State: {} -- Room temp {:.2f}C {:.2f}F Hum: {}".format(stateStr[self.state],curTemp,self.roomTemp,self.humidity))
         if round(self.roomTemp) != prevRoomTemp or 1:
             self.showRoomTemp()
         self.showUptime()
