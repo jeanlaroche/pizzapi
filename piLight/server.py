@@ -25,7 +25,7 @@ class Server(object):
     canTurnOff = 1
     onHour = 0
     onMin  = 0
-    onTimeOffsetMin = 30
+    onTimeOffsetMin = 15
     
     offHour = 23
     offMin  = 15
