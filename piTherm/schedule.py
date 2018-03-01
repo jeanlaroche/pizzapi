@@ -154,7 +154,7 @@ def logHeaterUse():
     
 def readSchedule(file,verbose=0):
     global schedule, todo
-    if verbose: print "Reading {}".format(file)
+    if verbose: heaterControl.log.info("Reading {}".format(file))
     holdTemp = 0
     with open(file,'r') as f:
         schedule = {}
@@ -168,11 +168,11 @@ def readSchedule(file,verbose=0):
                 # See if we have a line that says "hold"
                 R = re.search(r'hold[,\s]+(\d+)',line)
                 if not R or not R.group(1):
-                    if verbose: print "Could not parse {}, continuing".format(line)
+                    if verbose: heaterControl.log.error("Could not parse {}, continuing".format(line))
                     continue
                 else:
                     holdTemp = R.group(1)
-                    print "Hold temp {}".format(holdTemp)
+                    heaterControl.log.info("Hold temp {}".format(holdTemp))
                     continue
             if not R.group(3): schedule[R.group(1)]=[R.group(2)]
             else: 
@@ -186,11 +186,11 @@ def readSchedule(file,verbose=0):
         # Replace all temperatures in case of a hold
         for key in schedule:
             schedule[key][0]=holdTemp
-    if verbose: print "Done"
+    if verbose: heaterControl.log.info( "Done")
     
     if verbose:
         for key in schedule.keys():
-            print "At {} --> {}F".format(key,schedule[key][0])
+            heaterControl.log.info( "At {} --> {}F".format(key,schedule[key][0]))
 
 # Redo the last scheduled event.
 def redoSchedule():
@@ -214,12 +214,12 @@ def redoSchedule():
                 todo[key] = 0
                 break
 
-def openAndRun(heaterControl):
+def openAndRun(thisHC):
     global hc
-    hc = heaterControl
+    hc = thisHC
     # Open the schedule file
     file = '/home/pi/piTherm/heater.txt'
-    print "STARTING SCHEDULE"
+    heaterControl.log.info( "STARTING SCHEDULE")
     readSchedule(file,verbose=1)
     redoSchedule()
     # I'm going to do it from scratch. I could use sched, but it would be a bit of a mess.
