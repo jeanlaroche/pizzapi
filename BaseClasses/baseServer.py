@@ -16,11 +16,12 @@ class Server(object):
     allowControl = 0  # Allow or disallow control of temp
     alwaysAllow = 0  # Ignore flag above.
 
-    def  __init__(self,logFileName):
+    def  __init__(self,logFileName='logFile.log'):
         global log
         # This is so self.offTimer exists!
         LL = myLogger.myLogger(logFileName)
         log=LL.getLogger()
+        print log
     
     def favicon(self):
         return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
@@ -51,6 +52,11 @@ def reboot():
 @app.route("/")
 def Index():
     return server.Index()
+    
+@app.route("/funcName/<int:param1>/<int:param2>")
+def funcName(param1,param2):
+    return jsonify(param1=param1,param2=param2)
+    
 
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
 # to do it as above, by a call to "prestart"
