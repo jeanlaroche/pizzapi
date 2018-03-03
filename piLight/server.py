@@ -4,7 +4,7 @@ import pdb
 import re
 import threading, time, os
 import RPi.GPIO as GPIO
-import myLogger
+from BaseClasses import myLogger
 
 # Can use this for the sunset time: https://en.wikipedia.org/wiki/Sunrise_equation
 
