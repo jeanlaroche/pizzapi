@@ -1,6 +1,7 @@
 import pigpio
 from _433 import tx
 import time
+from BaseClasses import baseServer
 
 
 TX_GPIO = 17
@@ -11,7 +12,7 @@ codesBedRoom = {1:283955,-1:283964,2:284099,-2:284108,3:284419,-3:284428,4:28595
 codes = codesLivRoom
 codes = codesBedRoom
 
-class lightController(object):
+class lightController(baseServer.Server):
 
     transmitter = None
     pi = None
