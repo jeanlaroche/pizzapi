@@ -4,7 +4,7 @@ import pdb
 import re
 import threading, time, os
 import RPi.GPIO as GPIO
-import myLogger
+from BaseClasses import myLogger
 
 # Can use this for the sunset time: https://en.wikipedia.org/wiki/Sunrise_equation
 
@@ -25,7 +25,7 @@ class Server(object):
     canTurnOff = 1
     onHour = 0
     onMin  = 0
-    onTimeOffsetMin = 30
+    onTimeOffsetMin = 15
     
     offHour = 23
     offMin  = 15
