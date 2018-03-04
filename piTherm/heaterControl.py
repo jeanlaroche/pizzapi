@@ -67,18 +67,20 @@ class heaterControl(object):
     listImagePeriodS = 600
     heaterLogFile = 'heater.log'
     statusFile = 'heater.json'
+    lightOn = 0
 
     def __init__(self,doStart=1):
         # Init GPIO
         global log
         LL = myLogger.myLogger(self.heaterLogFile,mode='w',format='%(asctime)s -- %(levelname)s: %(message)s')
         log = LL.getLogger()
+        self.log = log
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.relayGPIO, GPIO.OUT)
         self.tempHistory = np.zeros(self.tempHistoryLengthS/self.updatePeriodS)
         schedule.hc = self
         self.lastIdleTime = time.time()
-
+        
         def onTouch(s,down):
             self.onTouch(s,down)
         self.display = dc.displayControl(onTouch,self)
@@ -136,6 +138,11 @@ class heaterControl(object):
                     self.outsideHum = Dict['humidity']
                     self.maxAirTemp = Dict['maxAirTemp']
                     self.minAirTemp = Dict['minAirTemp']
+                    Str = urllib2.urlopen("http://lightsjl.mooo.com/_getData").read()
+                    Dict = json.loads(Str)
+                    if self.lightOn != Dict['lightStatus']:
+                        self.lightOn = Dict['lightStatus']
+                        self.drawButtons()
                     time.sleep(10)
                 except:
                     log.warning("Error in readoutsideTemp()")
@@ -307,6 +314,18 @@ class heaterControl(object):
         self.drawButtons()
         log.info("VACATION")
         self.writeStatus()
+        
+    def onLightOn(self):
+        log.info("ON LIGHT ON %d",self.lightOn)
+        self.lightOn = 1-self.lightOn
+        if self.lightOn:
+            Dict = json.loads(urllib2.urlopen("http://lightsjl.mooo.com/_LightOn").read())
+        else:
+            Dict = json.loads(urllib2.urlopen("http://lightsjl.mooo.com/_LightOff").read())
+        log.info("URL RETURN %s",Dict)
+        self.lightOn = Dict["lightStatus"]
+        self.drawButtons()
+        log.info("Light on: %d",self.lightOn)
 
     def incTargetTemp(self,inc):
         self.setTargetTemp(self.targetTemp + inc)
@@ -339,11 +358,11 @@ class heaterControl(object):
             self.drawButtons(highlightButton=self.buttonPressed)
             def foo():
                 self.drawButtons()
-            Timer(.5, foo, ()).start()
+            if self.buttonPressed in [0,1]: Timer(.5, foo, ()).start()
             if self.buttonPressed == 0: self.onTempOff()
             if self.buttonPressed == 1: self.onRun()
             if self.buttonPressed == 2: self.onHold()
-            if self.buttonPressed == 3: self.setTargetTemp(64)
+            if self.buttonPressed == 3: self.onLightOn()
             if self.buttonPressed == 4: self.onVacation()
             self.waitForUp = 1
         if self.buttonPressed == -1:
@@ -384,7 +403,8 @@ class heaterControl(object):
         if self.holding: colors[2] = dc.nred
         self.display.make_button("Hold",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[2])
         startX += buttX+margin
-        self.display.make_button("64F",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[3])
+        if self.lightOn: colors[3] = dc.nred
+        self.display.make_button("Light",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[3])
         if self.vacation: colors[4] = dc.nred
         startX += buttX+margin
         self.display.make_button("Vac",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[4])
