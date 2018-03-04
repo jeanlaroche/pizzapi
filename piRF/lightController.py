@@ -1,7 +1,7 @@
 import pigpio
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from _433 import tx
-import time
+import time, threading
 from BaseClasses import baseServer
 
 
@@ -22,12 +22,33 @@ class lightController(baseServer.Server):
     transmitter = None
     pi = None
     
+    lightOffHour = 16
+    lightOffMin = 11
+    canTurnOff = 1
+    
     def __init__(self):
         global log
         super(lightController,self).__init__("rfLights.log")
         log = baseServer.log
         self.pi = pigpio.pi() # Connect to local Pi.
         self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=6)
+        
+        def timerLoop():
+            while 1:
+                try:
+                    locTime = time.localtime()
+                    if locTime.tm_hour == self.lightOffHour and locTime.tm_min == self.lightOffMin and self.canTurnOff:
+                        log.info('Timer turn lights off')
+                        self.turnLigthOnOff(100,0)
+                        self.canTurnOff = 0
+                    if locTime.tm_hour == (self.lightOffHour + 1 )%24: self.canTurnOff = 1
+                except Exception as e:
+                    self.error('Exception in timer: %s',e)
+        
+        log.info('Starting timer thread')
+        self.timerThread = threading.Thread(target=timerLoop)
+        self.timerThread.daemon = True
+        self.timerThread.start()
 
     def Index(self):
         return super(lightController,self).Index("index.html")
