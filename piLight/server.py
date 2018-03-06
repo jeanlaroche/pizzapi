@@ -29,6 +29,8 @@ class Server(object):
     
     offHour = 23
     offMin  = 15
+    
+    logFile = './lights.log'
 
     def  __init__(self):
         global log
@@ -39,7 +41,7 @@ class Server(object):
         self.offTimer = Timer(600, lambda x: x, (0))
         self.setPathLightOnOff(0)
         self.setLightOnOff(0)
-        LL = myLogger.myLogger('./lights.log')
+        LL = myLogger.myLogger(self.logFile)
         log=LL.getLogger()
         
         def timerLoop():
@@ -51,6 +53,11 @@ class Server(object):
     
     def favicon(self):
         return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+        
+    def _getLog(self):
+        with open(self.logFile) as f:
+            bigStr = f.readlines()
+            return jsonify(log=bigStr[-300:])
         
     # return index page when IP address of RPi is typed in the browser
     def Index(self):
@@ -171,6 +178,18 @@ def reboot():
 def Index():
     return server.Index()
 
+@app.route("/Path/<int:onOff>")
+def PathOn(onOff):
+    if onOff: server._PathOn()
+    else: server._PathOff()
+    return ('', 204)
+
+@app.route("/Light/<int:onOff>")
+def Light(onOff):
+    if onOff: server._LightOn()
+    else: server._LightOff()
+    return ('', 204)
+    
 @app.route("/_PathOn")
 def _PathOn():
     return server._PathOn()
@@ -191,6 +210,11 @@ def _LightOff():
 def _getData():
     return server._getData()
 
+@app.route("/_getLog")
+def _getLog():
+    return server._getLog()
+
+    
 server = Server()
 
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
