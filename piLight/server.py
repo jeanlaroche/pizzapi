@@ -48,6 +48,7 @@ class Server(object):
             return self.timerLoop()
         T = threading.Thread(target=timerLoop, args = ())
         T.daemon = True
+        log.info('Starting timer loop')
         T.start()
         pass
     
@@ -64,6 +65,7 @@ class Server(object):
         return render_template("index.html", uptime=self.GetUptime())
     
     def reboot(self):
+        log.info('Rebooting now!')
         os.system('sudo reboot now')
         
     def setPathLightOnOff(self,isOn):
@@ -108,12 +110,12 @@ class Server(object):
 
     def turnOffInMin(self,delayMin):
         def offWithYourHead():
-            log.info("Turning off from timer")
+            log.info("Delay: Turning off")
             self.setPathLightOnOff(0)
             self.setLightOnOff(0)
         if self.canTurnOn:
             # This means we're outside of the time period where the schedule will turn the lights off. 
-            log.info("Starting off timer %d mn",delayMin)
+            log.info("Starting delay timer %d mn",delayMin)
             self.offTimer.cancel()
             self.offTimer = Timer(delayMin*60, offWithYourHead, ())
             self.offTimer.start()
@@ -146,13 +148,13 @@ class Server(object):
                 # Get the time of day. Find out if the light should be on. 
                 locTime = time.localtime()
                 if locTime.tm_hour == self.onHour and locTime.tm_min == self.onMin and self.canTurnOn == 1:
-                    log.info("TIMER ON")
+                    log.info("TIMER: Turning everything on")
                     self.setPathLightOnOff(1)
                     self.canTurnOn = 0
                     self.canTurnOff = 1
                     self.offTimer.cancel()
                 if locTime.tm_hour == self.offHour and locTime.tm_min == self.offMin and self.canTurnOff == 1:
-                    log.info("TIMER OFF")
+                    log.info("TIMER Turning everything off")
                     self.setPathLightOnOff(0)
                     self.setLightOnOff(0)
                     self.canTurnOn = 1
@@ -160,9 +162,9 @@ class Server(object):
                     self.offTimer.cancel()
                 pass
             except:
-                log.errir("Exception")
+                log.error("Exception in timer")
             self.onHour,self.onMin=self.getSunsetTime()[0:2]
-            log.info("Timer, time: %d:%d -- onTime %d:%d -- offTime %d:%d",locTime.tm_hour,locTime.tm_min,self.onHour,self.onMin,self.offHour,self.offMin)
+            #log.info("Timer, time: %d:%d -- onTime %d:%d -- offTime %d:%d",locTime.tm_hour,locTime.tm_min,self.onHour,self.onMin,self.offHour,self.offMin)
             time.sleep(15)
 
 @app.route('/favicon.ico')
