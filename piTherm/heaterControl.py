@@ -11,6 +11,7 @@ import schedule
 import json
 import urllib2
 from piLight import myLogger
+from hotTubControl import HotTubControl
 
 log = None
 
@@ -64,6 +65,7 @@ class heaterControl(object):
     imageIdx=0
     lastImageChangeTime = 0
     showImage = 0
+    showHotTub = 0
     listImagePeriodS = 600
     heaterLogFile = 'heater.log'
     statusFile = 'heater.json'
@@ -84,6 +86,10 @@ class heaterControl(object):
         def onTouch(s,down):
             self.onTouch(s,down)
         self.display = dc.displayControl(onTouch,self)
+        
+        log.info('Create hottub control')
+        self.hotTubControl = HotTubControl(self.display,self)
+        self.hotTubControl.getTubStatus()
 
         # Read the status file if there's one.
         with open(self.statusFile,'r') as f:
@@ -242,6 +248,8 @@ class heaterControl(object):
                 self.state = state_off
         if self.showImage == 0 and time.time() > self.lastIdleTime + self.timeBeforeImage and len(self.allImages):
             self.showImage = 1
+            self.showHotTub = 0
+            self.hotTubControl.doUpdate=0
             self.draw()
             
         #log.info("{} Last turn on time: {:.0f}s ago".format(stateStr[self.state],time.time()-self.lastTurnOnTime))
@@ -302,11 +310,16 @@ class heaterControl(object):
         self.writeStatus()
 
     def onHold(self):
+        log.info("HOLD")
         self.holding = 1-self.holding
         self.drawButtons()
-        log.info("HOLD")
         self.writeStatus()
-
+        
+    def onHotTub(self):
+        self.showHotTub = 1
+        self.hotTubControl.doUpdate=1
+        self.draw()
+        return
 
     def onVacation(self):
         self.vacation = 1-self.vacation
@@ -355,15 +368,22 @@ class heaterControl(object):
         if down and self.waitForUp: return
         if self.buttonPressed > -1 and down:
             #log.info("Heater control button: {}".format(self.buttonPressed))
-            self.drawButtons(highlightButton=self.buttonPressed)
-            def foo():
-                self.drawButtons()
-            if self.buttonPressed in [0,1]: Timer(.5, foo, ()).start()
-            if self.buttonPressed == 0: self.onTempOff()
-            if self.buttonPressed == 1: self.onRun()
-            if self.buttonPressed == 2: self.onHold()
-            if self.buttonPressed == 3: self.onLightOn()
-            if self.buttonPressed == 4: self.onVacation()
+            def drawButtons(buttonPressed=-1):
+                if not self.showHotTub:
+                    self.drawButtons(highlightButton=buttonPressed)
+                else:
+                    self.hotTubControl.drawButtons(highlightButton=buttonPressed)
+            drawButtons(self.buttonPressed)
+            if self.buttonPressed in [0,1]: Timer(.3, drawButtons, ()).start()
+            if not self.showHotTub:
+                if self.buttonPressed == 0: self.onTempOff()
+                if self.buttonPressed == 1: self.onRun()
+                if self.buttonPressed == 2: self.onHold()
+                if self.buttonPressed == 3: self.onLightOn()
+                if self.buttonPressed == 4: self.onVacation()
+                if self.buttonPressed == 5: self.onHotTub()
+            else:
+                self.hotTubControl.onButton(self.buttonPressed)
             self.waitForUp = 1
         if self.buttonPressed == -1:
             if down:
@@ -383,18 +403,18 @@ class heaterControl(object):
         if not down: self.waitForUp = 0
 
     def showTarget(self):
-        if self.showImage: return
+        if self.showImage or self.showHotTub: return
         self.display.make_label("Target  {}F".format(self.targetTemp), self.display.xSize / 2, 0, 40, dc.ngreen)
         self.display.make_label("Out. {}F ({:.0f}%)".format(self.outsideTemp,self.outsideHum), self.display.xSize / 2, 40, 30, dc.nblue)
         self.display.make_label("Max {}F Min {}F".format(self.maxAirTemp,self.minAirTemp), self.display.xSize / 2, 65, 30, dc.nblue)
 
     def drawButtons(self,highlightButton=-1):
-        if self.showImage: return
+        if self.showImage or self.showHotTub: return
         buttX=80
         buttY=50
         margin=10
         startX = margin
-        colors = [dc.nocre]*5
+        colors = [dc.nocre]*10
         if highlightButton != -1: colors[highlightButton] = dc.nred
         self.display.make_button("Off",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[0])
         startX += buttX+margin
@@ -408,9 +428,14 @@ class heaterControl(object):
         if self.vacation: colors[4] = dc.nred
         startX += buttX+margin
         self.display.make_button("Vac",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[4])
-
+        
+        startX = margin + 4*(buttX+margin)
+        self.display.make_button("HT",startX,self.display.ySize-2*buttY-2*margin, buttX, buttY, colors[5])
+        startX += buttX+margin
+        
+        
     def showRoomTemp(self,):
-        if self.showImage: return
+        if self.showImage or self.showHotTub: return
         X,Y,R=120,120,100
         if self.celcius: roomTemp = (self.roomTemp - 32) / 1.8
         else: roomTemp = self.roomTemp
@@ -424,6 +449,10 @@ class heaterControl(object):
                 return self.showImage
             self.display.displayJPEG(self.imagePath,finalCheck)
             return
+        if self.showHotTub:
+            self.hotTubControl.draw()
+            return
+        self.display.allButtons = []
         self.display.screen.fill(dc.black)
         self.drawButtons(highlightButton)
         self.showRoomTemp()
@@ -433,7 +462,7 @@ class heaterControl(object):
         #self.display.update()
 
     def showHeater(self):
-        if self.showImage: return
+        if self.showImage or self.showHotTub: return
         self.display.make_disk(self.display.xSize-20,self.display.ySize-30,10,dc.nteal if not self.heaterOn else dc.nred)
         
     def updateTemp(self):
@@ -468,7 +497,7 @@ class heaterControl(object):
             time.sleep(1)
                     
     def showUptime(self):
-        if self.showImage: return
+        if self.showImage or self.showHotTub: return
         # get uptime from the linux terminal command
         from subprocess import check_output
         import re
