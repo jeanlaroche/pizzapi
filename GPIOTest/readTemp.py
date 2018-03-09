@@ -66,8 +66,11 @@ def readOutsideTemp():
 	hum, air = Adafruit_DHT.read_retry(sensor, airTempGPIO)
 	if hum is not None and air is not None and air is not 0 and hum <= 100:
 		humidity = hum
-		if airTemp == 0: airTemp = 32+1.8*air
-		else: airTemp = .95*airTemp + 0.05*(32+1.8*air)
+		tempAdjust = -2
+		if airTemp == 0: airTemp = 32+1.8*air + tempAdjust
+		else: airTemp = .95*airTemp + 0.05*((32+1.8*air) + tempAdjust)
+        # Adjusting because the HT seems to bias the outside temp up a bit.
+        # Adjusting because the HT seems to bias the outside temp up a bit.
 		airTemp = round(airTemp,1)
 		maxAirTemp = max(airTemp,maxAirTemp)
 		minAirTemp = min(airTemp,minAirTemp)

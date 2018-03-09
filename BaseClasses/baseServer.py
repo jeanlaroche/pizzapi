@@ -10,25 +10,21 @@ import myLogger
 # See this: http://electronicsbyexamples.blogspot.com/2014/02/raspberry-pi-control-from-mobile-device.html
 
 app = Flask(__name__)
-log = None
 
 class Server(object):
     allowControl = 0  # Allow or disallow control of temp
     alwaysAllow = 0  # Ignore flag above.
 
     def  __init__(self,logFileName='logFile.log'):
-        global log
         # This is so self.offTimer exists!
-        LL = myLogger.myLogger(logFileName)
-        log=LL.getLogger()
-        print log
+        myLogger.setLogger(logFileName)
     
     def favicon(self):
         return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
         
     # return index page when IP address of RPi is typed in the browser
-    def Index(self):
-        return render_template("index.html", uptime=self.GetUptime())
+    def Index(self,pageFile):
+        return render_template(pageFile)
     
     def reboot(self):
         os.system('sudo reboot now')
@@ -46,7 +42,8 @@ def favicon():
             
 @app.route("/reboot")
 def reboot():
-    return server.reboot()
+    server.reboot()
+    return ('', 204)
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")

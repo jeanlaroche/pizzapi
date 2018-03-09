@@ -210,7 +210,7 @@ class tx():
     A class to transmit the wireless codes sent by 433 MHz
     wireless fobs.
     """
-    def __init__(self, pi, gpio, repeats=15, bits=24, gap=5725, t0=184, t1=554):
+    def __init__(self, pi, gpio, repeats=20, bits=24, gap=5725, t0=184, t1=554):
         """
         Instantiate with the Pi and the GPIO connected to the wireless
         transmitter.
@@ -354,6 +354,7 @@ if __name__ == "__main__":
         while 1:
             a = raw_input('Command ->[]')
             inCode = codes[int(a)]
+            print("sending {}".format(inCode))
             tx.send(inCode)
         
 
