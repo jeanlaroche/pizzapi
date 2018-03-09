@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from _433 import tx
 import time, threading
 from BaseClasses import baseServer
-
+import logging
 
 TX_GPIO = 17
 # Codes for our light remote. > 0 means turn on, < 0 means turn off
@@ -17,7 +17,6 @@ codes.update(codesFamRoom)
 #codes = codesBedRoom
 
 app = Flask(__name__)
-log = None
 
 class lightController(baseServer.Server):
 
@@ -29,9 +28,7 @@ class lightController(baseServer.Server):
     canTurnOff = 1
     
     def __init__(self):
-        global log
         super(lightController,self).__init__("rfLights.log")
-        log = baseServer.log
         self.pi = pigpio.pi() # Connect to local Pi.
         self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=12)
         
@@ -40,7 +37,7 @@ class lightController(baseServer.Server):
                 try:
                     locTime = time.localtime()
                     if locTime.tm_hour == self.lightOffHour and locTime.tm_min == self.lightOffMin and self.canTurnOff:
-                        log.info('Timer turn lights off')
+                        logging.info('Timer turn lights off')
                         self.turnLigthOnOff(100,0)
                         self.canTurnOff = 0
                     if locTime.tm_hour == (self.lightOffHour + 1 )%24: self.canTurnOff = 1
@@ -48,7 +45,7 @@ class lightController(baseServer.Server):
                 except Exception as e:
                     self.error('Exception in timer: %s',e)
         
-        log.info('Starting timer thread')
+        logging.info('Starting timer thread')
         self.timerThread = threading.Thread(target=timerLoop)
         self.timerThread.daemon = True
         self.timerThread.start()
@@ -75,7 +72,7 @@ class lightController(baseServer.Server):
             return
         code = codes[lightNum] if onOff == 1 else codes[-lightNum]
         self.transmitter.send(code)
-        log.info('Turning light %d %d',lightNum,onOff)
+        logging.info('Turning light %d %d',lightNum,onOff)
         
 @app.route('/favicon.ico')
 def favicon():
