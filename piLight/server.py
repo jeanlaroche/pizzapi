@@ -148,7 +148,7 @@ class Server(object):
                 # Get the time of day. Find out if the light should be on. 
                 locTime = time.localtime()
                 if locTime.tm_hour == self.onHour and locTime.tm_min == self.onMin and self.canTurnOn == 1:
-                    log.info("TIMER: Turning everything on")
+                    log.info("TIMER: Turning path light on on")
                     self.setPathLightOnOff(1)
                     self.canTurnOn = 0
                     self.canTurnOff = 1
