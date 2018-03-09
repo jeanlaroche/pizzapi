@@ -46,7 +46,8 @@ def favicon():
             
 @app.route("/reboot")
 def reboot():
-    return server.reboot()
+    server.reboot()
+    return ('', 204)
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
