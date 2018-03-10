@@ -29,6 +29,8 @@ class Server(object):
     
     offHour = 23
     offMin  = 15
+    
+    logFile = './lights.log'
 
     def  __init__(self):
         global log
@@ -39,24 +41,31 @@ class Server(object):
         self.offTimer = Timer(600, lambda x: x, (0))
         self.setPathLightOnOff(0)
         self.setLightOnOff(0)
-        LL = myLogger.myLogger('./lights.log')
+        LL = myLogger.myLogger(self.logFile)
         log=LL.getLogger()
         
         def timerLoop():
             return self.timerLoop()
         T = threading.Thread(target=timerLoop, args = ())
         T.daemon = True
+        log.info('Starting timer loop')
         T.start()
         pass
     
     def favicon(self):
         return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
         
+    def _getLog(self):
+        with open(self.logFile) as f:
+            bigStr = f.readlines()
+            return jsonify(log=bigStr[-300:])
+        
     # return index page when IP address of RPi is typed in the browser
     def Index(self):
         return render_template("index.html", uptime=self.GetUptime())
     
     def reboot(self):
+        log.info('Rebooting now!')
         os.system('sudo reboot now')
         
     def setPathLightOnOff(self,isOn):
@@ -101,12 +110,12 @@ class Server(object):
 
     def turnOffInMin(self,delayMin):
         def offWithYourHead():
-            log.info("Turning off from timer")
+            log.info("Delay: Turning off")
             self.setPathLightOnOff(0)
             self.setLightOnOff(0)
         if self.canTurnOn:
             # This means we're outside of the time period where the schedule will turn the lights off. 
-            log.info("Starting off timer %d mn",delayMin)
+            log.info("Starting delay timer %d mn",delayMin)
             self.offTimer.cancel()
             self.offTimer = Timer(delayMin*60, offWithYourHead, ())
             self.offTimer.start()
@@ -139,13 +148,13 @@ class Server(object):
                 # Get the time of day. Find out if the light should be on. 
                 locTime = time.localtime()
                 if locTime.tm_hour == self.onHour and locTime.tm_min == self.onMin and self.canTurnOn == 1:
-                    log.info("TIMER ON")
+                    log.info("TIMER: Turning path light on on")
                     self.setPathLightOnOff(1)
                     self.canTurnOn = 0
                     self.canTurnOff = 1
                     self.offTimer.cancel()
                 if locTime.tm_hour == self.offHour and locTime.tm_min == self.offMin and self.canTurnOff == 1:
-                    log.info("TIMER OFF")
+                    log.info("TIMER Turning everything off")
                     self.setPathLightOnOff(0)
                     self.setLightOnOff(0)
                     self.canTurnOn = 1
@@ -153,9 +162,9 @@ class Server(object):
                     self.offTimer.cancel()
                 pass
             except:
-                log.errir("Exception")
+                log.error("Exception in timer")
             self.onHour,self.onMin=self.getSunsetTime()[0:2]
-            log.info("Timer, time: %d:%d -- onTime %d:%d -- offTime %d:%d",locTime.tm_hour,locTime.tm_min,self.onHour,self.onMin,self.offHour,self.offMin)
+            #log.info("Timer, time: %d:%d -- onTime %d:%d -- offTime %d:%d",locTime.tm_hour,locTime.tm_min,self.onHour,self.onMin,self.offHour,self.offMin)
             time.sleep(15)
 
 @app.route('/favicon.ico')
@@ -171,6 +180,18 @@ def reboot():
 def Index():
     return server.Index()
 
+@app.route("/Path/<int:onOff>")
+def PathOn(onOff):
+    if onOff: server._PathOn()
+    else: server._PathOff()
+    return ('', 204)
+
+@app.route("/Light/<int:onOff>")
+def Light(onOff):
+    if onOff: server._LightOn()
+    else: server._LightOff()
+    return ('', 204)
+    
 @app.route("/_PathOn")
 def _PathOn():
     return server._PathOn()
@@ -191,6 +212,11 @@ def _LightOff():
 def _getData():
     return server._getData()
 
+@app.route("/_getLog")
+def _getLog():
+    return server._getLog()
+
+    
 server = Server()
 
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
