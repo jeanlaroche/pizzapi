@@ -6,6 +6,7 @@ from BaseClasses import baseServer
 import logging
 
 TX_GPIO = 17
+BUTTON_GPIO = 10
 # Codes for our light remote. > 0 means turn on, < 0 means turn off
 codesLivRoom = {1:5510451,-1:5510460,2:5510595,-2:5510604,3:5510915,-3:5510924,4:5512451,-4:5512460,5:5518595,-5:5518604}
 codesBedRoom = {6:283955,-6:283964,7:284099,-7:284108,8:284419,-8:284428,9:285955,-9:285964,10:292099,-10:292108}
@@ -26,11 +27,19 @@ class lightController(baseServer.Server):
     lightOffHour = 23
     lightOffMin = 30
     canTurnOff = 1
+    buttonStatus = 0
+    resetCount = -1
+    resetTimeS = 10
     
     def __init__(self):
+        logging.info('Starting server')
         super(lightController,self).__init__("rfLights.log")
+        logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=12)
+        self.pi.set_mode(BUTTON_GPIO, pigpio.INPUT)
+        self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_DOWN)
+        self.pi.set_glitch_filter(BUTTON_GPIO, 100e3)
         
         def timerLoop():
             while 1:
@@ -41,6 +50,11 @@ class lightController(baseServer.Server):
                         self.turnLigthOnOff(100,0)
                         self.canTurnOff = 0
                     if locTime.tm_hour == (self.lightOffHour + 1 )%24: self.canTurnOff = 1
+                    self.resetCount -= 1
+                    if self.resetCount == 0:
+                        logging.info('Timer set status to 0')
+                        self.buttonStatus = 0
+                    if self.resetCount == -2: self.resetCount=-1
                     time.sleep(1)
                 except Exception as e:
                     self.error('Exception in timer: %s',e)
@@ -49,7 +63,22 @@ class lightController(baseServer.Server):
         self.timerThread = threading.Thread(target=timerLoop)
         self.timerThread.daemon = True
         self.timerThread.start()
+        
+        # Button callback
+        def buttonCallback(GPIO, level, tick):
+            self.onButton()
+        self.pi.callback(BUTTON_GPIO, pigpio.RISING_EDGE, buttonCallback)
 
+    def onButton(self):
+        logging.info('Button pressed, buttonStatus %d',self.buttonStatus)
+        if self.buttonStatus == 0: self.turnLigthOnOff(100,1)
+        if self.buttonStatus == 1: self.turnLigthOnOff(102,1)
+        if self.buttonStatus == 2: self.turnLigthOnOff(100,0)
+        if self.buttonStatus == 3: self.turnLigthOnOff(102,0)
+        self.buttonStatus += 1
+        if self.buttonStatus == 4: self.buttonStatus = 0
+        self.resetCount = self.resetTimeS
+        
     def Index(self):
         return super(lightController,self).Index("index.html")
         # return jsonify(imAlive="I am alive")
