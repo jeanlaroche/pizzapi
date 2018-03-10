@@ -138,13 +138,13 @@ class heaterControl(object):
         def readOutsideTemp():
             while self.stopNow == 0:
                 try:
-                    Str = urllib2.urlopen("http://hottub.mooo.com/airTemp").read()
+                    Str = urllib2.urlopen("http://hottub.mooo.com/airTemp",timeout=3).read()
                     Dict = json.loads(Str)
                     self.outsideTemp = Dict['outsideTemperature']
                     self.outsideHum = Dict['humidity']
                     self.maxAirTemp = Dict['maxAirTemp']
                     self.minAirTemp = Dict['minAirTemp']
-                    Str = urllib2.urlopen("http://lightsjl.mooo.com/_getData").read()
+                    Str = urllib2.urlopen("http://lightsjl.mooo.com/_getData",timeout=3).read()
                     Dict = json.loads(Str)
                     if self.lightOn != Dict['lightStatus']:
                         self.lightOn = Dict['lightStatus']
@@ -332,9 +332,9 @@ class heaterControl(object):
         logging.info("ON LIGHT ON %d",self.lightOn)
         self.lightOn = 1-self.lightOn
         if self.lightOn:
-            Dict = json.loads(urllib2.urlopen("http://lightsjl.mooo.com/_LightOn").read())
+            Dict = json.loads(urllib2.urlopen("http://lightsjl.mooo.com/_LightOn",timeout=3).read())
         else:
-            Dict = json.loads(urllib2.urlopen("http://lightsjl.mooo.com/_LightOff").read())
+            Dict = json.loads(urllib2.urlopen("http://lightsjl.mooo.com/_LightOff",timeout=3).read())
         logging.info("URL RETURN %s",Dict)
         self.lightOn = Dict["lightStatus"]
         self.drawButtons()
@@ -508,7 +508,7 @@ class heaterControl(object):
         #self.display.screen.fill(dc.black, rect=pygame.Rect(self.display.xSize / 2, 70, 300, 40))
         #self.display.make_label(self.lastMsg, self.display.xSize / 2, 70, 20, dc.nblue)
         #self.display.screen.fill(dc.black, rect=pygame.Rect(0,self.display.ySize -20, 500, 40))
-        self.display.make_label(self.lastMsg, 0, self.display.ySize -18, 16, dc.nblue, fullLine=1)
+        self.display.make_label(myLogger.lastMessage, 0, self.display.ySize -18, 16, dc.nblue, fullLine=1)
         
     def grabLog(self):
         with open('heater.log','r') as f:

@@ -3,6 +3,6 @@
 	l = log --oneline
 [user]
 	name = jean
-	email = noEmail
+	email = you@example.com
 [push]
 	default = simple
