@@ -374,8 +374,8 @@ class heaterControl(object):
                 else:
                     self.hotTubControl.drawButtons(highlightButton=buttonPressed)
             drawButtons(self.buttonPressed)
-            if self.buttonPressed in [0,1]: Timer(.3, drawButtons, ()).start()
             if not self.showHotTub:
+                if self.buttonPressed in [0,1]: Timer(.3, drawButtons, ()).start()
                 if self.buttonPressed == 0: self.onTempOff()
                 if self.buttonPressed == 1: self.onRun()
                 if self.buttonPressed == 2: self.onHold()
@@ -383,6 +383,7 @@ class heaterControl(object):
                 if self.buttonPressed == 4: self.onVacation()
                 if self.buttonPressed == 5: self.onHotTub()
             else:
+                Timer(.3, drawButtons, ()).start()
                 self.hotTubControl.onButton(self.buttonPressed)
             self.waitForUp = 1
         if self.buttonPressed == -1:

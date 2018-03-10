@@ -16,6 +16,7 @@ class HotTubControl(object):
     hotTubTemp = 0
     hotTubOn = 'OFF'
     hotTubURL = 'http://hottub.mooo.com/'
+    lightsURL = 'http://rfjl.mooo.com/'
     hc = None
     
     def __init__(self,display,hc):
@@ -59,7 +60,7 @@ class HotTubControl(object):
     def showStatus(self):
         # Show hot tub stuff
         startX=50
-        startY=100
+        startY=50
         height = 50
         gap = -10
         self.display.make_label("Target  {}F".format(self.targetTemp), startX, startY, height, dc.npeacock,fullLine=1)
@@ -76,11 +77,14 @@ class HotTubControl(object):
         startX = margin
         colors = [dc.nocre]*5
         if highlightButton != -1: colors[highlightButton] = dc.nred
-        self.display.make_button("UP",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[0])
+        self.display.make_button("UP",startX,self.display.ySize-2*buttY-2*margin, buttX, buttY, colors[0])
         startX += buttX+margin
-        self.display.make_button("DOWN",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[1])
+        self.display.make_button("DOWN",startX,self.display.ySize-2*buttY-2*margin, buttX, buttY, colors[1])
         startX += buttX+margin
+        startX = margin
         self.display.make_button("Done",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[2])
+        startX += buttX+margin
+        self.display.make_button("Lights",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[3])
         startX += buttX+margin
         
     def onButton(self,button):
@@ -96,5 +100,9 @@ class HotTubControl(object):
             self.doUpdate = 0
             self.hc.draw()
             return
+        if button == 3:
+            logging.info('Turn all lights off')
+            urllib2.urlopen(self.lightsURL+'lightOnOff/100/0')
+            urllib2.urlopen(self.lightsURL+'lightOnOff/102/0')
         self.getTubStatus()
         self.showStatus()
