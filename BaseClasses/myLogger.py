@@ -1,51 +1,50 @@
 import logging
 from logging.handlers import RotatingFileHandler
+from logging import StreamHandler
 
 defaultFormat = '%(asctime)s - %(filename)s / %(funcName)s- %(levelname)s - %(message)s'
 defaultFormat = '%(asctime)s: %(message)s'
+smallFormat = '%(message)s'
+mstr = None
+lastMessage = ''
 
-class myLogger():
-    """"""
+def setLogger(fileName,mode='a',level=logging.INFO,format=defaultFormat):
+    global mstr
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    ch = RotatingFileHandler(fileName,mode=mode,maxBytes=1024*1024,backupCount=2)
+    ch.setLevel(level)
+    formatter = logging.Formatter(format)
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    # This is so I can remember the last message
+    mstr = myStream()
+    ch2 = StreamHandler(mstr)
+    ch2.setLevel(level)
+    formatter2 = logging.Formatter(smallFormat)
+    ch2.setFormatter(formatter2)
+    logger.addHandler(ch2)
 
-    def __init__(self,fileName,mode='a',level=logging.INFO,format=defaultFormat):
-        """Constructor for myLogger"""
+    
+class myStream(object):
+    def __init__(self):
+        pass
+    def write(self,thisString):
+        global lastMessage
+        lastMessage = thisString.strip()
+    def flush(self):
+        pass
 
-        self.format = format
-        self.level=level
-
-        # create logger
-        self.logger = logging.getLogger('myLogger')
-        self.logger.setLevel(level)
-
-        # create console handler and set level to debug
-        self.ch = RotatingFileHandler(fileName,mode=mode,maxBytes=1024*1024,backupCount=2)
-        self.ch.setLevel(level)
-
-        # create formatter
-        self.formatter = logging.Formatter(format)
-
-        # add formatter to ch
-        self.ch.setFormatter(self.formatter)
-
-        # add ch to logger
-        self.logger.addHandler(self.ch)
-
-        # 'application' code
-        # logger.debug('debug message')
-        # logger.info('info message')
-        # logger.warn('warn message')
-        # logger.error('error message')
-        # logger.critical('critical message')
-
-    def getLogger(self):
-        return self.logger
-
-
-if __name__ == '__main__':
-    LL = myLogger('foo.log')
-    log = LL.getLogger()
-
-    for ii in range(100000):
-        log.debug('My message %d',ii)
+# import logging
+# from logging.handlers import RotatingFileHandler
+# logger = logging.getLogger()
+# logger.setLevel(logging.INFO)
+# ch = RotatingFileHandler('foo.log',mode='a',maxBytes=1024*1024,backupCount=2)
+# ch.setLevel(logging.INFO)
+# formatter = logging.Formatter('%(asctime)s: %(message)s')
+# # add formatter to ch
+# ch.setFormatter(formatter)
+# logger.addHandler(ch)
 
 

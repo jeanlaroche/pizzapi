@@ -9,6 +9,7 @@ from threading import Timer, Thread
 import numpy as np
 import exifread
 import heaterControl
+import logging
 
 inputDev = "/dev/input/event0"
 os.environ["SDL_FBDEV"] = "/dev/fb1"
@@ -99,9 +100,9 @@ class displayControl(object):
         # Initialize pygame and hide mouse
         self.hc = heatercontrol
         
-        self.hc.log.info( "Initpygame")
+        logging.info( "Initpygame")
         size = width, height = self.xSize, self.ySize
-        self.hc.log.info( "set mode")
+        logging.info( "set mode")
         class Alarm(Exception):
             pass
         def alarm_handler(signum, frame):
@@ -114,15 +115,15 @@ class displayControl(object):
             alarm(0)
         except Alarm:
             raise KeyboardInterrupt
-        self.hc.log.info( "Mouse")
+        logging.info( "Mouse")
         pygame.mouse.set_visible(0)
-        self.hc.log.info( "tslib")
+        logging.info( "tslib")
         self.ts, self.ts_read, self.ts_close = initTsLib()
         self.touchCallback = touchCallback
-        self.hc.log.info( "Done")
+        logging.info( "Done")
 
     def close(self):
-        self.hc.log.info( "Closing display")
+        logging.info( "Closing display")
         self.stopNow=1
         self.ts_close(self.ts)
         pygame.quit()
@@ -137,7 +138,7 @@ class displayControl(object):
     def onTouch(self,s):
         if self.touchCallback: self.touchCallback(s,self.down)
 
-    # define function for self.hc.log.info(ing text in a specific place with a specific width and height with a specific colour and border
+    # define function for logging.info(ing text in a specific place with a specific width and height with a specific colour and border
     def make_button(self, text, xpo, ypo, width, height, colour):
         R = [xpo-10,ypo-10,width,height]
         self.screen.fill(self.bckColor,R)
@@ -156,7 +157,7 @@ class displayControl(object):
                 return ii
         else: return -1
 
-    # define function for self.hc.log.info(ing text in a specific place with a specific colour
+    # define function for logging.info(ing text in a specific place with a specific colour
     def make_label(self, text, xpo, ypo, fontSize, colour, fullLine = 0,noBack=0):
         font=pygame.font.Font(None,fontSize)
         if fullLine: text += ' '*300
@@ -187,7 +188,7 @@ class displayControl(object):
                 tags = exifread.process_file(fh, stop_tag="EXIF DateTimeOriginal")
                 dateTaken = tags["EXIF DateTimeOriginal"]
                 dateTaken = str(dateTaken).split()[0]
-            self.hc.log.info( "{} : {}".format(imagePath,dateTaken))
+            logging.info( "{} : {}".format(imagePath,dateTaken))
             img=pygame.image.load(imagePath)
             # Rescale by the larger of the two x/y factors.
             #fact = np.max(np.array(img.get_size())/np.array([self.xSize,self.ySize]))
@@ -225,7 +226,7 @@ class displayControl(object):
     def update(self):
         if len(self.rectList): 
             pygame.display.update(self.rectList)
-            #self.hc.log.info( self.rectList
+            #logging.info( self.rectList
         self.rectList = []
         
     def startLoop(self,hc):
@@ -234,7 +235,7 @@ class displayControl(object):
             self.eventLoop()
         self.touchThread = Thread(target=_eventLoop, args=(), group=None)
         self.touchThread.daemon = True
-        self.hc.log.info("Starting touch thread")
+        logging.info("Starting touch thread")
         self.touchThread.start()
         def _displayLoop():
             while self.stopNow == 0:
@@ -243,9 +244,9 @@ class displayControl(object):
                 
         self.displayThread = Thread(target=_displayLoop, args=(), group=None)
         self.displayThread.daemon = True
-        self.hc.log.info("Starting display thread")
+        logging.info("Starting display thread")
         self.displayThread.start()
-        self.hc.log.info("DisplayControl starting done")
+        logging.info("DisplayControl starting done")
 
     def eventLoop(self):
         import pdb
@@ -267,25 +268,25 @@ class displayControl(object):
                     # if a: s=a
                     # else: break
                 if s and s.x >= 0 and s.y >= 0:
-                    #self.hc.log.info( s.x, s.y, s.pressure
+                    #logging.info( s.x, s.y, s.pressure
                     if self.down == 0:
                         self.firstDownPos = (s.x,s.y)
-                        #self.hc.log.info( "FIRST {}".format(s.y)
+                        #logging.info( "FIRST {}".format(s.y)
                     self.down = 1
                     self.onTouch(s)
                     lastT = time.time()
                 elif time.time()-lastT > timeThresh and self.down == 1:
                     self.down = 0
                     self.onTouch(off)
-                    self.hc.log.info( "UP")
-                # self.hc.log.info( "{} {} ".format(lastT,time.time())
+                    logging.info( "UP")
+                # logging.info( "{} {} ".format(lastT,time.time())
 
                 if self.stopNow: break
                 time.sleep(0.001)
             except Exception as e:
-                self.hc.log.error("ERROR IN TOUCH LOOP %s",e)
+                logging.error("ERROR IN TOUCH LOOP %s",e)
                 import traceback
-                self.hc.log.error("ERROR IN TOUCH LOOP %s",traceback.format_exc())
+                logging.error("ERROR IN TOUCH LOOP %s",traceback.format_exc())
                 pass
                 
 if __name__ == '__main__':
@@ -305,5 +306,5 @@ if __name__ == '__main__':
         pygame.display.update(dc.rectList)
         dc.rectList = []
     toc = time.time()
-    self.hc.log.info( "Elapsed: {:.2f}s {:.0f} per second".format(toc-tic,N*1./(toc-tic)))
+    logging.info( "Elapsed: {:.2f}s {:.0f} per second".format(toc-tic,N*1./(toc-tic)))
     # dc.eventLoop()

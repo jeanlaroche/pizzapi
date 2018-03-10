@@ -5,6 +5,7 @@ import datetime
 import pdb
 import numpy as np
 import heaterControl
+import logging
 
 schedule = {}
 todo = {}
@@ -154,7 +155,7 @@ def logHeaterUse():
     
 def readSchedule(file,verbose=0):
     global schedule, todo
-    if verbose: hc.log.info("Reading {}".format(file))
+    if verbose: logging.info("Reading {}".format(file))
     holdTemp = 0
     with open(file,'r') as f:
         schedule = {}
@@ -168,11 +169,11 @@ def readSchedule(file,verbose=0):
                 # See if we have a line that says "hold"
                 R = re.search(r'hold[,\s]+(\d+)',line)
                 if not R or not R.group(1):
-                    if verbose: hc.log.error("Could not parse {}, continuing".format(line))
+                    if verbose: logging.error("Could not parse {}, continuing".format(line))
                     continue
                 else:
                     holdTemp = R.group(1)
-                    hc.log.info("Hold temp {}".format(holdTemp))
+                    logging.info("Hold temp {}".format(holdTemp))
                     continue
             if not R.group(3): schedule[R.group(1)]=[R.group(2)]
             else: 
@@ -186,11 +187,11 @@ def readSchedule(file,verbose=0):
         # Replace all temperatures in case of a hold
         for key in schedule:
             schedule[key][0]=holdTemp
-    if verbose: hc.log.info( "Done")
+    if verbose: logging.info( "Done")
     
     if verbose:
         for key in schedule.keys():
-            hc.log.info( "At {} --> {}F".format(key,schedule[key][0]))
+            logging.info( "At {} --> {}F".format(key,schedule[key][0]))
 
 # Redo the last scheduled event.
 def redoSchedule():
@@ -199,17 +200,17 @@ def redoSchedule():
     # Reorder the schedule times in decreasing time, putting the ones that are later than curTime last.
     allTimes = sorted([key for key in schedule.keys() if key <= curTime],reverse=1)
     allTimes += sorted([key for key in schedule.keys() if key > curTime],reverse=1)
-    #if allTimes: hc.log.info("REDO SCHEDULE {}".format(len(allTimes)))
+    #if allTimes: logging.info("REDO SCHEDULE {}".format(len(allTimes)))
     # if not allTimes:
         # # curTime is before any of the schedule entries, redo the latest one.
         # allTimes = sorted(schedule.keys(),reverse=1)
         # print allTimes
-    hc.log.info("REDO SCHEDULE {}".format(len(allTimes)))
+    logging.info("REDO SCHEDULE {}".format(len(allTimes)))
     if allTimes: 
         weekDay = thisDate.weekday() if not vacation else 5
         for key in allTimes:
             if len(schedule[key]) == 1 or (weekDay in schedule[key][1]):        
-                hc.log.info("Redoing schedule for {} setting target to {}F -- day {} vacation {}".format(key,schedule[key][0],weekDay,vacation))
+                logging.info("Redoing schedule for {} setting target to {}F -- day {} vacation {}".format(key,schedule[key][0],weekDay,vacation))
                 if not hc.holding: hc.setTargetTemp(int(schedule[key][0]))
                 todo[key] = 0
                 break
@@ -219,7 +220,7 @@ def openAndRun(thisHC):
     hc = thisHC
     # Open the schedule file
     file = '/home/pi/piTherm/heater.txt'
-    hc.log.info( "STARTING SCHEDULE")
+    logging.info( "STARTING SCHEDULE")
     readSchedule(file,verbose=1)
     redoSchedule()
     # I'm going to do it from scratch. I could use sched, but it would be a bit of a mess.
@@ -244,7 +245,7 @@ def openAndRun(thisHC):
             # Check the day of the week! Execute if there's no week day indication or the current week day is in!
             weekDay = thisDate.weekday() if not vacation else 5
             if len(schedule[curTime]) == 1 or (weekDay in schedule[curTime][1]):
-                hc.log.info("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime][0]))
+                logging.info("Time = {} Schedule: setting tub to {}F".format(curTime,schedule[curTime][0]))
                 if not hc.holding: hc.setTargetTemp(int(schedule[curTime][0]))
                 todo[curTime] = 0
         time.sleep(30)
