@@ -188,7 +188,7 @@ class displayControl(object):
                 tags = exifread.process_file(fh, stop_tag="EXIF DateTimeOriginal")
                 dateTaken = tags["EXIF DateTimeOriginal"]
                 dateTaken = str(dateTaken).split()[0]
-            logging.info( "{} : {}".format(imagePath,dateTaken))
+            #logging.info( "{} : {}".format(imagePath,dateTaken))
             img=pygame.image.load(imagePath)
             # Rescale by the larger of the two x/y factors.
             #fact = np.max(np.array(img.get_size())/np.array([self.xSize,self.ySize]))

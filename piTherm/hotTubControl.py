@@ -3,12 +3,13 @@ import time, os
 import pygame
 import json
 import urllib2
-from threading import Thread
+
 import logging
+from BaseClasses import myLogger
 
 def readUrl(url):
     # Returns a dict from the URL.
-    return json.loads(urllib2.urlopen(url).read())
+    return json.loads(urllib2.urlopen(url,timeout=2).read())
 
 class HotTubControl(object):
     
@@ -16,6 +17,7 @@ class HotTubControl(object):
     hotTubTemp = 0
     hotTubOn = 'OFF'
     hotTubURL = 'http://hottub.mooo.com/'
+    lightsURL = 'http://rfjl.mooo.com/'
     hc = None
     
     def __init__(self,display,hc):
@@ -23,21 +25,21 @@ class HotTubControl(object):
         self.display = hc.display
         self.doUpdate = 0
         
+        def readTempLoop():
+            self.getTubStatus()
+        
         def updateLoop():
             if self.doUpdate:
-                self.getTubStatus()
                 self.showStatus()
-            time.sleep(1)
+                self.getTubStatus()
         
-        self.updateLoopThread = Thread(target=updateLoop, args=(), group=None)
-        self.updateLoopThread.daemon = True
-        logging.info("Starting hottub update thread")
-        self.updateLoopThread.start()
+        myLogger.loopFunc(updateLoop,1,name='Hottub display')
+        myLogger.loopFunc(readTempLoop,60,name='Hottub temp read')
     
     def getTubStatus(self):
         try:
             # This is to allow controlling the temp!
-            urllib2.urlopen(self.hotTubURL+'Pook').read()
+            urllib2.urlopen(self.hotTubURL+'Pook',timeout=2).read()
             status = readUrl(self.hotTubURL+'_getTubStatus')
             self.targetTemp = status['targetTemperatureValue']
             self.hotTubTemp = status['temperatureValue']
@@ -52,14 +54,12 @@ class HotTubControl(object):
         self.display.allButtons = []
         # Draw buttons:
         self.drawButtons(highlightButton)
-        self.getTubStatus()
-        self.showStatus()
         self.display.rectList = [[0,0,self.display.xSize,self.display.ySize]]
     
     def showStatus(self):
         # Show hot tub stuff
         startX=50
-        startY=100
+        startY=50
         height = 50
         gap = -10
         self.display.make_label("Target  {}F".format(self.targetTemp), startX, startY, height, dc.npeacock,fullLine=1)
@@ -76,11 +76,14 @@ class HotTubControl(object):
         startX = margin
         colors = [dc.nocre]*5
         if highlightButton != -1: colors[highlightButton] = dc.nred
-        self.display.make_button("UP",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[0])
+        self.display.make_button("UP",startX,self.display.ySize-2*buttY-2*margin, buttX, buttY, colors[0])
         startX += buttX+margin
-        self.display.make_button("DOWN",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[1])
+        self.display.make_button("DOWN",startX,self.display.ySize-2*buttY-2*margin, buttX, buttY, colors[1])
         startX += buttX+margin
+        startX = margin
         self.display.make_button("Done",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[2])
+        startX += buttX+margin
+        self.display.make_button("Lights",startX,self.display.ySize-buttY-margin, buttX, buttY, colors[3])
         startX += buttX+margin
         
     def onButton(self,button):
@@ -96,5 +99,8 @@ class HotTubControl(object):
             self.doUpdate = 0
             self.hc.draw()
             return
-        self.getTubStatus()
+        if button == 3:
+            logging.info('Turn all lights off')
+            urllib2.urlopen(self.lightsURL+'lightOnOff/100/0')
+            urllib2.urlopen(self.lightsURL+'lightOnOff/102/0')
         self.showStatus()
