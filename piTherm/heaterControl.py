@@ -89,7 +89,6 @@ class heaterControl(object):
         
         logging.info('Create hottub control')
         self.hotTubControl = HotTubControl(self.display,self)
-        self.hotTubControl.getTubStatus()
 
         # Read the status file if there's one.
         with open(self.statusFile,'r') as f:
@@ -150,8 +149,8 @@ class heaterControl(object):
                         self.lightOn = Dict['lightStatus']
                         self.drawButtons()
                     time.sleep(10)
-                except:
-                    logging.warning("Error in readoutsideTemp()")
+                except Exception as e:
+                    logging.warning("Error in readoutsideTemp() %s",e)
                     pass
         self.outsideTempThread = Thread(target=readOutsideTemp, args=(), group=None)
         self.outsideTempThread.daemon = True
