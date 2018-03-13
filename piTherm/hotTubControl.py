@@ -30,10 +30,11 @@ class HotTubControl(object):
         
         def updateLoop():
             if self.doUpdate:
+                logging.info("Checking Hottub status")
                 self.showStatus()
                 self.getTubStatus()
         
-        myLogger.loopFunc(updateLoop,1,name='Hottub display')
+        myLogger.loopFunc(updateLoop,.5,name='Hottub display')
         myLogger.loopFunc(readTempLoop,60,name='Hottub temp read')
     
     def getTubStatus(self):
@@ -66,8 +67,8 @@ class HotTubControl(object):
         startY += height+gap
         self.display.make_label("Actual  {}F".format(self.hotTubTemp), startX, startY, height, dc.npeacock,fullLine=1)
         startY += height+gap
-        thisColor = dc.red if self.hotTubOn == 'ON' else dc.ngreen
-        self.display.make_label("Hot tub is {}".format(self.hotTubOn), startX, startY, height, dc.npeacock,fullLine=1)
+        thisColor = dc.red if self.hotTubOn == 'ON' else dc.npeacock
+        self.display.make_label("Hot tub is {}".format(self.hotTubOn), startX, startY, height, thisColor,fullLine=1)
         
     def drawButtons(self,highlightButton=-1):
         buttX=120
