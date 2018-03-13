@@ -77,10 +77,8 @@ class lightController(baseServer.Server):
             if pushCount == 2: 
                 self.turnLigthOnOff(100,0)
                 self.turnLigthOnOff(102,0)
-            if pushCount == 3: self.turnLigthOnOff(100,1)
-            if pushCount == 4: self.turnLigthOnOff(102,1)
-            if pushCount == 5: self.turnLigthOnOff(100,0)
-            if pushCount == 6: self.turnLigthOnOff(102,0)
+            if pushCount == 3: self.turnLigthOnOff(102,0)
+            if pushCount == 4: self.turnLigthOnOff(100,0)
             
         try:
             self.actionTimer.cancel()
