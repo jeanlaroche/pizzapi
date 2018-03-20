@@ -1,6 +1,8 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from logging import StreamHandler
+from threading import Thread
+import time
 
 defaultFormat = '%(asctime)s - %(filename)s / %(funcName)s- %(levelname)s - %(message)s'
 defaultFormat = '%(asctime)s: %(message)s'
@@ -36,15 +38,21 @@ class myStream(object):
     def flush(self):
         pass
 
-# import logging
-# from logging.handlers import RotatingFileHandler
-# logger = logging.getLogger()
-# logger.setLevel(logging.INFO)
-# ch = RotatingFileHandler('foo.log',mode='a',maxBytes=1024*1024,backupCount=2)
-# ch.setLevel(logging.INFO)
-# formatter = logging.Formatter('%(asctime)s: %(message)s')
-# # add formatter to ch
-# ch.setFormatter(formatter)
-# logger.addHandler(ch)
+def threadFunc(func,args=(),name = ''):
+    loopThread = Thread(target=func, args=args, group=None)
+    loopThread.daemon = True
+    if name: logging.info("Starting %s thread",name)
+    loopThread.start()
+    return loopThread
 
-
+def loopFunc(func,sleepS,args=(),name = ''):
+    def auxFunc():
+        while 1:
+            func(*args)
+            time.sleep(sleepS)
+    loopThread = Thread(target=auxFunc, args=(), group=None)
+    loopThread.daemon = True
+    if name: logging.info("Starting %s thread",name)
+    loopThread.start()
+    return loopThread
+    

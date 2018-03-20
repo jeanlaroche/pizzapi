@@ -6,6 +6,7 @@ from BaseClasses import baseServer
 import logging
 
 TX_GPIO = 17
+BUTTON_GPIO = 10
 # Codes for our light remote. > 0 means turn on, < 0 means turn off
 codesLivRoom = {1:5510451,-1:5510460,2:5510595,-2:5510604,3:5510915,-3:5510924,4:5512451,-4:5512460,5:5518595,-5:5518604}
 codesBedRoom = {6:283955,-6:283964,7:284099,-7:284108,8:284419,-8:284428,9:285955,-9:285964,10:292099,-10:292108}
@@ -24,13 +25,21 @@ class lightController(baseServer.Server):
     pi = None
     
     lightOffHour = 23
-    lightOffMin = 30
+    lightOffMin = 0
     canTurnOff = 1
+    pushCount = 10 # so the first callback does nothing. I'm not sure why I'm getting one anyway!
+    pushDelayS = .7
+    actionTimer = None
     
     def __init__(self):
+        logging.info('Starting server')
         super(lightController,self).__init__("rfLights.log")
+        logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=12)
+        self.pi.set_mode(BUTTON_GPIO, pigpio.INPUT)
+        self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_DOWN)
+        self.pi.set_glitch_filter(BUTTON_GPIO, 10e3)
         
         def timerLoop():
             while 1:
@@ -49,7 +58,35 @@ class lightController(baseServer.Server):
         self.timerThread = threading.Thread(target=timerLoop)
         self.timerThread.daemon = True
         self.timerThread.start()
+        
+        # Button callback
+        def buttonCallback(GPIO, level, tick):
+            self.onButton()
+        self.pi.callback(BUTTON_GPIO, pigpio.RISING_EDGE, buttonCallback)
 
+    def onButton(self):
+        self.pushCount += 1
+        logging.info('Button pressed, pushCount %d',self.pushCount)
+
+        def takeAction():
+            logging.info('Take action! %d',self.pushCount)
+            pushCount,self.pushCount = self.pushCount,0
+            if pushCount == 1: 
+                self.turnLigthOnOff(100,1)
+                self.turnLigthOnOff(102,1)
+            if pushCount == 2: 
+                self.turnLigthOnOff(100,0)
+                self.turnLigthOnOff(102,0)
+            if pushCount == 3: self.turnLigthOnOff(102,0)
+            if pushCount == 4: self.turnLigthOnOff(100,0)
+            
+        try:
+            self.actionTimer.cancel()
+        except Exception as e:
+            logging.warning('Couldnt cancel timer %s',e)
+        self.actionTimer = threading.Timer(self.pushDelayS, takeAction, ())
+        self.actionTimer.start()
+        
     def Index(self):
         return super(lightController,self).Index("index.html")
         # return jsonify(imAlive="I am alive")

@@ -2,14 +2,45 @@
 <html>
 <head>
 	<title></title>
+        <style>
+            html, body {
+				  background-color: gray;
+            }
+			h1 {
+				font-size:60px;
+			}
+			h2 {
+				font-size:40px;
+			}
+			button {border-radius:15px;
+					background-color: white;
+					border:1;
+					padding:15px 25px;
+					font-family:Helvetica,sans-serif;
+					color:red;
+					font-weight:bold;
+					letter-spacing:-1px;
+					font-size:60px;
+					text-transform:uppercase;
+					width: 300px;
+					margin:10px auto;}
+			.primary {
+				color:blue;
+				}
+			.secondary {
+					color:red;
+					font-size:50px;
+					width: 130px;
+				}
+		</style>
 </head>
 <body><!-- I use this: https://www.quackit.com/html/online-html-editor/full/-->
-<table height="26" width="392">
+<table height="26" width="500">
 	<tbody>
 		<tr>
-			<td style="width: 135px;"><a href="http://hottub.mooo.com/Pook">Hot tub</a></td>
-			<td style="width: 123px;"><a href="http://heaterjl.mooo.com">Heater</a></td>
-			<td style="width: 112px;"><a href="http://lightsjl.mooo.com/">Lights</a></td>
+			<td><h2><a href="http://hottub.mooo.com/Pook">Hot tub</a></h2></td>
+			<td><h2><a href="http://heaterjl.mooo.com">Heater</a></h2></td>
+			<td><h2><a href="http://lightsjl.mooo.com/">Lights</a></h2></td>
 		</tr>
 	</tbody>
 </table>
@@ -19,54 +50,52 @@
 <table style="width: 401px;">
 	<tbody>
 		<tr>
-			<td style="width: 127px;">
-			<p><input onclick="location.href='lightOnOff/100/1';" type="button" value="All On" /></p>
-			<p><input onclick="location.href='lightOnOff/100/0';" type="button" value="All Off" /></p>
-			<p><input onclick="location.href='lightOnOff/102/1';" type="button" value="All On" /></p>
-			<p><input onclick="location.href='lightOnOff/102/0';" type="button" value="All Off" /></p>
+			<td style="width: 80;">
+			<p><button type="button" class="primary" onclick="location.href='lightOnOff/100/1';">All On!</button></p>
+			<p><button type="button" class="primary" onclick="location.href='lightOnOff/100/0';">All Off!</button></p>
+			<p><button type="button" class="primary" onclick="location.href='lightOnOff/102/1';">All On!</button></p>
+			<p><button type="button" class="primary" onclick="location.href='lightOnOff/102/0';">All Off!</button></p>
 			</td>
 			<td style="width: 262px;">
-			<table height="120" style="width: 217px;">
+			<table height="120" style="width: 120px;">
 				<tbody>
 					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/1/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/1/0';" type="button" value="Off" /></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/1/1';">1</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/1/0';">Off</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/2/1';">2</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/2/0';">Off</button></td>
 					</tr>
 					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/2/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/2/0';" type="button" value="Off" /></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/3/1';">3</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/3/0';">Off</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/4/1';">4</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/4/0';">Off</button></td>
 					</tr>
 					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/3/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/3/0';" type="button" value="Off" /></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/5/1';">5</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/5/0';">Off</button></td>
+					</tr>
+
+					<tr>
+						<td> <p> </p> </td>
+						<td> <p> </p> </td>
+					</tr>
+					
+					<tr>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/11/1';">6</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/11/0';">Off</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/12/1';">7</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/12/0';">Off</button></td>
 					</tr>
 					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/4/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/4/0';" type="button" value="Off" /></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/13/1';">8</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/13/0';">Off</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/14/1';">9</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/14/0';">Off</button></td>
 					</tr>
 					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/5/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/5/0';" type="button" value="Off" /></td>
-					</tr>
-					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/11/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/11/0';" type="button" value="Off" /></td>
-					</tr>
-					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/12/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/12/0';" type="button" value="Off" /></td>
-					</tr>
-					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/13/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/13/0';" type="button" value="Off" /></td>
-					</tr>
-					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/14/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/14/0';" type="button" value="Off" /></td>
-					</tr>
-					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/15/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/15/0';" type="button" value="Off" /></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/15/1';">10</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/15/0';">Off</button></td>
 					</tr>
 				</tbody>
 			</table>
@@ -77,17 +106,18 @@
 
 <p>&nbsp;</p>
 
+<hr />
 <h1><strong>Backyard</strong></h1>
 
 <table style="width:500px;">
 	<tbody>
 		<tr>
-			<td style="width: 200px; text-align: center;"><input onclick="location.href='http://lightsjl.mooo.com/Path/1';" type="button" value="Path On" /></td>
-			<td style="width: 200px; text-align: center;"><input onclick="location.href='http://lightsjl.mooo.com/Path/0';" type="button" value="Path Off" /></td>
+			<td><button type="button" class="primary" onclick="location.href='http://lightsjl.mooo.com/Path/1';">Path On</button></td>
+			<td><button type="button" class="primary" onclick="location.href='http://lightsjl.mooo.com/Path/0';">Path off</button></td>
 		</tr>
 		<tr>
-			<td style="width: 200px; text-align: center;"><input onclick="location.href='http://lightsjl.mooo.com/Light/1';" type="button" value="Lights On" /></td>
-			<td style="width: 200px; text-align: center;"><input onclick="location.href='http://lightsjl.mooo.com/Light/0';" type="button" value="Lights Off" /></td>
+			<td><button type="button" class="primary" onclick="location.href='http://lightsjl.mooo.com/Light/1';">Lights On</button></td>
+			<td><button type="button" class="primary" onclick="location.href='http://lightsjl.mooo.com/Light/0';">Lights off</button></td>
 		</tr>
 	</tbody>
 </table>
@@ -100,33 +130,24 @@
 <table style="width: 401px;">
 	<tbody>
 		<tr>
-			<td style="width: 127px;">
-			<p><input onclick="location.href='lightOnOff/101/1';" type="button" value="All On" /></p>
-
-			<p><input onclick="location.href='lightOnOff/101/0';" type="button" value="All Off" /></p>
+			<td style="width: 80;">
+			<p><button type="button" class="primary" onclick="location.href='lightOnOff/101/1';">All On!</button></p>
+			<p><button type="button" class="primary" onclick="location.href='lightOnOff/101/0';">All Off!</button></p>
 			</td>
 			<td style="width: 262px;">
-			<table height="120" style="width: 217px;">
+			<table height="120" style="width: 120px;">
 				<tbody>
 					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/6/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/6/0';" type="button" value="Off" /></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/6/1';">On</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/6/0';">Off</button></td>
 					</tr>
 					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/7/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/7/0';" type="button" value="Off" /></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/7/1';">On</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/7/0';">Off</button></td>
 					</tr>
 					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/8/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/8/0';" type="button" value="Off" /></td>
-					</tr>
-					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/9/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/9/0';" type="button" value="Off" /></td>
-					</tr>
-					<tr>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/10/1';" type="button" value="On" /></td>
-						<td style="width: 100px;"><input onclick="location.href='lightOnOff/10/0';" type="button" value="Off" /></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/8/1';">On</button></td>
+						<td><button type="button" class="secondary" onclick="location.href='lightOnOff/8/0';">Off</button></td>
 					</tr>
 				</tbody>
 			</table>
@@ -134,6 +155,7 @@
 		</tr>
 	</tbody>
 </table>
+
 
 <hr />
 <p>&nbsp;</p>
