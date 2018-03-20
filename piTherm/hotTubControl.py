@@ -102,6 +102,6 @@ class HotTubControl(object):
             return
         if button == 3:
             logging.info('Turn all lights off')
-            urllib2.urlopen(self.lightsURL+'lightOnOff/100/0')
-            urllib2.urlopen(self.lightsURL+'lightOnOff/102/0')
+            urllib2.urlopen(self.lightsURL+'lightOnOff/100/0',timeout=3)
+            urllib2.urlopen(self.lightsURL+'lightOnOff/102/0',timeout=3)
         self.showStatus()
