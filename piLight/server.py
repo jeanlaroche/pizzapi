@@ -175,6 +175,10 @@ def favicon():
 def reboot():
     return server.reboot()
 
+@app.route('/kg')
+def kg():
+    return server.kg()
+
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
 def Index():
