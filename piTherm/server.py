@@ -21,6 +21,9 @@ hc = None
 def favicon():
     return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
+@app.route('/kg')
+def kg():
+    os.system('sudo killall -SIGHUP gunicorn')
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")

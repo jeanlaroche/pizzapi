@@ -28,6 +28,9 @@ class Server(object):
     
     def reboot(self):
         os.system('sudo reboot now')
+
+    def kg(self):
+        os.system('sudo killall -SIGHUP gunicorn')
         
     def GetUptime(self):
         # get uptime from the linux terminal command
@@ -44,6 +47,12 @@ def favicon():
 def reboot():
     server.reboot()
     return ('', 204)
+    
+@app.route('/kg')
+def kg():
+    server.kg()
+    return ('', 204)
+
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")

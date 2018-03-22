@@ -23,6 +23,10 @@ def _airTemp():
 @app.route('/reboot')
 def reboot():
     os.system('sudo reboot now')
+
+@app.route('/kg')
+def kg():
+    os.system('sudo killall -SIGHUP gunicorn')
     
 @app.route('/favicon.ico')
 def favicon():
