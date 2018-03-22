@@ -19,6 +19,38 @@ codes.update(codesFamRoom)
 
 app = Flask(__name__)
 
+class myTimer(object):
+    
+    def __init__(self):
+        self.timedEvents = []
+    
+    def addEvent(self,hour,min,func,params,name):
+        logging.info('Adding event %s at %d:%d',name,hour,min)
+        self.timedEvents.append({'hour':hour,'min':min,'func':func,'params':params,'done':0,'name':name})
+    
+    def start(self):
+        def timerLoop():
+            while 1:
+                try:
+                    locTime = time.localtime()
+                    for event in self.timedEvents:
+                        hour,min,func,params,done = event['hour'],event['min'],event['func'],event['params'],event['done']
+                        if locTime.tm_hour == hour and locTime.tm_min == min:
+                            if done==0 and locTime.tm_sec < 30:
+                                logging.info('Triggering %s at %d:%d',event['name'],hour,min)
+                                func(*params)
+                                event['done']=1
+                            elif locTime.tm_sec >= 30:
+                                event['done']=0
+                    time.sleep(1)
+                except Exception as e:
+                    logging.error('Exception in timer: %s',e)        
+        logging.info('Starting timer thread')
+        self.timerThread = threading.Thread(target=timerLoop)
+        self.timerThread.daemon = True
+        self.timerThread.start()
+    
+
 class lightController(baseServer.Server):
 
     transmitter = None
@@ -36,28 +68,21 @@ class lightController(baseServer.Server):
         super(lightController,self).__init__("rfLights.log")
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
-        self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=12)
+        self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=10)
         self.pi.set_mode(BUTTON_GPIO, pigpio.INPUT)
         self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_DOWN)
         self.pi.set_glitch_filter(BUTTON_GPIO, 10e3)
         
-        def timerLoop():
-            while 1:
-                try:
-                    locTime = time.localtime()
-                    if locTime.tm_hour == self.lightOffHour and locTime.tm_min == self.lightOffMin and self.canTurnOff:
-                        logging.info('Timer turn lights off')
-                        self.turnLigthOnOff(100,0)
-                        self.canTurnOff = 0
-                    if locTime.tm_hour == (self.lightOffHour + 1 )%24: self.canTurnOff = 1
-                    time.sleep(1)
-                except Exception as e:
-                    self.error('Exception in timer: %s',e)
+        self.myTimer = myTimer()
+        def turnOff():
+            logging.info('Timer turn lights off')
+            self.turnLigthOnOff(100,0)
+            self.turnLigthOnOff(102,0)
+        self.myTimer.addEvent(self.lightOffHour,self.lightOffMin,turnOff,[],'Turn lights off')
+        self.myTimer.addEvent(23,10,self.turnLigthOnOff,[9,1],'Turn on gate light')
+        self.myTimer.addEvent(2,0,self.turnLigthOnOff,[9,0],'Turn off gate light')
+        self.myTimer.start()
         
-        logging.info('Starting timer thread')
-        self.timerThread = threading.Thread(target=timerLoop)
-        self.timerThread.daemon = True
-        self.timerThread.start()
         
         # Button callback
         def buttonCallback(GPIO, level, tick):
