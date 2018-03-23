@@ -3,13 +3,15 @@ import datetime
 import time, threading
 
 class myTimer(object):
+    ''' Useful class for timing events'''
     
     def __init__(self):
         self.timedEvents = []
+        # Get the sunset times for today
         self.getSunsetTime()
-        
+        # Set an event for getting the sunset time every day.
         def getST(): return self.getSunsetTime()
-        self.addEvent(18,30,getST,[],"Sunset time")
+        self.addEvent(3,0,getST,[],"Update sunset time")
         
     def addEvent(self,hour,min,func,params,name):
         if type(hour)==int:
@@ -20,28 +22,27 @@ class myTimer(object):
 
     def getSunsetTime(self):
         import ephem  
-        o=ephem.Observer()  
+        o=ephem.Observer()
+        # Santa cruz! :)
         o.lat='36.97'  
         o.long='-122.03'  
         s=ephem.Sun()  
         s.compute()
         logging.info( "Next sunrise: {}".format(ephem.localtime(o.next_rising(s))))
         logging.info( "Next sunset: {}".format(ephem.localtime(o.next_setting(s))))
-        self.sunset = ephem.localtime(o.next_setting(s))        
-        # import datetime
-        # LT = LT+datetime.timedelta(minutes=self.onTimeOffsetMin)
-        # return LT.hour,LT.minute,sunrise,sunset
-        
+        self.sunset = ephem.localtime(o.next_setting(s))                
 
     def start(self):
+        # Helper function for the timer loop
         def timerLoop():
             while 1:
                 try:
                     locTime = time.localtime()
+                    # Make a list of events to trigger. This way if one takes a long time to complete, the other will still run.
                     todo = []
-                    # Make a list of events to trigger
                     for event in self.timedEvents:
                         hour,min,func,params,done = event['hour'],event['min'],event['func'],event['params'],event['done']
+                        # Special case for sunset.
                         if hour == 'sunset':
                             sunset = self.sunset+datetime.timedelta(minutes=min)
                             hour,min = sunset.hour,sunset.minute
@@ -51,8 +52,9 @@ class myTimer(object):
                                 todo.append(event)
                                 event['done']=1
                         else:
+                            # If the time does not match, then done is 0
                             event['done']=0
-                    # Then trigger this!
+                    # Then trigger the events in the list
                     for event in todo:
                         logging.info('Triggering %s at %d:%d',event['name'],locTime.tm_hour,locTime.tm_min)
                         event['func'](*event['params'])
