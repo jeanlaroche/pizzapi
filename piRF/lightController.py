@@ -4,6 +4,8 @@ from _433 import tx
 import time, threading
 from BaseClasses import baseServer
 import logging
+import datetime
+from BaseClasses.utils import myTimer
 
 TX_GPIO = 17
 BUTTON_GPIO = 10
@@ -17,7 +19,7 @@ codes.update(codesBedRoom)
 codes.update(codesFamRoom)
 #codes = codesBedRoom
 
-app = Flask(__name__)
+app = Flask(__name__)    
 
 class lightController(baseServer.Server):
 
@@ -36,28 +38,26 @@ class lightController(baseServer.Server):
         super(lightController,self).__init__("rfLights.log")
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
-        self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=12)
+        self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=10)
         self.pi.set_mode(BUTTON_GPIO, pigpio.INPUT)
         self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_DOWN)
         self.pi.set_glitch_filter(BUTTON_GPIO, 10e3)
         
-        def timerLoop():
-            while 1:
-                try:
-                    locTime = time.localtime()
-                    if locTime.tm_hour == self.lightOffHour and locTime.tm_min == self.lightOffMin and self.canTurnOff:
-                        logging.info('Timer turn lights off')
-                        self.turnLigthOnOff(100,0)
-                        self.canTurnOff = 0
-                    if locTime.tm_hour == (self.lightOffHour + 1 )%24: self.canTurnOff = 1
-                    time.sleep(1)
-                except Exception as e:
-                    self.error('Exception in timer: %s',e)
+        self.myTimer = myTimer()
+        def turnOff():
+            logging.info('Timer turn lights off')
+            self.turnLigthOnOff(100,0)
+            self.turnLigthOnOff(102,0)
+        self.myTimer.addEvent(self.lightOffHour,self.lightOffMin,turnOff,[],'Turn lights off')
+        def gateLight(onOff):
+            # This is to make 100% sure that we're trying to turn the light on/off
+            for ii in range(5):
+                self.turnLigthOnOff(9,onOff)
+                time.sleep(1)
+        self.myTimer.addEvent('sunset',15,gateLight,[1],'Turn on gate light')
+        self.myTimer.addEvent(2,0,gateLight,[0],'Turn off gate light')
+        self.myTimer.start()
         
-        logging.info('Starting timer thread')
-        self.timerThread = threading.Thread(target=timerLoop)
-        self.timerThread.daemon = True
-        self.timerThread.start()
         
         # Button callback
         def buttonCallback(GPIO, level, tick):
@@ -111,6 +111,12 @@ class lightController(baseServer.Server):
         self.transmitter.send(code)
         logging.info('Turning light %d %d',lightNum,onOff)
         
+    def getLog(self):
+        with open("rfLights.log") as f:
+            allLines = f.readlines()
+        allLines.reverse()
+        return (allLines[0:50])
+        
 @app.route('/favicon.ico')
 def favicon():
     return lc.favicon()
@@ -118,6 +124,10 @@ def favicon():
 @app.route("/reboot")
 def reboot():
     return lc.reboot()
+
+@app.route("/getLog")
+def getLog():
+    return jsonify(lc.getLog())
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
