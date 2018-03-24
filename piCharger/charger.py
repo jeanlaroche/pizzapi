@@ -54,7 +54,13 @@ def kg():
     charger.kg()
     return ('', 204)
 
-# return index page when IP address of RPi is typed in the browser
+@app.route('/setRatio_<int:param1>')
+def setRatio(param1):
+    print "SET RATIO {}".format(param1)
+    charger.setDutyCycle(param1/100.)
+    return ('', param1)
+
+    # return index page when IP address of RPi is typed in the browser
 @app.route("/")
 def Index():
     return charger.Index()
@@ -68,7 +74,7 @@ charger = Charger()
 if __name__ == "__main__":
     #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
     #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
-    charger.glow()
+    #charger.glow()
     app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
 
     # while 1:
