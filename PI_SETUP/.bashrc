@@ -122,4 +122,4 @@ alias iperf="iperf3 -R -c 192.168.1.110"
 alias ip="dig +short myip.opendns.com @resolver1.opendns.com"
 alias pycharm='sh /opt/pycharm-community-2017.2.4/bin/pycharm.sh &'
 alias kg='sudo killall -SIGHUP gunicorn'
-
+alias umnt='sudo umount /mnt/mainpc/git/gpiotest/'

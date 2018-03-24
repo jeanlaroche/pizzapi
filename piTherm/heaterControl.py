@@ -290,7 +290,7 @@ class heaterControl(object):
     def setTargetTemp(self,targetTemp):
         self.targetTemp = targetTemp
         if self.targetTemp < 50: self.targetTemp = 50
-        if self.targetTemp > 74: self.targetTemp = 74
+        if self.targetTemp > 70: self.targetTemp = 70
         self.heaterToggleCount = 0
         self.showTarget()
         
