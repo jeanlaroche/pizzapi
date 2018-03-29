@@ -110,7 +110,7 @@ class mushroomControl(object):
             return
         self.curHumidity = curHumidity
         self.curTemp = np.round(curTemp*1.8 + 32,decimals=2)
-        self.mprint("Temp {:.2f} -- Humidity {:.2f}".format(self.curTemp,curHumidity))
+        #self.mprint("Temp {:.2f} -- Humidity {:.2f}".format(self.curTemp,curHumidity))
 
     def mprint(self,this,logit=1):
         import datetime
@@ -185,7 +185,8 @@ class mushroomControl(object):
             X.append(hour)
         # Subtract 24 from data whose hour is later than the most recent one
         X = np.array(X)
-        X[X > X[-1]] -= 24
+        if len(X):
+            X[X > X[-1]] -= 24
         return X.tolist(),Y
             
         
