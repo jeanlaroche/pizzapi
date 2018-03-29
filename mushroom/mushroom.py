@@ -1,18 +1,17 @@
 import RPi.GPIO as GPIO
 from threading import Timer, Thread
 import time, os
-import Adafruit_DHT
 import json
 import numpy as np
 ON = 0
 OFF = 1
+from tentacle_pi.AM2315 import AM2315
+am = AM2315(0x5c,"/dev/i2c-1")
 
 
 class mushroomControl(object):
-    sensor      = Adafruit_DHT.DHT22
-    sensorPin   = 14
-    fanRelayGPIO = 3    # Relay on right looking at AC connectors
-    humRelayGPIO = 2    # Relay on left looking at AC connectors
+    fanRelayGPIO = 14    # Relay on right looking at AC connectors
+    humRelayGPIO = 4    # Relay on left looking at AC connectors
     updatePeriodS = 4   # How often do we read the temp and humidity
     fanOnPeriodMin = 1      # How often does the fan come on, in minutes.
     fanOnLengthS = 15    # How long does it stay on, in minutes
@@ -104,13 +103,14 @@ class mushroomControl(object):
             self.humStatus = 1
 
     def updateTemp(self):
-        curHumidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
-        if curTemp is None or curHumidity >= 100 or curTemp == 0:
-            self.mprint("Failed to read temp")
+        # curHumidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
+        curTemp, curHumidity, crc_check = am.sense()
+        if curTemp is None or curHumidity > 100 or curTemp == 0:
+            self.mprint("Failed to read temp {} {}".format(curTemp,curHumidity))
             return
         self.curHumidity = curHumidity
         self.curTemp = np.round(curTemp*1.8 + 32,decimals=2)
-        #self.mprint("Temp {:.2f} -- Humidity {:.2f}".format(self.curTemp,curHumidity))
+        self.mprint("Temp {:.2f} -- Humidity {:.2f}".format(self.curTemp,curHumidity))
 
     def mprint(self,this,logit=1):
         import datetime
