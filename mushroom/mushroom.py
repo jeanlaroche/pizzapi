@@ -126,6 +126,10 @@ class mushroomControl(object):
         self.targetHumidity += inc
         self.writeJson()
 
+    def incFlux(self,inc):
+        self.humidityTrigger += inc
+        self.writeJson()
+
     def fanTest(self):
         # Trigger the fan
         self.fanLastOn = 0
@@ -145,7 +149,7 @@ class mushroomControl(object):
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'fanOnPeriodMin':self.fanOnPeriodMin,'fanOnLengthS':self.fanOnLengthS,'targetHumidity':self.targetHumidity},f)
+            json.dump({'fanOnPeriodMin':self.fanOnPeriodMin,'fanOnLengthS':self.fanOnLengthS,'targetHumidity':self.targetHumidity,'flux':self.humidityTrigger},f)
         
     def readJson(self):
         try:
@@ -154,6 +158,7 @@ class mushroomControl(object):
                 self.fanOnPeriodMin = A['fanOnPeriodMin']
                 self.fanOnLengthS = A['fanOnLengthS']
                 self.targetHumidity = A['targetHumidity']
+                self.humidityTrigger = A['flux']
         except:
             pass
             

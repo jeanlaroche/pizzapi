@@ -32,6 +32,22 @@ span {font-weight: bold;}
 			$("#targetHumidity").text(data.targetHumidity);
 		});
 	}
+
+	// Javascript function for down button
+	function onFluxDown() {
+		$.getJSON('/_fluxDown', function(data)
+		{
+			$("#flux").text(data.flux);
+		});
+	}
+	
+	// Javascript function for up button
+	function onFluxUp() {
+		$.getJSON('/_fluxUp', function(data)
+		{
+			$("#flux").text(data.flux);
+		});
+	}
 	
 	function onFanTest() {
 		$.getJSON('/_fanTest');
@@ -84,6 +100,7 @@ span {font-weight: bold;}
 				$("#curTemp").text(data.curTemp);
 				$("#targetHumidity").text(data.targetHumidity);
 				$("#curHumidity").text(data.curHumidity);
+				$("#flux").text(data.flux);
 				$("#fanOnPeriodMin").text(data.fanOnPeriodMin);				
 				$("#fanOnLengthS").text(data.fanOnLengthS);				
 				$("#upTime").text(data.upTime);
@@ -199,8 +216,13 @@ span {font-weight: bold;}
 			<div class="ui-block-a"><button name="Up" id="Up" onclick="onHumidityUp()" data-theme="d">Humidity +</button></div>
 			<div class="ui-block-b"><button name="Down" id="Down" onclick="onHumidityDown()" data-theme="d">Humidity -</button></div>
 	    </fieldset>
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onFluxUp()" data-theme="d">Flux Cap. +</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onFluxDown()" data-theme="d">Flux Cap. -</button></div>
+	    </fieldset>
 		<p><h2>Target Humidity: <span id="targetHumidity"></span> %</h2></p>
 		<p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
+		<p><h2>Flux Capacitor: <span id="flux"></span> %</h2></p>
 		<fieldset class="ui-grid-b">
 			<div class="ui-block-a"><button name="FanP" id="FanP" onclick="onFanUp()" data-theme="d">FAN Interval +</button></div>
 			<div class="ui-block-b"><button name="FanM" id="FanM" onclick="onFanDown()" data-theme="d">FAN Interval -</button></div>
