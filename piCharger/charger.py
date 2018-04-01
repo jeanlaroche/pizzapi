@@ -1,5 +1,7 @@
 import pigpio
 from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask_socketio import SocketIO, emit
+
 import time, threading
 from BaseClasses.baseServer import Server
 import logging
@@ -8,6 +10,8 @@ from BaseClasses import myLogger
 outGPIO = 18
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
 
 
 class Charger(Server):
@@ -71,13 +75,15 @@ class Charger(Server):
                         ratio -= step
                 else:
                     step=0
-                    ratio += 1. * .3 * (self.target-self.inputs[0]) / 256
+                    ratio += 1. * .9 * (self.target-self.inputs[0]) / 256
                 ratio = max(0,min(ratio,1))
                 self.setDutyCycle(ratio)
                 time.sleep(0.01)
-                str = "input {:.1f} target {:.2f} ratio {:.3f} step {:.4f}".format(self.inputs[0],self.target, ratio, step)
+                str = "input {:.1f} target {:.2f} ratio {:.0f} step {:.4f}".format(self.inputs[0],self.target, ratio*256, step)
                 back = '\b'*(len(str)+1)
                 print str+back,
+                infoStr = 'CurVal {:.2f} -- target {:.2f} -- ratio {:.2f}'.format(self.inputs[0],self.target, ratio)
+                socketio.emit('currentValues', {'data': str})
         t = threading.Thread(target=regLoop)
         t.daemon = True
         t.start()
@@ -129,13 +135,22 @@ def Index():
 def funcName(param1,param2):
     return jsonify(param1=param1,param2=param2)
 
+@socketio.on('my event')
+def handle_my_custom_event(arg1):
+    #print('received args:')
+    # print arg1['data']
+    charger.target = int(arg1['data'])/100.*256
+    #emit('targetVal', {'data': charger.target})
+
+    
 charger = Charger()
 
 if __name__ == "__main__":
     #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
     #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
     #charger.glow()
-    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+    socketio.run(app,host='0.0.0.0',port=8080)
+    # app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
     exit(0)
 
     # while 1:

@@ -8,23 +8,49 @@
   <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
-
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+<script type="text/javascript" charset="utf-8">
+//    var socket = io.connect('http://' + document.domain + ':' + location.port);
+//    socket.on('connect', function() {
+//        socket.emit('my event', {data: 'I\'m connected!'});
+//        socket.emit('my event', {data: 'Yepee'});
+//    });
+</script>
   <script>
   $( function() {
+  } );
+
+$(document).ready(function(){
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    socket.on('currentValues', function(msg) {
+        $('#log2').text(msg.data);
+    });
+//    socket.on('targetVal', function(msg) {
+//        $('#log').text(msg.data);
+//    });
     $( "#slider" ).slider({
       slide: function( event, ui ) {
-        $.get('/setRatio_'+ui.value);
+        //$.get('/setRatio_'+ui.value);
+		//$('#log').text(ui.value);
+		socket.emit('my event', {data: ui.value});
       },
     });
-  } );
+});
   </script>
-</head>
+<style>
+h3 {text-align: center;}
+h4 {text-align: left; color: green}
+span {font-weight: bold;}
+</style>
+
+  </head>
 <body>
  
-<div ><p>...</p></div>
+<div ><p><h2>VOLTAGE CONTROLER</h2></p></div>
 
 <div id="slider"></div>
- 
+<div ><p> </p></div>
+<span id="log2"></span> <br>
  
 </body>
 </html>
