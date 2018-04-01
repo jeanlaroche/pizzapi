@@ -54,7 +54,7 @@ class lightController(baseServer.Server):
             for ii in range(5):
                 self.turnLigthOnOff(9,onOff)
                 time.sleep(1)
-        self.myTimer.addEvent('sunset',15,gateLight,[1],'Turn on gate light')
+        self.myTimer.addEvent('sunset',5,gateLight,[1],'Turn on gate light')
         self.myTimer.addEvent(2,0,gateLight,[0],'Turn off gate light')
         self.myTimer.start()
         
@@ -76,8 +76,13 @@ class lightController(baseServer.Server):
                 self.turnLigthOnOff(100,1)
                 self.turnLigthOnOff(102,1)
             if pushCount == 2: 
-                self.turnLigthOnOff(100,0)
-                self.turnLigthOnOff(102,0)
+                if self.pi.read(BUTTON_GPIO) == 0:
+                    self.turnLigthOnOff(102,0)
+                    time.sleep(5)
+                    self.turnLigthOnOff(100,0)
+                else:
+                    self.turnLigthOnOff(100,0)
+                    self.turnLigthOnOff(102,0)
             if pushCount == 3: self.turnLigthOnOff(102,0)
             if pushCount == 4: self.turnLigthOnOff(100,0)
             
