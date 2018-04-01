@@ -7,8 +7,8 @@ import logging
 import datetime
 from BaseClasses.utils import myTimer
 
-TX_GPIO = 17
-BUTTON_GPIO = 10
+TX_GPIO = 18
+BUTTON_GPIO = 17
 # Codes for our light remote. > 0 means turn on, < 0 means turn off
 codesLivRoom = {1:5510451,-1:5510460,2:5510595,-2:5510604,3:5510915,-3:5510924,4:5512451,-4:5512460,5:5518595,-5:5518604}
 codesBedRoom = {6:283955,-6:283964,7:284099,-7:284108,8:284419,-8:284428,9:285955,-9:285964,10:292099,-10:292108}
@@ -40,7 +40,7 @@ class lightController(baseServer.Server):
         self.pi = pigpio.pi() # Connect to local Pi.
         self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=10)
         self.pi.set_mode(BUTTON_GPIO, pigpio.INPUT)
-        self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_DOWN)
+        self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_UP)
         self.pi.set_glitch_filter(BUTTON_GPIO, 10e3)
         
         self.myTimer = myTimer()
@@ -62,9 +62,10 @@ class lightController(baseServer.Server):
         # Button callback
         def buttonCallback(GPIO, level, tick):
             self.onButton()
-        self.pi.callback(BUTTON_GPIO, pigpio.RISING_EDGE, buttonCallback)
+        self.pi.callback(BUTTON_GPIO, pigpio.FALLING_EDGE, buttonCallback)
 
     def onButton(self):
+        if self.pushCount > 5: self.pushCount = 0
         self.pushCount += 1
         logging.info('Button pressed, pushCount %d',self.pushCount)
 
@@ -109,7 +110,7 @@ class lightController(baseServer.Server):
             return
         code = codes[lightNum] if onOff == 1 else codes[-lightNum]
         self.transmitter.send(code)
-        logging.info('Turning light %d %d',lightNum,onOff)
+        #logging.info('Turning light %d %d',lightNum,onOff)
         
     def getLog(self):
         with open("rfLights.log") as f:

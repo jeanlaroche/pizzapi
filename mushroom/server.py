@@ -52,6 +52,18 @@ def _humidityDown():
     # if allowControl or alwaysAllow: rt.incSetHumidityerature(-1)
         # return jsonify(targetHumidityeratureValue=rt.targetHumidityeratureVal)
 
+@app.route("/_fluxUp")
+def _fluxUp():
+    print "FLUX UP"
+    mush.incFlux(1)
+    return jsonify(flux=int(mush.humidityTrigger))
+
+@app.route("/_fluxDown")
+def _fluxDown():
+    print "FLUX Down"
+    mush.incFlux(-1)
+    return jsonify(flux=int(mush.humidityTrigger))
+
 @app.route("/_fanTest")
 def _fanTest():
     print "FAN Test"
@@ -96,7 +108,7 @@ def _getData():
     # stats = ''.join(stats)
     # stats,X,Y = schedule.computeGraphData()
     # print stats
-    return jsonify(curHumidity=curHumidity,targetHumidity=int(mush.targetHumidity),humidity=mush.curHumidity,upTime=GetUptime(),fanStatus=mush.fanStatus,humStatus=mush.humStatus,curTemp=mush.curTemp,fanOnPeriodMin=mush.fanOnPeriodMin,fanOnLengthS=mush.fanOnLengthS,X=X,Y=Y)
+    return jsonify(curHumidity=curHumidity,targetHumidity=int(mush.targetHumidity),humidity=mush.curHumidity,upTime=GetUptime(),fanStatus=mush.fanStatus,humStatus=mush.humStatus,curTemp=mush.curTemp,fanOnPeriodMin=mush.fanOnPeriodMin,fanOnLengthS=mush.fanOnLengthS,X=X,Y=Y,flux=mush.humidityTrigger)
 
 
 def GetUptime():

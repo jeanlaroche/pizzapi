@@ -352,10 +352,14 @@ if __name__ == "__main__":
             tx.send(inCode)
             time.sleep(0.01)
         while 1:
-            a = raw_input('Command ->[]')
-            inCode = codes[int(a)]
-            print("sending {}".format(inCode))
-            tx.send(inCode)
+            #a = raw_input('Command ->[]')
+            #inCode = codes[int(a)]
+            # print("sending {}".format(inCode))
+            # tx.send(inCode)
+            time.sleep(1)
+            tx.send(285955)
+            time.sleep(1)
+            tx.send(285964)
         
 
         tx.cancel() # Cancel the transmitter.
