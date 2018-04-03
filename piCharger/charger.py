@@ -63,19 +63,12 @@ class Charger(Server):
             fork = 2
             while 1:
                 self.readADInputs()
-                errorAbs = abs(self.inputs[0] - self.target)
-                if 0:
-                    if errorAbs > 50: step = 100./256
-                    elif errorAbs > 10*fork: step = 25./256
-                    elif errorAbs > 3*fork: step = 10./256
-                    else: step = 1./256
-                    if self.inputs[0] < self.target-fork:
-                        ratio += step
-                    elif self.inputs[0] > self.target+fork:
-                        ratio -= step
+                step=0
+                absDiff = abs(self.target-self.inputs[0])
+                if absDiff > 5:
+                    ratio += 1. * .9 * (self.target-self.inputs[0]) / 256.
                 else:
-                    step=0
-                    ratio += 1. * .9 * (self.target-self.inputs[0]) / 256
+                    ratio += 1. * .2 * (self.target-self.inputs[0]) / 256.
                 ratio = max(0,min(ratio,1))
                 self.setDutyCycle(ratio)
                 time.sleep(0.01)
@@ -139,7 +132,7 @@ def funcName(param1,param2):
 def handle_my_custom_event(arg1):
     #print('received args:')
     # print arg1['data']
-    charger.target = int(arg1['data'])/100.*256
+    charger.target = int(arg1['data']/100.*256)
     #emit('targetVal', {'data': charger.target})
 
     
