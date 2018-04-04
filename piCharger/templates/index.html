@@ -24,6 +24,8 @@ $(document).ready(function(){
     var socket = io.connect('http://' + document.domain + ':' + location.port);
     socket.on('currentValues', function(msg) {
         $('#log2').text(msg.data);
+        $('#VSupply').text(msg.VSupply);
+        $('#VOut').text(msg.VOut);
     });
 //    socket.on('targetVal', function(msg) {
 //        $('#log').text(msg.data);
@@ -51,6 +53,8 @@ span {font-weight: bold;}
 <div id="slider"></div>
 <div ><p> </p></div>
 <span id="log2"></span> <br>
+Vsupply: <span id="VSupply"></span> V<br>
+VOut:    <span id="VOut"></span> V<br>
  
 </body>
 </html>

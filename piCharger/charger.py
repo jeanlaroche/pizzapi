@@ -35,7 +35,7 @@ class Charger(Server):
         self.regulateForTargetV()
 
     def readADInputs(self,numToRead=512):
-        for a in range(0,1):
+        for a in range(0,2):
             # self.aout = self.aout + 1
             try:
                 self.pi.i2c_write_byte_data(self.handle, 0x40 | a, self.aout&0xFF)
@@ -64,19 +64,24 @@ class Charger(Server):
             while 1:
                 self.readADInputs()
                 step=0
-                absDiff = abs(self.target-self.inputs[0])
+                delta = self.target-(self.inputs[1]-self.inputs[0])
+                absDiff = abs(delta)
                 if absDiff > 5:
-                    ratio += 1. * .9 * (self.target-self.inputs[0]) / 256.
+                    ratio -= 1. * .9 * (delta) / 256.
                 else:
-                    ratio += 1. * .2 * (self.target-self.inputs[0]) / 256.
+                    ratio -= 1. * .2 * (delta) / 256.
                 ratio = max(0,min(ratio,1))
                 self.setDutyCycle(ratio)
                 time.sleep(0.01)
-                str = "input {:.1f} target {:.2f} ratio {:.0f} step {:.4f}".format(self.inputs[0],self.target, ratio*256, step)
+                str = "input1 {:.1f} input2 {:.1f} out {:.1f} target {:.2f} ratio {:.0f} step {:.4f}".format(
+                    self.inputs[0],self.inputs[1],self.inputs[1]-self.inputs[0],self.target, ratio*256, step)
                 back = '\b'*(len(str)+1)
                 print str+back,
-                infoStr = 'CurVal {:.2f} -- target {:.2f} -- ratio {:.2f}'.format(self.inputs[0],self.target, ratio)
-                socketio.emit('currentValues', {'data': str})
+                self.vSupplyFact = 12./256
+                self.vOutFact = 12./256
+                self.VSupply = round(self.vSupplyFact*self.inputs[1],1)
+                self.VOut = round(self.VSupply-self.vOutFact*self.inputs[0],1)
+                socketio.emit('currentValues', {'data': str,'VSupply':self.VSupply,'VOut':self.VOut})
         t = threading.Thread(target=regLoop)
         t.daemon = True
         t.start()
