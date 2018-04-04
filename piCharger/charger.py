@@ -77,8 +77,8 @@ class Charger(Server):
                     self.inputs[0],self.inputs[1],self.inputs[1]-self.inputs[0],self.target, ratio*256, step)
                 back = '\b'*(len(str)+1)
                 print str+back,
-                self.vSupplyFact = 12./256
-                self.vOutFact = 12./256
+                self.vSupplyFact = 1.75*12./256
+                self.vOutFact = 1.75*12./256
                 self.VSupply = round(self.vSupplyFact*self.inputs[1],1)
                 self.VOut = round(self.VSupply-self.vOutFact*self.inputs[0],1)
                 socketio.emit('currentValues', {'data': str,'VSupply':self.VSupply,'VOut':self.VOut})
