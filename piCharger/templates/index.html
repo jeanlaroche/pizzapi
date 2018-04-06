@@ -25,7 +25,7 @@ $(document).ready(function(){
     socket.on('currentValues', function(msg) {
         $('#log2').text(msg.data);
         $('#VSupply').text(msg.VSupply);
-        $('#VOut').text(msg.VOut);
+        $('#VOut').text(msg.VOut.toFixed(2));
     });
 //    socket.on('targetVal', function(msg) {
 //        $('#log').text(msg.data);

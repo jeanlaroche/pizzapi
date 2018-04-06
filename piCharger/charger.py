@@ -16,8 +16,12 @@ socketio = SocketIO(app)
 
 class Charger(Server):
     
-    oscFreqHz = 1000
+    oscFreqHz = 320
+    pwmRange = 1024
     target = 255
+    toReadSlow = 1024*4
+    toReadFast = 512
+    numToRead=toReadSlow
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
         logging.info('Starting pigpio')
@@ -25,6 +29,7 @@ class Charger(Server):
         self.pi.set_mode(outGPIO, pigpio.OUTPUT)
         self.pi.set_pull_up_down(outGPIO, pigpio.PUD_UP)
         self.pi.set_PWM_frequency(outGPIO,self.oscFreqHz)
+        self.pi.set_PWM_range(outGPIO,self.pwmRange)
         self.pi.set_PWM_dutycycle(outGPIO,128)
         #self.pi.write(outGPIO,1)
         
@@ -33,9 +38,10 @@ class Charger(Server):
         self.aout = 0
         self.inputs = [0,0,0,0]
         self.regulateForTargetV()
+        #self.glow()
 
-    def readADInputs(self,numToRead=512):
-        for a in range(0,2):
+    def readADInputs(self):
+        for a in range(0,1):
             # self.aout = self.aout + 1
             try:
                 self.pi.i2c_write_byte_data(self.handle, 0x40 | a, self.aout&0xFF)
@@ -46,9 +52,11 @@ class Charger(Server):
                 v = self.pi.i2c_read_byte(self.handle)
                 self.inputs[a] = int(v)
             else:
-                n,bytes = self.pi.i2c_read_device(self.handle,numToRead)
+                n,bytes = self.pi.i2c_read_device(self.handle,self.numToRead)
                 #print [int(item) for item in bytes]
-                self.inputs[a]=1.*sum(bytes)/n
+                #bytes = [min(item,127) for item in bytes]
+                # bytes = sorted(bytes)[128:-128]
+                self.inputs[a]=1.*sum(bytes)/len(bytes)
         back = '\b'*16
         # back = '\n'
         #print "{:03d} {:03d} {:03d} {:03d}{}".format(self.inputs[0],self.inputs[1],self.inputs[2],self.inputs[3],back),
@@ -56,6 +64,7 @@ class Charger(Server):
         
     def regulateForTargetV(self):
         self.target = 60
+        fullRange = 256.
         self.setDutyCycle(1)
         def regLoop():
             ratio = 1
@@ -64,30 +73,28 @@ class Charger(Server):
             while 1:
                 self.readADInputs()
                 step=0
-                delta = self.target-(self.inputs[1]-self.inputs[0])
-                absDiff = abs(delta)
+                absDiff = abs(self.target-self.inputs[0])
+                if absDiff > 15: self.numToRead=self.toReadFast
+                else: self.numToRead=self.toReadSlow
                 if absDiff > 5:
-                    ratio -= 1. * .9 * (delta) / 256.
+                    ratio += 1. * .9 * (self.target-self.inputs[0]) / fullRange
                 else:
-                    ratio -= 1. * .2 * (delta) / 256.
+                    ratio += 1. * .4 * (self.target-self.inputs[0]) / fullRange
                 ratio = max(0,min(ratio,1))
                 self.setDutyCycle(ratio)
-                time.sleep(0.01)
-                str = "input1 {:.1f} input2 {:.1f} out {:.1f} target {:.2f} ratio {:.0f} step {:.4f}".format(
-                    self.inputs[0],self.inputs[1],self.inputs[1]-self.inputs[0],self.target, ratio*256, step)
+                # self.setDutyCycle(self.target/256.)
+                time.sleep(0.0001)
+                str = "input {:.1f} target {:.2f} ratio {:.0f}".format(self.inputs[0],self.target, ratio*self.pwmRange)
                 back = '\b'*(len(str)+1)
                 print str+back,
-                self.vSupplyFact = 1.75*12./256
-                self.vOutFact = 1.75*12./256
-                self.VSupply = round(self.vSupplyFact*self.inputs[1],1)
-                self.VOut = round(self.VSupply-self.vOutFact*self.inputs[0],1)
-                socketio.emit('currentValues', {'data': str,'VSupply':self.VSupply,'VOut':self.VOut})
+                VOut = self.inputs[0] * 14.99/224.7
+                socketio.emit('currentValues', {'data': str,'VOut':VOut})
         t = threading.Thread(target=regLoop)
         t.daemon = True
         t.start()
 
     def setDutyCycle(self,ratio):
-        self.pi.set_PWM_dutycycle(outGPIO,int(255*(ratio)))
+        self.pi.set_PWM_dutycycle(outGPIO,int(self.pwmRange*(ratio)))
         
     def glow(self):
         def doGlow():
@@ -122,6 +129,7 @@ def setRatio(param1):
     # print "SET RATIO {}".format(param1)
     #charger.setDutyCycle(param1/100.)
     charger.target = param1/100.*256
+    charger.numToRead = charger.toReadFast
     return ('', param1)
 
     # return index page when IP address of RPi is typed in the browser
