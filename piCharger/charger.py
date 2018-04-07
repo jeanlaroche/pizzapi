@@ -20,9 +20,6 @@ class Charger(Server):
     oscFreqHz = 320*4
     pwmRange = 1024
     target = 255
-    toReadSlow = 1024*4
-    toReadFast = 512
-    numToRead=toReadSlow
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
         logging.info('Starting pigpio')
@@ -39,7 +36,8 @@ class Charger(Server):
         self.handle = self.pi.i2c_open(1, YL_40, 0)
         self.aout = 0
         self.inputs = [0,0,0,0]
-        self.dataHist = 256*np.ones(2)
+        self.dataHist = 256*np.ones(8)
+        self.nMean = 2
         self.regulateForTargetV()
         #self.glow()
 
@@ -60,8 +58,8 @@ class Charger(Server):
                 meanVal = 1.*np.mean(bytes)
                 self.dataHist = np.roll(self.dataHist,1)
                 self.dataHist[0]= meanVal
-                weights = np.linspace(1,0,len(self.dataHist))
-                self.inputs[a]=np.mean(self.dataHist * weights)/np.mean(weights)
+                self.inputs[a]=np.mean(self.dataHist[0:self.nMean])
+                self.disp = np.mean(self.dataHist)
         back = '\b'*16
         # back = '\n'
         #print "{:03d} {:03d} {:03d} {:03d}{}".format(self.inputs[0],self.inputs[1],self.inputs[2],self.inputs[3],back),
@@ -79,8 +77,6 @@ class Charger(Server):
                 self.readADInputs()
                 step=0
                 absDiff = abs(self.target-self.inputs[0])
-                if absDiff > 15: self.numToRead=self.toReadFast
-                else: self.numToRead=self.toReadSlow
                 if absDiff > 15:
                     ratio += 1 * (self.target-self.inputs[0]) / fullRange
                 elif absDiff > 2:
@@ -92,7 +88,7 @@ class Charger(Server):
                 str = "input {:.1f} target {:.2f} ratio {:.0f} -- {}   ".format(self.inputs[0],self.target, ratio*self.pwmRange, self.counter)
                 back = '\b'*(len(str)+1)
                 print str+back,
-                VOut = self.inputs[0] * 14.99/224.7
+                VOut = self.disp * 14.99/224.7
                 socketio.emit('currentValues', {'data': str,'VOut':VOut})
         t = threading.Thread(target=regLoop)
         t.daemon = True
@@ -134,7 +130,6 @@ def setRatio(param1):
     # print "SET RATIO {}".format(param1)
     #charger.setDutyCycle(param1/100.)
     charger.target = param1/100.*256
-    charger.numToRead = charger.toReadFast
     return ('', param1)
 
     # return index page when IP address of RPi is typed in the browser
