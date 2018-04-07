@@ -6,6 +6,7 @@ import time, threading
 from BaseClasses.baseServer import Server
 import logging
 from BaseClasses import myLogger
+import numpy as np
 
 outGPIO = 18
 
@@ -16,7 +17,7 @@ socketio = SocketIO(app)
 
 class Charger(Server):
     
-    oscFreqHz = 320
+    oscFreqHz = 320*4
     pwmRange = 1024
     target = 255
     toReadSlow = 1024*4
@@ -31,12 +32,14 @@ class Charger(Server):
         self.pi.set_PWM_frequency(outGPIO,self.oscFreqHz)
         self.pi.set_PWM_range(outGPIO,self.pwmRange)
         self.pi.set_PWM_dutycycle(outGPIO,128)
+        self.counter = 0
         #self.pi.write(outGPIO,1)
         
         YL_40=0x48
         self.handle = self.pi.i2c_open(1, YL_40, 0)
         self.aout = 0
         self.inputs = [0,0,0,0]
+        self.dataHist = 256*np.ones(2)
         self.regulateForTargetV()
         #self.glow()
 
@@ -52,11 +55,13 @@ class Charger(Server):
                 v = self.pi.i2c_read_byte(self.handle)
                 self.inputs[a] = int(v)
             else:
-                n,bytes = self.pi.i2c_read_device(self.handle,self.numToRead)
-                #print [int(item) for item in bytes]
-                #bytes = [min(item,127) for item in bytes]
-                # bytes = sorted(bytes)[128:-128]
-                self.inputs[a]=1.*sum(bytes)/len(bytes)
+                self.counter = (self.counter + 1) % 10
+                n,bytes = self.pi.i2c_read_device(self.handle,512)
+                meanVal = 1.*np.mean(bytes)
+                self.dataHist = np.roll(self.dataHist,1)
+                self.dataHist[0]= meanVal
+                weights = np.linspace(1,0,len(self.dataHist))
+                self.inputs[a]=np.mean(self.dataHist * weights)/np.mean(weights)
         back = '\b'*16
         # back = '\n'
         #print "{:03d} {:03d} {:03d} {:03d}{}".format(self.inputs[0],self.inputs[1],self.inputs[2],self.inputs[3],back),
@@ -76,15 +81,15 @@ class Charger(Server):
                 absDiff = abs(self.target-self.inputs[0])
                 if absDiff > 15: self.numToRead=self.toReadFast
                 else: self.numToRead=self.toReadSlow
-                if absDiff > 5:
-                    ratio += 1. * .9 * (self.target-self.inputs[0]) / fullRange
-                else:
-                    ratio += 1. * .4 * (self.target-self.inputs[0]) / fullRange
+                if absDiff > 15:
+                    ratio += 1 * (self.target-self.inputs[0]) / fullRange
+                elif absDiff > 2:
+                    ratio += .3 * (self.target-self.inputs[0]) / fullRange
                 ratio = max(0,min(ratio,1))
                 self.setDutyCycle(ratio)
                 # self.setDutyCycle(self.target/256.)
                 time.sleep(0.0001)
-                str = "input {:.1f} target {:.2f} ratio {:.0f}".format(self.inputs[0],self.target, ratio*self.pwmRange)
+                str = "input {:.1f} target {:.2f} ratio {:.0f} -- {}   ".format(self.inputs[0],self.target, ratio*self.pwmRange, self.counter)
                 back = '\b'*(len(str)+1)
                 print str+back,
                 VOut = self.inputs[0] * 14.99/224.7
