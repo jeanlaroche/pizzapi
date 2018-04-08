@@ -35,14 +35,15 @@ class Charger(Server):
         YL_40=0x48
         self.handle = self.pi.i2c_open(1, YL_40, 0)
         self.aout = 0
-        self.inputs = [0,0,0,0]
-        self.dataHist = 256*np.ones(8)
+        self.outputV = [0]*2
+        self.outputVSmooth = [0]*2
+        self.outputVHist = [256*np.ones(8)]*2
         self.nMean = 2
         self.regulateForTargetV()
         #self.glow()
 
     def readADInputs(self):
-        for a in range(0,1):
+        for a in range(0,2):
             # self.aout = self.aout + 1
             try:
                 self.pi.i2c_write_byte_data(self.handle, 0x40 | a, self.aout&0xFF)
@@ -51,18 +52,17 @@ class Charger(Server):
                 continue
             if 0:
                 v = self.pi.i2c_read_byte(self.handle)
-                self.inputs[a] = int(v)
+                self.outputV = int(v)
             else:
                 self.counter = (self.counter + 1) % 10
                 n,bytes = self.pi.i2c_read_device(self.handle,512)
                 meanVal = 1.*np.mean(bytes)
-                self.dataHist = np.roll(self.dataHist,1)
-                self.dataHist[0]= meanVal
-                self.inputs[a]=np.mean(self.dataHist[0:self.nMean])
-                self.disp = np.mean(self.dataHist)
+                self.outputVHist[a] = np.roll(self.outputVHist[a],1)
+                self.outputVHist[a][0]= meanVal
+                self.outputV[a]=np.mean(self.outputVHist[a][0:self.nMean])
+                self.outputVSmooth[a] = np.mean(self.outputVHist[a])
         back = '\b'*16
         # back = '\n'
-        #print "{:03d} {:03d} {:03d} {:03d}{}".format(self.inputs[0],self.inputs[1],self.inputs[2],self.inputs[3],back),
         
         
     def regulateForTargetV(self):
@@ -76,19 +76,19 @@ class Charger(Server):
             while 1:
                 self.readADInputs()
                 step=0
-                absDiff = abs(self.target-self.inputs[0])
+                absDiff = abs(self.target-self.outputV[0])
                 if absDiff > 15:
-                    ratio += 1 * (self.target-self.inputs[0]) / fullRange
+                    ratio += 1 * (self.target-self.outputV[0]) / fullRange
                 elif absDiff > 2:
-                    ratio += .3 * (self.target-self.inputs[0]) / fullRange
+                    ratio += .3 * (self.target-self.outputV[0]) / fullRange
                 ratio = max(0,min(ratio,1))
                 self.setDutyCycle(ratio)
                 # self.setDutyCycle(self.target/256.)
                 time.sleep(0.0001)
-                str = "input {:.1f} target {:.2f} ratio {:.0f} -- {}   ".format(self.inputs[0],self.target, ratio*self.pwmRange, self.counter)
+                str = "input {:.1f} {:.1f} target {:.2f} ratio {:.0f} -- {}   ".format(self.outputV[0],self.outputV[1], self.target, ratio*self.pwmRange, self.counter)
                 back = '\b'*(len(str)+1)
                 print str+back,
-                VOut = self.disp * 14.99/224.7
+                VOut = self.outputVSmooth[0] * 14.99/224.7
                 socketio.emit('currentValues', {'data': str,'VOut':VOut})
         t = threading.Thread(target=regLoop)
         t.daemon = True
