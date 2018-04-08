@@ -19,16 +19,16 @@ class Charger(Server):
     
     oscFreqHz = 320*4
     pwmRange = 1024
-    target = 255
+    targetOutV = 255
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(outGPIO, pigpio.OUTPUT)
-        self.pi.set_pull_up_down(outGPIO, pigpio.PUD_UP)
+        # self.pi.set_pull_up_down(outGPIO, pigpio.PUD_UP)
         self.pi.set_PWM_frequency(outGPIO,self.oscFreqHz)
         self.pi.set_PWM_range(outGPIO,self.pwmRange)
-        self.pi.set_PWM_dutycycle(outGPIO,128)
+        self.pi.set_PWM_dutycycle(outGPIO,0)
         self.counter = 0
         #self.pi.write(outGPIO,1)
         
@@ -39,19 +39,23 @@ class Charger(Server):
         self.outputVSmooth = [0]*2
         self.outputVHist = [256*np.ones(8)]*2
         self.nMean = 2
+        self.targetOutV = 0
+        self.targetOutA = 5
+        self.PowerOn = 1
         self.regulateForTargetV()
         #self.glow()
 
     def readADInputs(self):
         self.counter = (self.counter + 1) % 10
+        # Somehow input 1 does not seem to work any longer?
         inputs=[0,2]
         for a in range(0,2):
-            # self.aout = self.aout + 1
             try:
-                self.pi.i2c_write_byte_data(self.handle, 0x00 | inputs[a], self.aout&0xFF)
+                self.pi.i2c_write_byte_data(self.handle, 0x00 | inputs[a], 0)
             except:
                 print "Write failed"
                 return
+            # Massaging: get the mean of 512 values, then use the 1024 last one for the feedback and many more for the diaplsy
             n,bytes = self.pi.i2c_read_device(self.handle,512)
             meanVal = 1.*np.mean(bytes)
             self.outputVHist[a] = np.roll(self.outputVHist[a],1)
@@ -59,28 +63,38 @@ class Charger(Server):
             self.outputV[a]=np.mean(self.outputVHist[a][0:self.nMean])
             self.outputVSmooth[a] = np.mean(self.outputVHist[a])
         
-        
     def regulateForTargetV(self):
-        self.target = 60
         fullRange = 256.
         self.setDutyCycle(1)
+        
+        def controlFun(ratio,delta,mult=1,deadZone=2):
+            # Simple feedback function.
+            absDiff = abs(delta)
+            if absDiff > 15:
+                ratio += 1 * (delta) / fullRange * mult
+            elif absDiff > deadZone:
+                ratio += .3 * (delta) / fullRange * mult
+            return max(0,min(ratio,1))        
+        
         def regLoop():
-            ratio = 1
-            maxStep = .2
-            fork = 2
+            ratio,ratioV,ratioA = 0,0,0
+            control = 'V'
             while 1:
                 self.readADInputs()
-                step=0
-                absDiff = abs(self.target-self.outputV[0])
-                if absDiff > 15:
-                    ratio += 1 * (self.target-self.outputV[0]) / fullRange
-                elif absDiff > 2:
-                    ratio += .3 * (self.target-self.outputV[0]) / fullRange
-                ratio = max(0,min(ratio,1))
-                self.setDutyCycle(ratio)
-                # self.setDutyCycle(self.target/256.)
+                if self.PowerOn:
+                    # Update the two ratios according to desired V and A
+                    delta = self.targetOutV-self.outputV[0]
+                    ratioV = controlFun(ratioV,delta)
+                    delta = self.targetOutA-self.outputV[1]
+                    ratioA = controlFun(ratioA,delta,mult=10,deadZone=0)
+                    # But pick the minimum of the two.
+                    ratio,control = min(ratioV,ratioA),'V' if ratioV < ratioA else 'A'
+                    ratioA,ratioV=ratio,ratio
+                    self.setDutyCycle(ratio)
+                else:
+                    self.setDutyCycle(0)
                 time.sleep(0.0001)
-                str = "input {:.1f} {:.1f} target {:.2f} ratio {:.0f} -- {}   ".format(self.outputV[0],self.outputV[1], self.target, ratio*self.pwmRange, self.counter)
+                str = "{:.1f}V {:.1f}A tarV {:.2f} ratio {:.0f}({}) -- {}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, ratio*self.pwmRange, control, self.counter)
                 back = '\b'*(len(str)+1)
                 print str+back,
                 VOut = self.outputVSmooth[0] * 14.99/224.7
@@ -125,7 +139,7 @@ def kg():
 def setRatio(param1):
     # print "SET RATIO {}".format(param1)
     #charger.setDutyCycle(param1/100.)
-    charger.target = param1/100.*256
+    charger.targetOutV = param1/100.*256
     return ('', param1)
 
     # return index page when IP address of RPi is typed in the browser
@@ -141,8 +155,8 @@ def funcName(param1,param2):
 def handle_my_custom_event(arg1):
     #print('received args:')
     # print arg1['data']
-    charger.target = int(arg1['data']/100.*256)
-    #emit('targetVal', {'data': charger.target})
+    charger.targetOutV = int(arg1['data']/100.*256)
+    #emit('targetVal', {'data': charger.targetOutV})
 
     
 charger = Charger()
