@@ -30,13 +30,17 @@ $(document).ready(function(){
 //    socket.on('targetVal', function(msg) {
 //        $('#log').text(msg.data);
 //    });
-    $( "#slider" ).slider({
+    $( "#sliderV" ).slider({
       slide: function( event, ui ) {
-        //$.get('/setRatio_'+ui.value);
-		//$('#log').text(ui.value);
-		socket.emit('my event', {data: ui.value});
+		socket.emit('setTargetV', {data: ui.value});
       },
     });
+    $( "#sliderA" ).slider({
+      slide: function( event, ui ) {
+		socket.emit('setTargetA', {data: ui.value});
+      },
+    });
+
 });
   </script>
 <style>
@@ -50,11 +54,17 @@ span {font-weight: bold;}
  
 <div ><p><h2>VOLTAGE CONTROLER</h2></p></div>
 
-<div id="slider"></div>
+<div id="sliderV"></div>
+<div ><p> </p></div>
+<div ><p> </p></div>
+<div id="sliderA"></div>
+<div ><p> </p></div>
 <div ><p> </p></div>
 <span id="log2"></span> <br>
-AOut: <span id="AOut"></span> A<br>
+<div ><p> </p></div>
 VOut: <span id="VOut"></span> V<br>
+<div ><p> </p></div>
+AOut: <span id="AOut"></span> A<br>
  
 </body>
 </html>

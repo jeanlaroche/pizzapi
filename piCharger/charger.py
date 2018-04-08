@@ -4,7 +4,7 @@ from flask_socketio import SocketIO, emit
 
 import time, threading
 from BaseClasses.baseServer import Server
-import logging
+import logging, json
 from BaseClasses import myLogger
 import numpy as np
 
@@ -20,6 +20,7 @@ class Charger(Server):
     oscFreqHz = 320*4
     pwmRange = 1024
     targetOutV = 255
+    paramFile = 'params.json'
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
         logging.info('Starting pigpio')
@@ -42,6 +43,7 @@ class Charger(Server):
         self.targetOutV = 0
         self.targetOutA = 5
         self.PowerOn = 1
+        self.loadParams()
         self.regulateForTargetV()
         #self.glow()
 
@@ -94,18 +96,30 @@ class Charger(Server):
                 else:
                     self.setDutyCycle(0)
                 time.sleep(0.0001)
-                str = "{:.1f}V {:.1f}A tarV {:.2f} ratio {:.0f}({}) -- {}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, ratio*self.pwmRange, control, self.counter)
+                str = "{:.1f}V {:.1f}A tarV {:.2f} tarA {:.2f} ratio {:.0f}({}) -- {}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, self.targetOutA, ratio*self.pwmRange, control, self.counter)
                 back = '\b'*(len(str)+1)
                 print str+back,
                 VOut = self.outputVSmooth[0] * 14.99/224.7
                 AOut = self.outputVSmooth[1] * 1.01/8.3
-                socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut})
+                socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'Control':control})
         t = threading.Thread(target=regLoop)
         t.daemon = True
         t.start()
 
     def setDutyCycle(self,ratio):
         self.pi.set_PWM_dutycycle(outGPIO,int(self.pwmRange*(ratio)))
+        
+    def saveParams(self):
+        with open(self.paramFile,'w') as f:
+            json.dump({'targetA':self.targetOutA,'targetV':self.targetOutV},f)
+    def loadParams(self):
+        try:
+            with open(self.paramFile) as f:
+                D = json.load(f)
+                self.targetOutA = D['targetA']
+                self.targetOutV = D['targetV']
+        except:
+            pass
         
     def glow(self):
         def doGlow():
@@ -137,8 +151,6 @@ def kg():
 
 @app.route('/setRatio_<int:param1>')
 def setRatio(param1):
-    # print "SET RATIO {}".format(param1)
-    #charger.setDutyCycle(param1/100.)
     charger.targetOutV = param1/100.*256
     return ('', param1)
 
@@ -151,13 +163,15 @@ def Index():
 def funcName(param1,param2):
     return jsonify(param1=param1,param2=param2)
 
-@socketio.on('my event')
-def handle_my_custom_event(arg1):
-    #print('received args:')
-    # print arg1['data']
+@socketio.on('setTargetV')
+def setTargetV(arg1):
     charger.targetOutV = int(arg1['data']/100.*256)
-    #emit('targetVal', {'data': charger.targetOutV})
+    charger.saveParams()
 
+@socketio.on('setTargetA')
+def setTargetA(arg1):
+    charger.targetOutA = int(arg1['data']/100.*15)
+    charger.saveParams()
     
 charger = Charger()
 
