@@ -1,18 +1,17 @@
 import RPi.GPIO as GPIO
 from threading import Timer, Thread
 import time, os
-import Adafruit_DHT
 import json
 import numpy as np
 ON = 0
 OFF = 1
+from tentacle_pi.AM2315 import AM2315
+am = AM2315(0x5c,"/dev/i2c-1")
 
 
 class mushroomControl(object):
-    sensor      = Adafruit_DHT.DHT22
-    sensorPin   = 14
-    fanRelayGPIO = 3    # Relay on right looking at AC connectors
-    humRelayGPIO = 2    # Relay on left looking at AC connectors
+    fanRelayGPIO = 14    # Relay on right looking at AC connectors
+    humRelayGPIO = 4    # Relay on left looking at AC connectors
     updatePeriodS = 4   # How often do we read the temp and humidity
     fanOnPeriodMin = 1      # How often does the fan come on, in minutes.
     fanOnLengthS = 15    # How long does it stay on, in minutes
@@ -104,9 +103,10 @@ class mushroomControl(object):
             self.humStatus = 1
 
     def updateTemp(self):
-        curHumidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
-        if curTemp is None or curHumidity >= 100 or curTemp == 0:
-            self.mprint("Failed to read temp")
+        # curHumidity, curTemp = Adafruit_DHT.read_retry(self.sensor, self.sensorPin)
+        curTemp, curHumidity, crc_check = am.sense()
+        if curTemp is None or curHumidity > 100 or curTemp == 0:
+            self.mprint("Failed to read temp {} {}".format(curTemp,curHumidity))
             return
         self.curHumidity = curHumidity
         self.curTemp = np.round(curTemp*1.8 + 32,decimals=2)
@@ -124,6 +124,10 @@ class mushroomControl(object):
                 
     def incTargetHumidity(self,inc):
         self.targetHumidity += inc
+        self.writeJson()
+
+    def incFlux(self,inc):
+        self.humidityTrigger += inc
         self.writeJson()
 
     def fanTest(self):
@@ -145,7 +149,7 @@ class mushroomControl(object):
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'fanOnPeriodMin':self.fanOnPeriodMin,'fanOnLengthS':self.fanOnLengthS,'targetHumidity':self.targetHumidity},f)
+            json.dump({'fanOnPeriodMin':self.fanOnPeriodMin,'fanOnLengthS':self.fanOnLengthS,'targetHumidity':self.targetHumidity,'flux':self.humidityTrigger},f)
         
     def readJson(self):
         try:
@@ -154,6 +158,7 @@ class mushroomControl(object):
                 self.fanOnPeriodMin = A['fanOnPeriodMin']
                 self.fanOnLengthS = A['fanOnLengthS']
                 self.targetHumidity = A['targetHumidity']
+                self.humidityTrigger = A['flux']
         except:
             pass
             
@@ -185,7 +190,8 @@ class mushroomControl(object):
             X.append(hour)
         # Subtract 24 from data whose hour is later than the most recent one
         X = np.array(X)
-        X[X > X[-1]] -= 24
+        if len(X):
+            X[X > X[-1]] -= 24
         return X.tolist(),Y
             
         

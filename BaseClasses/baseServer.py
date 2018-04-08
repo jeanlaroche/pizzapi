@@ -23,7 +23,7 @@ class Server(object):
         return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
         
     # return index page when IP address of RPi is typed in the browser
-    def Index(self,pageFile):
+    def Index(self,pageFile='index.html'):
         return render_template(pageFile)
     
     def reboot(self):

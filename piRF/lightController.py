@@ -4,9 +4,11 @@ from _433 import tx
 import time, threading
 from BaseClasses import baseServer
 import logging
+import datetime
+from BaseClasses.utils import myTimer
 
-TX_GPIO = 17
-BUTTON_GPIO = 10
+TX_GPIO = 18
+BUTTON_GPIO = 17
 # Codes for our light remote. > 0 means turn on, < 0 means turn off
 codesLivRoom = {1:5510451,-1:5510460,2:5510595,-2:5510604,3:5510915,-3:5510924,4:5512451,-4:5512460,5:5518595,-5:5518604}
 codesBedRoom = {6:283955,-6:283964,7:284099,-7:284108,8:284419,-8:284428,9:285955,-9:285964,10:292099,-10:292108}
@@ -17,7 +19,7 @@ codes.update(codesBedRoom)
 codes.update(codesFamRoom)
 #codes = codesBedRoom
 
-app = Flask(__name__)
+app = Flask(__name__)    
 
 class lightController(baseServer.Server):
 
@@ -36,35 +38,34 @@ class lightController(baseServer.Server):
         super(lightController,self).__init__("rfLights.log")
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
-        self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=12)
+        self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=10)
         self.pi.set_mode(BUTTON_GPIO, pigpio.INPUT)
-        self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_DOWN)
+        self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_UP)
         self.pi.set_glitch_filter(BUTTON_GPIO, 10e3)
         
-        def timerLoop():
-            while 1:
-                try:
-                    locTime = time.localtime()
-                    if locTime.tm_hour == self.lightOffHour and locTime.tm_min == self.lightOffMin and self.canTurnOff:
-                        logging.info('Timer turn lights off')
-                        self.turnLigthOnOff(100,0)
-                        self.canTurnOff = 0
-                    if locTime.tm_hour == (self.lightOffHour + 1 )%24: self.canTurnOff = 1
-                    time.sleep(1)
-                except Exception as e:
-                    self.error('Exception in timer: %s',e)
+        self.myTimer = myTimer()
+        def turnOff():
+            logging.info('Timer turn lights off')
+            self.turnLigthOnOff(100,0)
+            self.turnLigthOnOff(102,0)
+        self.myTimer.addEvent(self.lightOffHour,self.lightOffMin,turnOff,[],'Turn lights off')
+        def gateLight(onOff):
+            # This is to make 100% sure that we're trying to turn the light on/off
+            for ii in range(5):
+                self.turnLigthOnOff(9,onOff)
+                time.sleep(1)
+        self.myTimer.addEvent('sunset',5,gateLight,[1],'Turn on gate light')
+        self.myTimer.addEvent(2,0,gateLight,[0],'Turn off gate light')
+        self.myTimer.start()
         
-        logging.info('Starting timer thread')
-        self.timerThread = threading.Thread(target=timerLoop)
-        self.timerThread.daemon = True
-        self.timerThread.start()
         
         # Button callback
         def buttonCallback(GPIO, level, tick):
             self.onButton()
-        self.pi.callback(BUTTON_GPIO, pigpio.RISING_EDGE, buttonCallback)
+        self.pi.callback(BUTTON_GPIO, pigpio.FALLING_EDGE, buttonCallback)
 
     def onButton(self):
+        if self.pushCount > 5: self.pushCount = 0
         self.pushCount += 1
         logging.info('Button pressed, pushCount %d',self.pushCount)
 
@@ -75,8 +76,13 @@ class lightController(baseServer.Server):
                 self.turnLigthOnOff(100,1)
                 self.turnLigthOnOff(102,1)
             if pushCount == 2: 
-                self.turnLigthOnOff(100,0)
-                self.turnLigthOnOff(102,0)
+                if self.pi.read(BUTTON_GPIO) == 0:
+                    self.turnLigthOnOff(102,0)
+                    time.sleep(5)
+                    self.turnLigthOnOff(100,0)
+                else:
+                    self.turnLigthOnOff(100,0)
+                    self.turnLigthOnOff(102,0)
             if pushCount == 3: self.turnLigthOnOff(102,0)
             if pushCount == 4: self.turnLigthOnOff(100,0)
             
@@ -109,7 +115,13 @@ class lightController(baseServer.Server):
             return
         code = codes[lightNum] if onOff == 1 else codes[-lightNum]
         self.transmitter.send(code)
-        logging.info('Turning light %d %d',lightNum,onOff)
+        #logging.info('Turning light %d %d',lightNum,onOff)
+        
+    def getLog(self):
+        with open("rfLights.log") as f:
+            allLines = f.readlines()
+        allLines.reverse()
+        return (allLines[0:50])
         
 @app.route('/favicon.ico')
 def favicon():
@@ -118,6 +130,10 @@ def favicon():
 @app.route("/reboot")
 def reboot():
     return lc.reboot()
+
+@app.route("/getLog")
+def getLog():
+    return jsonify(lc.getLog())
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
