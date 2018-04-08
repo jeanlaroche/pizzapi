@@ -43,26 +43,21 @@ class Charger(Server):
         #self.glow()
 
     def readADInputs(self):
+        self.counter = (self.counter + 1) % 10
+        inputs=[0,2]
         for a in range(0,2):
             # self.aout = self.aout + 1
             try:
-                self.pi.i2c_write_byte_data(self.handle, 0x40 | a, self.aout&0xFF)
+                self.pi.i2c_write_byte_data(self.handle, 0x00 | inputs[a], self.aout&0xFF)
             except:
                 print "Write failed"
-                continue
-            if 0:
-                v = self.pi.i2c_read_byte(self.handle)
-                self.outputV = int(v)
-            else:
-                self.counter = (self.counter + 1) % 10
-                n,bytes = self.pi.i2c_read_device(self.handle,512)
-                meanVal = 1.*np.mean(bytes)
-                self.outputVHist[a] = np.roll(self.outputVHist[a],1)
-                self.outputVHist[a][0]= meanVal
-                self.outputV[a]=np.mean(self.outputVHist[a][0:self.nMean])
-                self.outputVSmooth[a] = np.mean(self.outputVHist[a])
-        back = '\b'*16
-        # back = '\n'
+                return
+            n,bytes = self.pi.i2c_read_device(self.handle,512)
+            meanVal = 1.*np.mean(bytes)
+            self.outputVHist[a] = np.roll(self.outputVHist[a],1)
+            self.outputVHist[a][0]= meanVal
+            self.outputV[a]=np.mean(self.outputVHist[a][0:self.nMean])
+            self.outputVSmooth[a] = np.mean(self.outputVHist[a])
         
         
     def regulateForTargetV(self):
@@ -89,7 +84,8 @@ class Charger(Server):
                 back = '\b'*(len(str)+1)
                 print str+back,
                 VOut = self.outputVSmooth[0] * 14.99/224.7
-                socketio.emit('currentValues', {'data': str,'VOut':VOut})
+                AOut = self.outputVSmooth[1] * 1.01/8.3
+                socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut})
         t = threading.Thread(target=regLoop)
         t.daemon = True
         t.start()
