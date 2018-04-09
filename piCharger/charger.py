@@ -20,6 +20,8 @@ class Charger(Server):
     oscFreqHz = 320*4
     pwmRange = 1024
     targetOutV = 255
+    posToV = 256./100
+    posToA = 15./100
     paramFile = 'params.json'
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
@@ -96,7 +98,7 @@ class Charger(Server):
                 else:
                     self.setDutyCycle(0)
                 time.sleep(0.0001)
-                str = "{:.1f}V {:.1f}A tarV {:.2f} tarA {:.2f} ratio {:.0f}({}) -- {}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, self.targetOutA, ratio*self.pwmRange, control, self.counter)
+                str = "{:.1f}V {:.1f}A tarV {:.0f} tarA {:.0f} ratio {:.0f}({}) -- {}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, self.targetOutA, ratio*self.pwmRange, control, self.counter)
                 back = '\b'*(len(str)+1)
                 print str+back,
                 VOut = self.outputVSmooth[0] * 14.99/224.7
@@ -149,6 +151,10 @@ def kg():
     charger.kg()
     return ('', 204)
 
+@app.route('/_init')
+def init():
+    return(jsonify(VOut=charger.targetOutV/charger.posToV,AOut=charger.targetOutA/charger.posToA))
+
 @app.route('/setRatio_<int:param1>')
 def setRatio(param1):
     charger.targetOutV = param1/100.*256
@@ -165,12 +171,12 @@ def funcName(param1,param2):
 
 @socketio.on('setTargetV')
 def setTargetV(arg1):
-    charger.targetOutV = int(arg1['data']/100.*256)
+    charger.targetOutV = int(arg1['data']*charger.posToV)
     charger.saveParams()
 
 @socketio.on('setTargetA')
 def setTargetA(arg1):
-    charger.targetOutA = int(arg1['data']/100.*15)
+    charger.targetOutA = int(arg1['data']*charger.posToA)
     charger.saveParams()
     
 charger = Charger()

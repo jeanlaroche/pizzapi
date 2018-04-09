@@ -17,7 +17,13 @@
 //    });
 </script>
   <script>
+  // Function called when the page is loaded.
   $( function() {
+	$.getJSON('/_init', function(data)
+			{
+				$("#sliderV" ).slider('value',data.VOut)
+				$("#sliderA" ).slider('value',data.AOut)
+			})
   } );
 
 $(document).ready(function(){
