@@ -34,7 +34,7 @@ $(document).ready(function(){
         $('#VOut').text("Actual " + msg.VOut.toFixed(2) + " V");
         $('#AMax').text("Max A " +msg.AMax.toFixed(2) + " A");
         $('#VMax').text("Max V " +msg.VMax.toFixed(2) + " V");
-		$('#OnOff').text((msg.PowerOn?"ON":"OFF")+" Power: "+msg.Power.toFixed(2) + " W -- mAHour " + msg.mAmpHour.toFixed(2))
+		$('#OnOff').text((msg.PowerOn?"ON":"OFF")+" Power: "+msg.Power.toFixed(2) + " W -- mWHour " + msg.mWHour.toFixed(2))
 		$("#OnOff").attr('style',msg.PowerOn? 'color:red' : 'color:black');
 		if(msg.PowerOn) $('#OnButton').css("background","red");
 		else $('#OnButton').css("background","white");
