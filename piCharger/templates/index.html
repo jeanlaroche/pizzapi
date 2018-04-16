@@ -30,22 +30,37 @@ $(document).ready(function(){
     var socket = io.connect('http://' + document.domain + ':' + location.port);
     socket.on('currentValues', function(msg) {
         $('#log2').text(msg.data);
-        $('#AOut').text(msg.AOut.toFixed(2));
-        $('#VOut').text(msg.VOut.toFixed(2));
+        $('#AOut').text("Actual " + msg.AOut.toFixed(2)+ " A");
+        $('#VOut').text("Actual " + msg.VOut.toFixed(2) + " V");
+        $('#AMax').text("Max A " +msg.AMax.toFixed(2) + " A");
+        $('#VMax').text("Max V " +msg.VMax.toFixed(2) + " V");
+		$('#OnOff').text( (msg.PowerOn)?"ON":"OFF")
+		$("#OnOff").attr('style',msg.PowerOn? 'color:red' : 'color:black');
+		if(msg.PowerOn) $('#OnButton').css("background","red");
+		else $('#OnButton').css("background","white");
+		$("#VMax").attr('style',(msg.control=="V") ? 'color:red' : 'color:black');
+		$("#AMax").attr('style',(msg.control=="A") ? 'color:red' : 'color:black');
     });
-//    socket.on('targetVal', function(msg) {
-//        $('#log').text(msg.data);
-//    });
+     $( "#sliderA" ).slider({
+      slide: function( event, ui ) {
+		socket.emit('setTargetA', {data: ui.value});
+      },
+    });
     $( "#sliderV" ).slider({
       slide: function( event, ui ) {
 		socket.emit('setTargetV', {data: ui.value});
       },
     });
-    $( "#sliderA" ).slider({
-      slide: function( event, ui ) {
-		socket.emit('setTargetA', {data: ui.value});
-      },
+    $( "#OnButton" ).button({width: 155
     });
+    $( "#OffButton" ).button({width: 155
+    });
+	$( "#OnButton" ).click(function() {
+		socket.emit('TurnOnOff', {data: 1});
+      });
+	$( "#OffButton" ).click(function() {
+		socket.emit('TurnOnOff', {data: 0});
+      });
 
 });
   </script>
@@ -60,17 +75,32 @@ span {font-weight: bold;}
  
 <div ><p><h2>VOLTAGE CONTROLER</h2></p></div>
 
-<div id="sliderV"></div>
-<div ><p> </p></div>
-<div ><p> </p></div>
-<div id="sliderA"></div>
-<div ><p> </p></div>
-<div ><p> </p></div>
-<span id="log2"></span> <br>
-<div ><p> </p></div>
-VOut: <span id="VOut"></span> V<br>
-<div ><p> </p></div>
-AOut: <span id="AOut"></span> A<br>
+ <div ><p><h2 id="OnOff"> ONOFF </h2></p></div>
  
+ <table style="height: 172px; width: 350px; border:1px solid black; padding:15px, " border=1 >
+<tbody>
+<tr>
+<td style="width: 350px;" colspan="2"><div id="sliderV"></div></td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2"><div id="sliderA"></div></td>
+</tr>
+<tr>
+<td style="width: 175px;" id="VMax"> VMAX </td>
+<td style="width: 175px;"id="AMax" > AMAX </td>
+</tr>
+<tr>
+<td style="width: 175px;" id="VOut" ></td>
+<td style="width: 175px;" id="AOut" ></td>
+</tr>
+<tr>
+<td style="width: 155px;" id="OnButton">ON</td>
+<td style="width: 155px;" id="OffButton">OFF</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2" id="log2">status</td>
+</tr>
+</tbody>
+</table>
 </body>
 </html>

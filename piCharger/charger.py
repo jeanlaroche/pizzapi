@@ -20,8 +20,8 @@ class Charger(Server):
     oscFreqHz = 320*4
     pwmRange = 1024
     targetOutV = 255
-    posToV = 256./100
-    posToA = 150./100
+    posToAdcV = 256./100
+    posToAdcA = 150./100
     paramFile = 'params.json'
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
@@ -44,7 +44,7 @@ class Charger(Server):
         self.nMean = 2
         self.targetOutV = 0
         self.targetOutA = 5
-        self.PowerOn = 1
+        self.PowerOn = 0
         self.loadParams()
         self.regulateForTargetV()
         #self.glow()
@@ -69,7 +69,6 @@ class Charger(Server):
         
     def regulateForTargetV(self):
         fullRange = 256.
-        self.setDutyCycle(1)
         
         def controlFun(ratio,delta,mult=1,deadZone=2):
             # Simple feedback function.
@@ -90,7 +89,7 @@ class Charger(Server):
                     delta = self.targetOutV-self.outputV[0]
                     ratioV = controlFun(ratioV,delta)
                     delta = self.targetOutA-self.outputV[1]
-                    ratioA = controlFun(ratioA,delta,mult=10,deadZone=0)
+                    ratioA = controlFun(ratioA,delta,mult=4,deadZone=0)
                     # But pick the minimum of the two.
                     ratio,control = min(ratioV,ratioA),'V' if ratioV < ratioA else 'A'
                     ratioA,ratioV=ratio,ratio
@@ -101,9 +100,14 @@ class Charger(Server):
                 str = "{:.1f}V {:.1f}A tarV {:.0f} tarA {:.0f} ratio {:.0f}({}) -- {}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, self.targetOutA, ratio*self.pwmRange, control, self.counter)
                 back = '\b'*(len(str)+1)
                 print str+back,
-                VOut = self.outputVSmooth[0] * 14.84/224.7
-                AOut = self.outputVSmooth[1] * 0.168/8.3
-                socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'Control':control})
+                self.dacToVolt = 14.84/224.7
+                self.dacToAmp = 0.168/8.3
+                VOut = self.outputVSmooth[0] * self.dacToVolt
+                AOut = self.outputVSmooth[1] * self.dacToAmp
+                VMax = self.targetOutV * self.dacToVolt
+                AMax = self.targetOutA * self.dacToAmp
+                socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'VMax':VMax,'AMax':AMax,'Control':control,
+                    'PowerOn':self.PowerOn})
         t = threading.Thread(target=regLoop)
         t.daemon = True
         t.start()
@@ -153,7 +157,7 @@ def kg():
 
 @app.route('/_init')
 def init():
-    return(jsonify(VOut=charger.targetOutV/charger.posToV,AOut=charger.targetOutA/charger.posToA))
+    return(jsonify(VOut=charger.targetOutV/charger.posToAdcV,AOut=charger.targetOutA/charger.posToAdcA))
 
 @app.route('/setRatio_<int:param1>')
 def setRatio(param1):
@@ -171,13 +175,19 @@ def funcName(param1,param2):
 
 @socketio.on('setTargetV')
 def setTargetV(arg1):
-    charger.targetOutV = int(arg1['data']*charger.posToV)
+    charger.targetOutV = int(arg1['data']*charger.posToAdcV)
     charger.saveParams()
 
 @socketio.on('setTargetA')
 def setTargetA(arg1):
-    charger.targetOutA = int(arg1['data']*charger.posToA)
+    charger.targetOutA = int(arg1['data']*charger.posToAdcA)
     charger.saveParams()
+
+@socketio.on('TurnOnOff')
+def turnOnOff(arg1):
+    print "TURNING ON?OFF {}".format(arg1['data'])
+    charger.PowerOn = int(arg1['data'])
+
     
 charger = Charger()
 
