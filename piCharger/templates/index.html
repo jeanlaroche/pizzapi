@@ -63,11 +63,13 @@ $(document).ready(function(){
       });
     $( "#CalibV" ).button({});
 	$( "#CalibV" ).click(function() {
-		socket.emit('Calib', {data: "V"});
+		if(confirm("Are you sure?")==true)
+			socket.emit('Calib', {data: "V"});
       });
     $( "#CalibA" ).button({});
 	$( "#CalibA" ).click(function() {
-		socket.emit('Calib', {data: "A"});
+		if(confirm("Are you sure?")==true)
+			socket.emit('Calib', {data: "A"});
       });
 
 });

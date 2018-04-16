@@ -27,7 +27,7 @@ class Charger(Server):
     paramFile = 'params.json'
     mWHour = 0
     lastAmpHourTime = 0
-    autoOffMin = 1
+    autoOffMin = 120
     lastOnTime = 0
     
     def __init__(self):
@@ -138,10 +138,12 @@ class Charger(Server):
         self.PowerOn = onOrOff
         
     def calibrate(self,AorV):
+        logging.info("Calibrating %s",AorV)
         if AorV == "V":
             # The actual voltage is supposed to be 6V.
             self.dacToVolt = 6. / self.outputVSmooth[0]
         else:
+            # The actual amperage is supposed to be 1A.
             self.dacToAmp = 1. / self.outputVSmooth[1]
         self.saveParams()
 
