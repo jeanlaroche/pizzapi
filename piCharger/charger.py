@@ -31,7 +31,7 @@ class Charger(Server):
     lastOnTime = 0
     
     def __init__(self):
-        myLogger.setLogger('charger.log',mode='a')
+        myLogger.setLogger('charger.log',mode='a',dateFormat="%H:%M:%S")
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(outGPIO, pigpio.OUTPUT)
@@ -122,7 +122,7 @@ class Charger(Server):
                     if thisTime > self.lastAmpHourTime+2:
                         self.mWHour += (thisTime-self.lastAmpHourTime)*Power/3.6
                         self.lastAmpHourTime = thisTime
-                        logging.info("mWHour: {:.2f}mWh".format(self.mWHour))
+                        logging.info("T: %.2f V: %.2f A: %.2f W: %.2f mWH: %.2f",thisTime-self.lastOnTime,VOut,AOut,Power,self.mWHour)
                     
                 socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'VMax':VMax,'AMax':AMax,'Control':control,
                     'PowerOn':self.PowerOn,'Power':Power,'mWHour':self.mWHour})
