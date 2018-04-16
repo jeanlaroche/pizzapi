@@ -21,7 +21,7 @@ class Charger(Server):
     pwmRange = 1024
     targetOutV = 255
     posToV = 256./100
-    posToA = 15./100
+    posToA = 150./100
     paramFile = 'params.json'
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
@@ -101,8 +101,8 @@ class Charger(Server):
                 str = "{:.1f}V {:.1f}A tarV {:.0f} tarA {:.0f} ratio {:.0f}({}) -- {}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, self.targetOutA, ratio*self.pwmRange, control, self.counter)
                 back = '\b'*(len(str)+1)
                 print str+back,
-                VOut = self.outputVSmooth[0] * 14.99/224.7
-                AOut = self.outputVSmooth[1] * 1.01/8.3
+                VOut = self.outputVSmooth[0] * 14.84/224.7
+                AOut = self.outputVSmooth[1] * 0.168/8.3
                 socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'Control':control})
         t = threading.Thread(target=regLoop)
         t.daemon = True
