@@ -22,7 +22,12 @@ class Charger(Server):
     targetOutV = 255
     posToAdcV = 256./100
     posToAdcA = 150./100
+    dacToVolt = 14.84/224.7
+    dacToAmp = 0.168/8.3
     paramFile = 'params.json'
+    mAmpHour = 0
+    lastAmpHourTime = 0
+    
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
         logging.info('Starting pigpio')
@@ -98,32 +103,56 @@ class Charger(Server):
                     self.setDutyCycle(0)
                 time.sleep(0.0001)
                 str = "{:.1f}V {:.1f}A tarV {:.0f} tarA {:.0f} ratio {:.0f}({}) -- {}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, self.targetOutA, ratio*self.pwmRange, control, self.counter)
+                str = "V{:.1f} A{:.1f} tarV {:.0f} tarA {:.0f} ratio {:.0f}   ".format(self.outputV[0],self.outputV[1], self.targetOutV, self.targetOutA, ratio*self.pwmRange)
                 back = '\b'*(len(str)+1)
                 print str+back,
-                self.dacToVolt = 14.84/224.7
-                self.dacToAmp = 0.168/8.3
-                VOut = self.outputVSmooth[0] * self.dacToVolt
-                AOut = self.outputVSmooth[1] * self.dacToAmp
                 VMax = self.targetOutV * self.dacToVolt
                 AMax = self.targetOutA * self.dacToAmp
+                VOut = self.outputVSmooth[0] * self.dacToVolt
+                AOut = self.outputVSmooth[1] * self.dacToAmp
+                Power = VOut*AOut
+                thisTime = time.time()
+                if self.PowerOn:
+                    if self.lastAmpHourTime == 0: self.lastAmpHourTime = thisTime
+                    if thisTime > self.lastAmpHourTime+2:
+                        self.mAmpHour += (thisTime-self.lastAmpHourTime)*Power/3.6
+                        self.lastAmpHourTime = thisTime
+                        logging.info("mAmpHour: {:.2f}mWh".format(self.mAmpHour))
+                    
                 socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'VMax':VMax,'AMax':AMax,'Control':control,
-                    'PowerOn':self.PowerOn})
+                    'PowerOn':self.PowerOn,'Power':Power,'mAmpHour':self.mAmpHour})
         t = threading.Thread(target=regLoop)
         t.daemon = True
         t.start()
+
+    def turnOn(self,onOrOff):
+        if self.PowerOn == 0 and onOrOff == 1:
+            self.lastAmpHourTime = 0
+            self.mAmpHour = 0
+        self.PowerOn = onOrOff
+        
+    def calibrate(self,AorV):
+        if AorV == "V":
+            # The actual voltage is supposed to be 6V.
+            self.dacToVolt = 6. / self.outputVSmooth[0]
+        else:
+            self.dacToAmp = 1. / self.outputVSmooth[1]
+        self.saveParams()
 
     def setDutyCycle(self,ratio):
         self.pi.set_PWM_dutycycle(outGPIO,int(self.pwmRange*(ratio)))
         
     def saveParams(self):
         with open(self.paramFile,'w') as f:
-            json.dump({'targetA':self.targetOutA,'targetV':self.targetOutV},f)
+            json.dump({'targetA':self.targetOutA,'targetV':self.targetOutV,'dacToVolt':self.dacToVolt,'dacToAmp':self.dacToAmp},f)
     def loadParams(self):
         try:
             with open(self.paramFile) as f:
                 D = json.load(f)
                 self.targetOutA = D['targetA']
                 self.targetOutV = D['targetV']
+                self.dacToVolt = D['dacToVolt']
+                self.dacToAmp = D['dacToAmp']
         except:
             pass
         
@@ -186,7 +215,12 @@ def setTargetA(arg1):
 @socketio.on('TurnOnOff')
 def turnOnOff(arg1):
     print "TURNING ON?OFF {}".format(arg1['data'])
-    charger.PowerOn = int(arg1['data'])
+    charger.turnOn(int(arg1['data']))
+
+@socketio.on('Calib')
+def Calib(arg1):
+    print "CALIBRATE {}".format(arg1['data'])
+    charger.calibrate(arg1['data'])
 
     
 charger = Charger()
