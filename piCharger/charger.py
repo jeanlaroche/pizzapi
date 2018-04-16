@@ -27,6 +27,8 @@ class Charger(Server):
     paramFile = 'params.json'
     mWHour = 0
     lastAmpHourTime = 0
+    autoOffMin = 1
+    lastOnTime = 0
     
     def __init__(self):
         myLogger.setLogger('charger.log',mode='a')
@@ -113,6 +115,9 @@ class Charger(Server):
                 Power = VOut*AOut
                 thisTime = time.time()
                 if self.PowerOn:
+                    if thisTime > self.lastOnTime + self.autoOffMin*60:
+                        logging.info("Auto shut off after {} minutes".format(self.autoOffMin))
+                        self.turnOn(0)
                     if self.lastAmpHourTime == 0: self.lastAmpHourTime = thisTime
                     if thisTime > self.lastAmpHourTime+2:
                         self.mWHour += (thisTime-self.lastAmpHourTime)*Power/3.6
@@ -129,6 +134,7 @@ class Charger(Server):
         if self.PowerOn == 0 and onOrOff == 1:
             self.lastAmpHourTime = 0
             self.mWHour = 0
+            self.lastOnTime = time.time()
         self.PowerOn = onOrOff
         
     def calibrate(self,AorV):
