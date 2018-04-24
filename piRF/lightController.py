@@ -27,7 +27,7 @@ class lightController(baseServer.Server):
     pi = None
     
     lightOffHour = 23
-    lightOffMin = 0
+    lightOffMin = 20
     canTurnOff = 1
     pushCount = 10 # so the first callback does nothing. I'm not sure why I'm getting one anyway!
     pushDelayS = .7
