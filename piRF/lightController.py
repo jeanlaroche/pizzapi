@@ -17,6 +17,10 @@ codesFamRoom = {11:4461875,-11:4461884,12:4462019,-12:4462028,13:4462339,-13:446
 codes = codesLivRoom
 codes.update(codesBedRoom)
 codes.update(codesFamRoom)
+gateLightNum = 16
+codes[gateLightNum]= 4463724
+codes[-gateLightNum]=4468884
+
 #codes = codesBedRoom
 
 app = Flask(__name__)    
@@ -52,7 +56,7 @@ class lightController(baseServer.Server):
         def gateLight(onOff):
             # This is to make 100% sure that we're trying to turn the light on/off
             for ii in range(5):
-                self.turnLigthOnOff(9,onOff)
+                self.turnLigthOnOff(gateLightNum,onOff)
                 time.sleep(1)
         self.myTimer.addEvent('sunset',5,gateLight,[1],'Turn on gate light')
         self.myTimer.addEvent(2,0,gateLight,[0],'Turn off gate light')
