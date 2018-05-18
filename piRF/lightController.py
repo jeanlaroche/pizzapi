@@ -6,6 +6,7 @@ from BaseClasses import baseServer
 import logging
 import datetime
 from BaseClasses.utils import myTimer
+import random
 
 TX_GPIO = 18
 BUTTON_GPIO = 17
@@ -36,6 +37,7 @@ class lightController(baseServer.Server):
     pushCount = 10 # so the first callback does nothing. I'm not sure why I'm getting one anyway!
     pushDelayS = .7
     actionTimer = None
+    doRandomLight = 0
     
     def __init__(self):
         logging.info('Starting server')
@@ -50,24 +52,49 @@ class lightController(baseServer.Server):
         self.myTimer = myTimer()
         def turnOff():
             logging.info('Timer turn lights off')
-            self.turnLigthOnOff(100,0)
-            self.turnLigthOnOff(102,0)
+            self.turnLightOnOff(100,0)
+            self.turnLightOnOff(102,0)
         self.myTimer.addEvent(self.lightOffHour,self.lightOffMin,turnOff,[],'Turn lights off')
         def gateLight(onOff):
             # This is to make 100% sure that we're trying to turn the light on/off
             for ii in range(5):
-                self.turnLigthOnOff(gateLightNum,onOff)
+                self.turnLightOnOff(gateLightNum,onOff)
                 time.sleep(1)
         self.myTimer.addEvent('sunset',5,gateLight,[1],'Turn on gate light')
         self.myTimer.addEvent(2,0,gateLight,[0],'Turn off gate light')
+        def _randomOnOff():
+            self.randomOnOff()
+        self.myTimer.addEvent(19,0,_randomOnOff,[],'Light randomizer')
         self.myTimer.start()
-        
+        self.doRandomLight = 1
         
         # Button callback
         def buttonCallback(GPIO, level, tick):
             self.onButton()
         self.pi.callback(BUTTON_GPIO, pigpio.FALLING_EDGE, buttonCallback)
 
+    def randomOnOff(self):
+        lightOn = [1,1,1]
+        def randOn():
+            if self.doRandomLight == 0: delayS = 3600
+            else: delayM = random.randint(5,15)
+            delayM = 1
+            self.myTimer.addDelayedEvent(delayM,randOn,[],'Random event')
+            if self.doRandomLight:
+                # Turn off lights that were previously on
+                for light in lightOn:
+                    self.turnLightOnOff(light,0)
+                    time.sleep(1)
+                # Turn lights on randomly. I need a way to stop that after 23:00
+                # Perhaps it would be nicer to schedule 2 events for each light: an on and an off.
+                nextLightOn = random.sample(range(11,16), len(lightOn))
+                for ii,light in enumerate(nextLightOn):
+                    self.turnLightOnOff(light,1)
+                    lightOn[ii] = light
+                    time.sleep(1)
+        self.myTimer.addDelayedEvent(1,randOn,[],'Start random')
+           
+        
     def onButton(self):
         if self.pushCount > 5: self.pushCount = 0
         self.pushCount += 1
@@ -77,18 +104,18 @@ class lightController(baseServer.Server):
             logging.info('Take action! %d',self.pushCount)
             pushCount,self.pushCount = self.pushCount,0
             if pushCount == 1: 
-                self.turnLigthOnOff(100,1)
-                self.turnLigthOnOff(102,1)
+                self.turnLightOnOff(100,1)
+                self.turnLightOnOff(102,1)
             if pushCount == 2: 
                 if self.pi.read(BUTTON_GPIO) == 0:
-                    self.turnLigthOnOff(102,0)
+                    self.turnLightOnOff(102,0)
                     time.sleep(5)
-                    self.turnLigthOnOff(100,0)
+                    self.turnLightOnOff(100,0)
                 else:
-                    self.turnLigthOnOff(100,0)
-                    self.turnLigthOnOff(102,0)
-            if pushCount == 3: self.turnLigthOnOff(102,0)
-            if pushCount == 4: self.turnLigthOnOff(100,0)
+                    self.turnLightOnOff(100,0)
+                    self.turnLightOnOff(102,0)
+            if pushCount == 3: self.turnLightOnOff(102,0)
+            if pushCount == 4: self.turnLightOnOff(100,0)
             
         try:
             self.actionTimer.cancel()
@@ -101,20 +128,20 @@ class lightController(baseServer.Server):
         return super(lightController,self).Index("index.html")
         # return jsonify(imAlive="I am alive")
         
-    def turnLigthOnOff(self, lightNum, onOff):
+    def turnLightOnOff(self, lightNum, onOff):
         if lightNum == 100:
             for ii in range(1,6):
-                self.turnLigthOnOff(ii,onOff)
+                self.turnLightOnOff(ii,onOff)
                 time.sleep(0.01)
             return
         if lightNum == 101:
             for ii in range(6,11):
-                self.turnLigthOnOff(ii,onOff)
+                self.turnLightOnOff(ii,onOff)
                 time.sleep(0.01)
             return
         if lightNum == 102:
             for ii in range(11,16):
-                self.turnLigthOnOff(ii,onOff)
+                self.turnLightOnOff(ii,onOff)
                 time.sleep(0.01)
             return
         code = codes[lightNum] if onOff == 1 else codes[-lightNum]
@@ -146,7 +173,7 @@ def Index():
 
 @app.route("/lightOnOff/<int:light_id>/<int:on_off>")
 def lightOnOff(light_id,on_off):
-    lc.turnLigthOnOff(light_id,on_off)
+    lc.turnLightOnOff(light_id,on_off)
     return ('', 204)
     
 lc = lightController()
@@ -159,5 +186,5 @@ if __name__ == "__main__":
     while 1:
         a = raw_input('Command ->[]')
         a = int(a)
-        lc.turnLigthOnOff(abs(a),a>0)
+        lc.turnLightOnOff(abs(a),a>0)
         
