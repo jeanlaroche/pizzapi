@@ -18,7 +18,14 @@ class myTimer(object):
             logging.info('Adding event %s at %d:%d',name,hour,min)
         else:
             logging.info('Adding event %s at %s:%d',name,hour,min)
-        self.timedEvents.append({'hour':hour,'min':min,'func':func,'params':params,'done':0,'name':name})
+        self.timedEvents.append({'hour':hour,'min':min,'func':func,'params':params,'done':0,'name':name,'remove':0})
+        
+    def addDelayedEvent(self,delayM,func,params,name):
+        logging.info('Adding delayed event %s, delay %.0f',name,delayM)
+        import pdb
+        #pdb.set_trace()
+        eventTime = datetime.datetime.now()+datetime.timedelta(minutes=delayM)
+        self.timedEvents.append({'hour':eventTime.hour,'min':eventTime.minute,'func':func,'params':params,'done':0,'name':name,'remove':1})
 
     def getSunsetTime(self):
         import ephem  
@@ -58,6 +65,10 @@ class myTimer(object):
                     for event in todo:
                         logging.info('Triggering %s at %d:%d',event['name'],locTime.tm_hour,locTime.tm_min)
                         event['func'](*event['params'])
+                        if event['remove']:
+                            idx = self.timedEvents.index(event)
+                            logging.info('Removing event %s',event['name'])
+                            self.timedEvents.pop(idx)
                         
                     time.sleep(1)
                 except Exception as e:
