@@ -37,7 +37,9 @@ class lightController(baseServer.Server):
     pushCount = 10 # so the first callback does nothing. I'm not sure why I'm getting one anyway!
     pushDelayS = .7
     actionTimer = None
-    doRandomLight = 0
+    scheduleRandomLight = 1     # Flag to start or not start the random light scheduling
+    stopRandomLight = 0         # Flag to stop the current random light loop
+    
     
     def __init__(self):
         logging.info('Starting server')
@@ -61,12 +63,10 @@ class lightController(baseServer.Server):
                 self.turnLightOnOff(gateLightNum,onOff)
                 time.sleep(1)
         self.myTimer.addEvent('sunset',5,gateLight,[1],'Turn on gate light')
-        self.myTimer.addEvent(2,0,gateLight,[0],'Turn off gate light')
-        def _randomOnOff():
-            self.randomOnOff()
-        self.myTimer.addEvent(19,0,_randomOnOff,[],'Light randomizer')
+        self.myTimer.addEvent(1,0,gateLight,[0],'Turn off gate light')
+        self.myTimer.addEvent(17,40,self.randomOnOff,[],'Light randomizer start')
+        self.myTimer.addEvent(18,15,lambda x: setattr(self,'stopRandomLight',1),[None],'Light randomizer end')
         self.myTimer.start()
-        self.doRandomLight = 1
         
         # Button callback
         def buttonCallback(GPIO, level, tick):
@@ -74,17 +74,20 @@ class lightController(baseServer.Server):
         self.pi.callback(BUTTON_GPIO, pigpio.FALLING_EDGE, buttonCallback)
 
     def randomOnOff(self):
+        # pdb.set_trace()
         lightOn = [1,1,1]
+        logging.info("randomOnOff called, scheduleRandomLight = %d",self.scheduleRandomLight)
         def randOn():
-            if self.doRandomLight == 0: delayS = 3600
-            else: delayM = random.randint(5,15)
-            delayM = 1
-            self.myTimer.addDelayedEvent(delayM,randOn,[],'Random event')
-            if self.doRandomLight:
-                # Turn off lights that were previously on
-                for light in lightOn:
-                    self.turnLightOnOff(light,0)
-                    time.sleep(1)
+            delayM = random.randint(2,6)
+            #delayM = 1
+            # Turn off lights that were previously on
+            logging.debug("Random: turning lights off")
+            for light in lightOn:
+                self.turnLightOnOff(light,0)
+                time.sleep(1)
+            # Only turn the lights on if we're not stopping.
+            if not self.stopRandomLight:
+                logging.debug("Random: turning lights on")
                 # Turn lights on randomly. I need a way to stop that after 23:00
                 # Perhaps it would be nicer to schedule 2 events for each light: an on and an off.
                 nextLightOn = random.sample(range(11,16), len(lightOn))
@@ -92,7 +95,15 @@ class lightController(baseServer.Server):
                     self.turnLightOnOff(light,1)
                     lightOn[ii] = light
                     time.sleep(1)
-        self.myTimer.addDelayedEvent(1,randOn,[],'Start random')
+                # If we're not stopping yet, schedule the next random shuffle
+                logging.debug("Random: re-scheduling")
+                self.myTimer.addDelayedEvent(delayM,randOn,[],'Random event')
+            return
+        if self.scheduleRandomLight:
+            self.stopRandomLight = 0
+            logging.info("Random: initial-scheduling")
+            self.myTimer.addDelayedEvent(1,randOn,[],'Start random')
+        
            
         
     def onButton(self):
