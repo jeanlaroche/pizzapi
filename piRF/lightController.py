@@ -64,8 +64,8 @@ class lightController(baseServer.Server):
                 time.sleep(1)
         self.myTimer.addEvent('sunset',5,gateLight,[1],'Turn on gate light')
         self.myTimer.addEvent(1,0,gateLight,[0],'Turn off gate light')
-        self.myTimer.addEvent(17,40,self.randomOnOff,[],'Light randomizer start')
-        self.myTimer.addEvent(18,15,lambda x: setattr(self,'stopRandomLight',1),[None],'Light randomizer end')
+        self.myTimer.addEvent(23,10,self.randomOnOff,[],'Light randomizer start')
+        self.myTimer.addEvent(23,30,lambda x: setattr(self,'stopRandomLight',1),[None],'Light randomizer end')
         self.myTimer.start()
         
         # Button callback
@@ -90,7 +90,7 @@ class lightController(baseServer.Server):
                 logging.debug("Random: turning lights on")
                 # Turn lights on randomly. I need a way to stop that after 23:00
                 # Perhaps it would be nicer to schedule 2 events for each light: an on and an off.
-                nextLightOn = random.sample(range(11,16), len(lightOn))
+                nextLightOn = random.sample(range(11,16)+range(1,6), len(lightOn))
                 for ii,light in enumerate(nextLightOn):
                     self.turnLightOnOff(light,1)
                     lightOn[ii] = light
