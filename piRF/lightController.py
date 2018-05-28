@@ -21,6 +21,12 @@ codes.update(codesFamRoom)
 gateLightNum = 16
 codes[gateLightNum]= 4463724
 codes[-gateLightNum]=4468884
+pathLightNum = 17
+codes[pathLightNum]= 4464536
+codes[-pathLightNum]=4464572
+yardLightNum = 18
+codes[yardLightNum]= 4469605
+codes[-yardLightNum]=4469635
 
 #codes = codesBedRoom
 
@@ -57,13 +63,15 @@ class lightController(baseServer.Server):
             self.turnLightOnOff(100,0)
             self.turnLightOnOff(102,0)
         self.myTimer.addEvent(self.lightOffHour,self.lightOffMin,turnOff,[],'Turn lights off')
-        def gateLight(onOff):
+        def turnLightOnOffRepeat(lightNum,onOff):
             # This is to make 100% sure that we're trying to turn the light on/off
             for ii in range(5):
-                self.turnLightOnOff(gateLightNum,onOff)
+                self.turnLightOnOff(lightNum,onOff)
                 time.sleep(1)
-        self.myTimer.addEvent('sunset',5,gateLight,[1],'Turn on gate light')
-        self.myTimer.addEvent(1,0,gateLight,[0],'Turn off gate light')
+        self.myTimer.addEvent('sunset',5,turnLightOnOffRepeat,[gateLightNum,1],'Turn on gate light')
+        self.myTimer.addEvent(1,0,turnLightOnOffRepeat,[gateLightNum,0],'Turn off gate light')
+        self.myTimer.addEvent('sunset',10,turnLightOnOffRepeat,[pathLightNum,1],'Turn on path light')
+        self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[pathLightNum,0],'Turn off path light')
         self.myTimer.addEvent(23,10,self.randomOnOff,[],'Light randomizer start')
         self.myTimer.addEvent(23,30,lambda x: setattr(self,'stopRandomLight',1),[None],'Light randomizer end')
         self.myTimer.start()
