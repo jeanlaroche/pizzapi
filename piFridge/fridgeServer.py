@@ -51,7 +51,7 @@ class FridgeControl(Server):
                     self.regulate()
                 except:
                     pass
-                time.sleep(1)
+                time.sleep(2)
             logging.info('Exiting regulate loop')
             
         self.timerThread = threading.Thread(target=mainLoop)
@@ -121,8 +121,8 @@ class FridgeControl(Server):
 
 if __name__ == "__main__":
     fc = FridgeControl()
-    fc.setTargetTemp(40)
-    fc.setTargetHumi(90)
+    fc.setTargetTemp(70)
+    fc.setTargetHumi(40)
     time.sleep(10)
     # for ii in range(100):
         # temp,humi = fc.read_SHT()
