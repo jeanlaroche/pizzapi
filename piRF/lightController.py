@@ -46,6 +46,7 @@ class lightController(baseServer.Server):
     scheduleRandomLight = 1     # Flag to start or not start the random light scheduling
     stopRandomLight = 0         # Flag to stop the current random light loop
     
+    lightStatus = {key:0 for key in codes.keys() if key > 0}
     
     def __init__(self):
         logging.info('Starting server')
@@ -72,9 +73,13 @@ class lightController(baseServer.Server):
         self.myTimer.addEvent(1,0,turnLightOnOffRepeat,[gateLightNum,0],'Turn off gate light')
         self.myTimer.addEvent('sunset',10,turnLightOnOffRepeat,[pathLightNum,1],'Turn on path light')
         self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[pathLightNum,0],'Turn off path light')
+        self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[yardLightNum,0],'Turn off yard light')
         self.myTimer.addEvent(23,10,self.randomOnOff,[],'Light randomizer start')
         self.myTimer.addEvent(23,30,lambda x: setattr(self,'stopRandomLight',1),[None],'Light randomizer end')
         self.myTimer.start()
+        
+        turnLightOnOffRepeat(pathLightNum,0)
+        turnLightOnOffRepeat(yardLightNum,0)
         
         # Button callback
         def buttonCallback(GPIO, level, tick):
@@ -151,19 +156,23 @@ class lightController(baseServer.Server):
         if lightNum == 100:
             for ii in range(1,6):
                 self.turnLightOnOff(ii,onOff)
+                self.lightStatus[ii]=onOff
                 time.sleep(0.01)
             return
         if lightNum == 101:
             for ii in range(6,11):
                 self.turnLightOnOff(ii,onOff)
+                self.lightStatus[ii]=onOff
                 time.sleep(0.01)
             return
         if lightNum == 102:
             for ii in range(11,16):
                 self.turnLightOnOff(ii,onOff)
+                self.lightStatus[ii]=onOff
                 time.sleep(0.01)
             return
         code = codes[lightNum] if onOff == 1 else codes[-lightNum]
+        self.lightStatus[lightNum]=onOff
         self.transmitter.send(code)
         #logging.info('Turning light %d %d',lightNum,onOff)
         
@@ -172,6 +181,10 @@ class lightController(baseServer.Server):
             allLines = f.readlines()
         allLines.reverse()
         return (allLines[0:50])
+        
+    def getData(self):
+        data = {'lightStatus':self.lightStatus[yardLightNum]}
+        return data
         
 @app.route('/favicon.ico')
 def favicon():
@@ -184,6 +197,10 @@ def reboot():
 @app.route("/getLog")
 def getLog():
     return jsonify(lc.getLog())
+
+@app.route("/getData")
+def getData():
+    return jsonify(lc.getData())
 
 # return index page when IP address of RPi is typed in the browser
 @app.route("/")
