@@ -37,13 +37,16 @@ class FridgeControl(Server):
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
         self.pi.set_mode(humiGPIO, pigpio.OUTPUT)
-        self.handle = self.pi.i2c_open(1, 0x44)
+        self.sht_handle = self.pi.i2c_open(1, 0x44)
+        self.am_handle = self.pi.i2c_open(1, 0x5C)
         self.stopNow = 0
         if os.path.exists(self.jsonFile):
             with open(self.jsonFile) as f:
                 data = json.load(f)
                 self.targetTemp = data['targetTemp']
                 self.targetHumi = data['targetHumi']
+        self.temp = self.targetTemp
+        self.humi = self.targetHumi
         
         def mainLoop():
             while self.stopNow==0:
@@ -77,16 +80,16 @@ class FridgeControl(Server):
         
     def read_SHT(self,timeOutS=1):
         # I write the raw device as that's easier. This is for no clock stretching.
-        self.pi.i2c_write_device(self.handle, [0x24, 0x00])
+        self.pi.i2c_write_device(self.sht_handle, [0x24, 0x00])
         nn=0
         t0=time.time()
         # Read 6 bytes, returned as TMSB|TLSB|CRC|HMSB|HLSB|CRC
         while time.time()-t0 < timeOutS:
-            nn,data = self.pi.i2c_read_device(self.handle, 6)
+            nn,data = self.pi.i2c_read_device(self.sht_handle, 6)
             if nn==6: break
             time.sleep(0.1)
         if nn < 6:
-            return 0.,0.
+            return None,None
         # Convert the value using the first 2 bytes for the temp
         temp = unpack('>H',data[0:2])[0]
         # temp = -45+175*(temp/65535.)
@@ -96,9 +99,34 @@ class FridgeControl(Server):
         humi = 100.*humi/65535.
         return temp,humi
         
+    def read_AM(self,timeOutS=1):
+        t0=time.time()
+        while time.time()-t0 < timeOutS:
+            try:
+                self.pi.i2c_write_device(self.am_handle, [0x03, 0x00, 0x04])
+                break
+            except:
+                time.sleep(0.010)
+        # print "Elapsed: {:.0f}ms".format(1000*(time.time()-t0))
+        nn,data = self.pi.i2c_read_device(self.am_handle,8)
+        #print nn,data[0],data[1]
+        # I'm not sure why I need to mask the top bit of data[0]... 
+        if nn != 8 or data[0]&0x7F != 0x03 or data[1] != 0x04:
+            return None,None
+        temp = unpack('>h',data[4:6])[0]
+        temp = 32+1.8*temp/10.
+        humi = unpack('>h',data[2:4])[0]
+        humi = humi/10.
+        # print "Temp {} Humi {}".format(temp,humi)
+        return temp,humi
+        
     def regulate(self):
-        self.temp,self.humi = self.read_SHT()
-        logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi)
+        temp,humi = self.read_SHT()
+        temp1,humi1 = self.read_AM()
+        logging.info("T1 %.2f T2 %.2f H1 %.1f H2 %.1f",temp,temp1,humi,humi1)
+        if temp != None and humi != None:
+            self.temp,self.humi = temp,humi
+        #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi)
         if self.temp < self.targetTemp - self.tempDelta:
             # Turn fridge off
             if self.fridgeStatus: logging.info("Turning cooling off")
@@ -118,11 +146,33 @@ class FridgeControl(Server):
         self.pi.write(tempGPIO,self.humidiStatus)
         self.pi.write(humiGPIO,self.humidiStatus)
 
+fc = FridgeControl()
+
+# import pdb
+# pi = pigpio.pi() # Connect to local Pi.
+# handle = pi.i2c_open(1, 0x5C)
+# t0=time.time()
+# while 1:
+    # try:
+        # pi.i2c_write_device(handle, [0x03, 0x00, 0x04])
+        # break
+    # except:
+        # time.sleep(0.010)
+# print "Elapsed: {:.0f}ms".format(1000*(time.time()-t0))
+# nn,data = pi.i2c_read_device(handle,8)
+# temp = unpack('>H',data[4:6])[0]
+# temp = temp/10.
+# humi = unpack('>H',data[2:4])[0]
+# humi = humi/10.
+# print "Temp {} Humi {}".format(temp,humi)
+# pdb.set_trace()
+# pi.stop()
 
 if __name__ == "__main__":
-    fc = FridgeControl()
     fc.setTargetTemp(70)
     fc.setTargetHumi(40)
+    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+
     time.sleep(10)
     # for ii in range(100):
         # temp,humi = fc.read_SHT()
