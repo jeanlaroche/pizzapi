@@ -83,16 +83,11 @@ span {font-weight: bold;}
 	
 	// Flask allows you to decode URLs like /onDayPrev and /onDayNext so they're sent to the same function.
 	// It would be a bit more succint on the python side.
-
-	// Read all temps, when the page is reloaded.
-	function getFullData() {
-		$.getJSON('/getFullData');
-	}
 	
 	// This is called at regular intervals when the page is loaded.
 	function getHumidity() 
 	{
-		$.getJSON('/getData', function(data)
+		$.getJSON('/getData/1', function(data)
 			{
 				// The text() is a method of the selector to set the text of the selected elements.
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
@@ -108,8 +103,8 @@ span {font-weight: bold;}
 				$("#fridgeStatus").text(data.fridgeStatus == 0 ? "OFF" : "ON");
 				$("#humStatus").text(data.humStatus == 0 ? "OFF" : "ON");
 				// To set a color, set the style to "color:red"
-				//$("#fridgeStatus").attr('style',data.fridgeStatus == 0 ? 'color:white' : 'color:red');
-				//$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
+				$("#fridgeStatus").attr('style',data.fridgeStatus == 0 ? 'color:white' : 'color:red');
+				$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
 				redraw()
 				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
 				// various things in the console.
@@ -135,11 +130,12 @@ span {font-weight: bold;}
     );
 	
 	function redraw() {
-		$.getJSON('/getData', function(data) {
+		$.getJSON('/getData/1', function(data) {
 			Plots = document.getElementById('Plots');
 			//Plots.style = {width:window.innerWidth , height:150};
 			var X = data.X;
 			var Y = data.Y;
+			var Z = data.Z;
 			//var XLabels = data.heaterLabel;
 			//var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
@@ -170,7 +166,7 @@ span {font-weight: bold;}
 			$("#Stats").text(data.stats);
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
-			Plotly.newPlot( Plots, [{x: X,y: Y}], layout );
+			Plotly.newPlot( Plots, [{x: X,y: Y},{x: X,y: Z}], layout );
 			});
 	}
 	
@@ -208,25 +204,12 @@ span {font-weight: bold;}
 		<p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
 		<p><h2>Target Temp: <span id="targetTemp"></span> F</h2></p>
 		<p><h2>Current Temp: <span id="curTemp"></span> F</h2></p>
-		<fieldset class="ui-grid-b">
-			<div class="ui-block-a"><button name="FridgeP" id="FridgeP" onclick="onFridgeUp()" data-theme="d">FAN Interval +</button></div>
-			<div class="ui-block-b"><button name="FridgeM" id="FridgeM" onclick="onFridgeDown()" data-theme="d">FAN Interval -</button></div>
-			<div class="ui-block-c"><button name="Test" id="Test" onclick="onFridgeTest()" data-theme="d">Test FAN</button></div>
-				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
-	    </fieldset>
-		<p><h2>Fridge is on every: <span id="fridgeOnPeriodMin"></span> min</h2></p>
-		<fieldset class="ui-grid-a">
-			<div class="ui-block-a"><button name="FridgeDP" id="FridgeDP" onclick="onFridgeDurUp()" data-theme="d">FAN On Dur. +</button></div>
-			<div class="ui-block-b"><button name="FridgeDM" id="FridgeDM" onclick="onFridgeDurDown()" data-theme="d">FAN On Dur. -</button></div>
-				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
-	    </fieldset>
-		<p><h2>Fridge is on for: <span id="fridgeOnLengthS"></span> seconds</h2></p>
 	</div>
   </div>
  <div data-role="footer">
     <div ><h4><span id="lastMessage" ></span></h4></div>
     <div><h4><span id="upTime" ></span></h4></div>
-    <div ><h2>Humidity:</h2></div>
+    <div ><h2>Temperature:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
 <div id="Plots" style="width:auto;height:250px;"></div>
