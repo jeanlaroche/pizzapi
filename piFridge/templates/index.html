@@ -1,0 +1,237 @@
+<!doctype html>
+<head>
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+
+<style>
+h3 {text-align: center;}
+h4 {text-align: left; color: green}
+span {font-weight: bold;}
+</style>
+
+<script type=text/javascript>
+	
+	// Javascript function for up button
+	function onHumiUp() {
+		$.getJSON('/humiUp', function(data)
+		{
+			$("#targetHumidity").text(data.targetHumidity);
+		});
+	}
+	
+	// Javascript function for down button
+	function onHumiDown() {
+		$.getJSON('/humiDown', function(data)
+		{
+			$("#targetHumidity").text(data.targetHumidity);
+		});
+	}
+
+	// Javascript function for down button
+	function onTempDown() {
+		$.getJSON('/tempDown', function(data)
+		{
+			$("#targetTemp").text(data.targetTemp);
+		});
+	}
+	
+	// Javascript function for up button
+	function onTempUp() {
+		$.getJSON('/tempUp', function(data)
+		{
+			$("#targetTemp").text(data.targetTemp);
+		});
+	}
+	
+	function onFridgeTest() {
+		$.getJSON('/fridgeTest');
+	}
+
+	function onFridgeUp() {
+		$.getJSON('/fridgeUp', function(data)
+		{
+			$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);
+		});
+	}
+	
+	function onFridgeDown() {
+		$.getJSON('/fridgeDown', function(data)
+		{
+			$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);
+		});
+	}
+	
+	function onFridgeDurUp() {
+		$.getJSON('/fridgeDurUp', function(data)
+		{
+			$("#fridgeOnLengthS").text(data.fridgeOnLengthS);
+		});
+	}
+	
+	function onFridgeDurDown() {
+		$.getJSON('/fridgeDurDown', function(data)
+		{
+			$("#fridgeOnLengthS").text(data.fridgeOnLengthS);
+		});
+	}
+	
+	// Flask allows you to decode URLs like /onDayPrev and /onDayNext so they're sent to the same function.
+	// It would be a bit more succint on the python side.
+
+	// Read all temps, when the page is reloaded.
+	function getFullData() {
+		$.getJSON('/getFullData');
+	}
+	
+	// This is called at regular intervals when the page is loaded.
+	function getHumidity() 
+	{
+		$.getJSON('/getData', function(data)
+			{
+				// The text() is a method of the selector to set the text of the selected elements.
+				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
+				// Since many elements might match.
+				$("#targetTemp").text(data.targetTemp);
+				$("#curTemp").text(data.curTemp);
+				$("#targetHumidity").text(data.targetHumidity);
+				$("#curHumidity").text(data.curHumidity);
+				//$("#temp").text(data.temp);
+				//$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);				
+				//$("#fridgeOnLengthS").text(data.fridgeOnLengthS);				
+				$("#upTime").text(data.upTime);
+				$("#fridgeStatus").text(data.fridgeStatus == 0 ? "OFF" : "ON");
+				$("#humStatus").text(data.humStatus == 0 ? "OFF" : "ON");
+				// To set a color, set the style to "color:red"
+				//$("#fridgeStatus").attr('style',data.fridgeStatus == 0 ? 'color:white' : 'color:red');
+				//$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
+				redraw()
+				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
+				// various things in the console.
+				setTimeout(function(){getHumidity();},4000);
+			});
+	}
+	
+
+	// This is a JQuery shorthand to define a function that's called when the page is loaded.
+    $(
+		function() 
+		{
+			// Binds the ajax request pageUnload to onbeforeunload of the window.
+			window.onbeforeunload = function(){
+				// The ajax request must return something, but it's OK to ignore it.
+				$.get('/pageUnload');
+			};
+			
+			// You can also call a regular javascipt function:
+			getHumidity();
+			window. addEventListener ( "resize" , function ( event ) {redraw();});
+		}
+    );
+	
+	function redraw() {
+		$.getJSON('/getData', function(data) {
+			Plots = document.getElementById('Plots');
+			//Plots.style = {width:window.innerWidth , height:150};
+			var X = data.X;
+			var Y = data.Y;
+			//var XLabels = data.heaterLabel;
+			//var XTicks = data.heaterTicks;
+			// second arg is data, third arg is layout.
+			var layout = { margin: { t: 30, l:20, r:20 },
+			  xaxis: {
+				title: 'Hour',
+				showgrid: true,
+				showline: true,
+				color: 'rgba(256,256,0,1)',
+				//tickvals: XTicks,
+				//ticktext: XLabels,
+				//tickangle: 0,
+			  },
+				paper_bgcolor : 'rgba(0,0,0,0)',
+				plot_bgcolor : 'rgba(0,0,0,0)',
+			yaxis: {
+				title: '',
+				showline: true,
+				showgrid: true,
+				//tickvals: [0,1],
+				//ticktext: ['0','1'],
+				color: 'rgba(256,256,0,1)'
+			  },
+			showlegend : false,
+			//title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
+			titlefont: {color: 'yellow'},
+			  };
+			$("#Stats").text(data.stats);
+			var d = new Date()
+			var hours = d.getHours() + d.getMinutes()/60.0
+			Plotly.newPlot( Plots, [{x: X,y: Y}], layout );
+			});
+	}
+	
+    $(
+		// You can put more code to be executed at page loading in here but it has to be inside a function.
+//		function () {
+//		$.getJSON('/humidityUp');
+//		}
+		function() {
+			redraw()
+		}
+    );
+	
+</script>
+<!-- Simple JQuery Mobile page that display the getHumidity state on the breadoard -->
+<!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
+
+<div data-role="page" data-theme="b">
+  <div data-role="header">
+    <div><h2><center>FRIDGE CONTROL</center></h2></div>
+  </div>
+  
+  <div data-role="content">
+    <p><h2>Fridge: <span id="fridgeStatus" ></span> <br>Humidifier: <span id="humStatus" ></span></h2></p>
+	<div data-role="fieldcontain">
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onHumiUp()" data-theme="d">Humidity +</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onHumiDown()" data-theme="d">Humidity -</button></div>
+	    </fieldset>
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">Temp. +</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">Temp. -</button></div>
+	    </fieldset>
+		<p><h2>Target Humidity: <span id="targetHumidity"></span> %</h2></p>
+		<p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
+		<p><h2>Target Temp: <span id="targetTemp"></span> F</h2></p>
+		<p><h2>Current Temp: <span id="curTemp"></span> F</h2></p>
+		<fieldset class="ui-grid-b">
+			<div class="ui-block-a"><button name="FridgeP" id="FridgeP" onclick="onFridgeUp()" data-theme="d">FAN Interval +</button></div>
+			<div class="ui-block-b"><button name="FridgeM" id="FridgeM" onclick="onFridgeDown()" data-theme="d">FAN Interval -</button></div>
+			<div class="ui-block-c"><button name="Test" id="Test" onclick="onFridgeTest()" data-theme="d">Test FAN</button></div>
+				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
+	    </fieldset>
+		<p><h2>Fridge is on every: <span id="fridgeOnPeriodMin"></span> min</h2></p>
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="FridgeDP" id="FridgeDP" onclick="onFridgeDurUp()" data-theme="d">FAN On Dur. +</button></div>
+			<div class="ui-block-b"><button name="FridgeDM" id="FridgeDM" onclick="onFridgeDurDown()" data-theme="d">FAN On Dur. -</button></div>
+				<!-- <div class="ui-block-b"><button name="tst" id="tst" onclick="test()" data-theme="d">TST</button></div> -->
+	    </fieldset>
+		<p><h2>Fridge is on for: <span id="fridgeOnLengthS"></span> seconds</h2></p>
+	</div>
+  </div>
+ <div data-role="footer">
+    <div ><h4><span id="lastMessage" ></span></h4></div>
+    <div><h4><span id="upTime" ></span></h4></div>
+    <div ><h2>Humidity:</h2></div>
+    <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
+  </div>
+<div id="Plots" style="width:auto;height:250px;"></div>
+ --><div ><h2>Stats Log:</h2></div>
+ <div>
+ <pre id="Stats"></pre>
+ </div>
+ </div>

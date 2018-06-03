@@ -14,8 +14,8 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
-tempGPIO = 18
-humiGPIO = 19
+tempGPIO = 4
+humiGPIO = 17
 
 class FridgeControl(Server):
     
@@ -47,6 +47,8 @@ class FridgeControl(Server):
                 self.targetHumi = data['targetHumi']
         self.temp = self.targetTemp
         self.humi = self.targetHumi
+        self.pi.write(tempGPIO,1-self.fridgeStatus)
+        self.pi.write(humiGPIO,1-self.humidiStatus)
         
         def mainLoop():
             while self.stopNow==0:
@@ -54,7 +56,7 @@ class FridgeControl(Server):
                     self.regulate()
                 except:
                     pass
-                time.sleep(2)
+                time.sleep(10)
             logging.info('Exiting regulate loop')
             
         self.timerThread = threading.Thread(target=mainLoop)
@@ -73,6 +75,16 @@ class FridgeControl(Server):
     def setTargetTemp(self,targetTemp):
         self.targetTemp = targetTemp
         self.writeJson()
+        
+    def incTargetTemp(self,inc):
+        logging.info("Inc temp %.0f",self.targetTemp)
+        self.targetTemp += inc
+        self.writeJson()
+
+    def incTargetHumi(self,inc):
+        logging.info("Inc humi %.0f",self.targetHumi)
+        self.targetHumi += inc
+        self.writeJson()
 
     def setTargetHumi(self,targetHumi):
         self.targetHumi = targetHumi
@@ -89,6 +101,7 @@ class FridgeControl(Server):
             if nn==6: break
             time.sleep(0.1)
         if nn < 6:
+            logging.warning("Read error in read_SHT")
             return None,None
         # Convert the value using the first 2 bytes for the temp
         temp = unpack('>H',data[0:2])[0]
@@ -112,6 +125,7 @@ class FridgeControl(Server):
         #print nn,data[0],data[1]
         # I'm not sure why I need to mask the top bit of data[0]... 
         if nn != 8 or data[0]&0x7F != 0x03 or data[1] != 0x04:
+            logging.warning("Read error in read_AM")
             return None,None
         temp = unpack('>h',data[4:6])[0]
         temp = 32+1.8*temp/10.
@@ -123,9 +137,8 @@ class FridgeControl(Server):
     def regulate(self):
         temp,humi = self.read_SHT()
         temp1,humi1 = self.read_AM()
-        logging.info("T1 %.2f T2 %.2f H1 %.1f H2 %.1f",temp,temp1,humi,humi1)
         if temp != None and humi != None:
-            self.temp,self.humi = temp,humi
+            self.temp,self.humi = round(temp,ndigits=1),round(humi,ndigits=1)
         #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi)
         if self.temp < self.targetTemp - self.tempDelta:
             # Turn fridge off
@@ -143,9 +156,46 @@ class FridgeControl(Server):
             # Turn humidifier off
             if self.humidiStatus: logging.info("Turning humidifier off")
             self.humidiStatus = 0
-        self.pi.write(tempGPIO,self.humidiStatus)
-        self.pi.write(humiGPIO,self.humidiStatus)
+        self.pi.write(tempGPIO,1-self.fridgeStatus)
+        self.pi.write(humiGPIO,1-self.humidiStatus)
+        if temp!=None and temp1 != None and humi != None and humi1 != None:
+            logging.info("Time: %.0f T1 %.2f T2 %.2f H1 %.1f H2 %.1f CC %d HH %d",time.time(),temp,temp1,humi,humi1,
+                self.fridgeStatus,self.humidiStatus)
 
+    def getData(self):
+        data = {"curTemp":self.temp,"curHumidity":self.humi,"targetHumidity":self.targetHumi,
+            "targetTemp":self.targetTemp,"upTime":"","fridgeStatus":self.fridgeStatus,"humStatus":self.humidiStatus}        
+            
+        return data
+
+@app.route("/")
+def Index():
+    return fc.Index()
+        
+@app.route("/getData")
+def getData():
+    return jsonify(**fc.getData())
+    
+@app.route("/tempUp")
+def tempUp():
+    fc.incTargetTemp(1)
+    return jsonify(**fc.getData())
+    
+@app.route("/tempDown")
+def tempDown():
+    fc.incTargetTemp(-1)
+    return jsonify(**fc.getData())
+    
+@app.route("/humiUp")
+def humiUp():
+    fc.incTargetHumi(1)
+    return jsonify(**fc.getData())
+    
+@app.route("/humiDown")
+def humiDown():
+    fc.incTargetHumi(-1)
+    return jsonify(**fc.getData())
+    
 fc = FridgeControl()
 
 # import pdb
