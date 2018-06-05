@@ -139,7 +139,8 @@ span {font-weight: bold;}
 			var X = data.X;
 			var Y = data.Y;
 			var Z = data.Z;
-			var TT = data.targetTemp
+			var TT = data.TT
+			var TH = data.TH
 			//var XLabels = data.heaterLabel;
 			//var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
@@ -170,9 +171,9 @@ span {font-weight: bold;}
 			$("#Stats").text(data.stats);
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
-			Plotly.newPlot( Plots, [{x: X,y: Y} , {x:[X[0],X[X.length-1]], y: [TT,TT]}], layout );
+			Plotly.newPlot( Plots, [{x: X,y: Y} , {x: X,y: TT}], layout );
 			Plots = document.getElementById('PlotH');
-			Plotly.newPlot( Plots, [{x: X,y: Z}], layout );
+			Plotly.newPlot( Plots, [{x: X,y: Z},{x: X,y: TH}], layout );
 			});
 	}
 	

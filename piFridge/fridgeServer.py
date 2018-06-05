@@ -192,36 +192,38 @@ class FridgeControl(Server):
 
     def getData(self,full=0):
         if full:
-            X,Y,Z = self.getPlotData()
+            X,Y,Z,TT,TH = self.getPlotData()
         else:
-            X,Y,Z = [],[],[]
+            X,Y,Z,TT,TH = [],[],[],[],[]
         uptime = self.GetUptime()+" {:.1f}F {:.1f}F {:.1f}% {:.1f}%".format(self.t1,self.t2,self.h1,self.h2)
         data = {"curTemp":self.temp,"curHumidity":self.humi,"targetHumidity":self.targetHumi,
             "targetTemp":self.targetTemp,"upTime":uptime,"fridgeStatus":self.fridgeStatus,"humStatus":self.humidiStatus,
-            "X":X,"Y":Y,"Z":Z,"coolingMode":self.coolingMode} 
+            "X":X,"Y":Y,"Z":Z,"TT":TT,"TH":TH,"coolingMode":self.coolingMode} 
         return data
     
     def getPlotData(self):
         # Read the log file, extract the temp and humidity data...
         with open(self.logFile) as f:
             allLines = f.readlines()
-        X,Y,Z = [],[],[]
+        X,Y,Z,T,H = [],[],[],[],[]
         curTime = time.time()
         curHour = time.localtime().tm_hour+time.localtime().tm_min / 60.
         minTime = curTime-12*3600
-        prevTT=0
+        prevTI=0
         for line in allLines:
             if "T1" not in line: continue
-            R = re.search('Time:\s+(\d*)\s+T1 ([\d\.]*)\s+T2 ([\d\.]*)\s+H1 ([\d\.]*)\s+H2 ([\d\.]*)\s+CC\s+(\d)\s+HH\s+(\d)',line)
+            R = re.search('Time:\s+(\d*)\s+T1 ([\d\.]*)\s+T2 ([\d\.]*)\s+H1 ([\d\.]*)\s+H2 ([\d\.]*)\s+CC\s+(\d)\s+HH\s+(\d)\s+TT\s+([\d\.]*)\s+TH\s+([\d\.]*)',line)
             if not R: continue
-            TT,T1,T2,H1,H2,CC,HH = R.group(1),R.group(2),R.group(3),R.group(4),R.group(5),R.group(6),R.group(7)
-            TT,T1,T2,H1,H2,CC,HH=int(TT),float(T1),float(T2),float(H1),float(H2),int(CC),int(HH)
-            if TT < minTime or TT < prevTT + 60: continue
-            X.append(curHour+(TT-curTime)/3600)
+            TI,T1,T2,H1,H2,CC,HH,TT,TH = R.group(1),R.group(2),R.group(3),R.group(4),R.group(5),R.group(6),R.group(7),R.group(8),R.group(9)
+            TI,T1,T2,H1,H2,CC,HH,TT,TH=int(TI),float(T1),float(T2),float(H1),float(H2),int(CC),int(HH),float(TT),float(TH)
+            if TI < minTime or TI < prevTI + 60: continue
+            X.append(curHour+(TI-curTime)/3600)
             Y.append(T2)
             Z.append(H2)
-            prevTT = TT
-        return X,Y,Z
+            T.append(TT)
+            H.append(TH)
+            prevTI = TI
+        return X,Y,Z,T,H
         
 @app.route("/")
 def Index():
