@@ -24,11 +24,12 @@ class FridgeControl(Server):
     humi = 0
     targetTemp = 52
     targetHumi = 70
-    tempDelta = 1
+    tempDelta = .5
     humiDelta = 5
     
     fridgeStatus = 0
     humidiStatus = 0
+    coolingMode = 1 # 0 for heating mode.
     
     logDeltaS = 60  # Time interval in s between two data logs
     lastLogTime = 0
@@ -51,6 +52,7 @@ class FridgeControl(Server):
                 data = json.load(f)
                 self.targetTemp = data['targetTemp']
                 self.targetHumi = data['targetHumi']
+                self.coolingMode = data['coolingMode']
         self.temp = self.targetTemp
         self.humi = self.targetHumi
         self.pi.write(tempGPIO,1-self.fridgeStatus)
@@ -60,7 +62,8 @@ class FridgeControl(Server):
             while self.stopNow==0:
                 try:
                     self.regulate()
-                except:
+                except Exception as e:
+                    logging.error('Error in regulate: %s',e)
                     pass
                 time.sleep(2)
             logging.info('Exiting regulate loop')            
@@ -70,7 +73,7 @@ class FridgeControl(Server):
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi},f)
+            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode},f)
     
     def stop(self):
         self.stopNow=1
@@ -82,12 +85,12 @@ class FridgeControl(Server):
         self.writeJson()
         
     def incTargetTemp(self,inc):
-        logging.info("Inc temp %.0f",self.targetTemp)
+        #logging.info("Inc temp %.0f",self.targetTemp)
         self.targetTemp += inc
         self.writeJson()
 
     def incTargetHumi(self,inc):
-        logging.info("Inc humi %.0f",self.targetHumi)
+        #logging.info("Inc humi %.0f",self.targetHumi)
         self.targetHumi += inc
         self.writeJson()
 
@@ -119,14 +122,16 @@ class FridgeControl(Server):
         
     def read_AM(self,timeOutS=1):
         t0=time.time()
+        nn=0
         while time.time()-t0 < timeOutS:
             try:
                 self.pi.i2c_write_device(self.am_handle, [0x03, 0x00, 0x04])
+                nn,data = self.pi.i2c_read_device(self.am_handle,8)
+                if nn != 8 or data[1] != 0x04: continue
                 break
             except:
                 time.sleep(0.001)
         # print "Elapsed: {:.0f}ms".format(1000*(time.time()-t0))
-        nn,data = self.pi.i2c_read_device(self.am_handle,8)
         #print nn,data[0],data[1]
         # I'm not sure why I need to mask the top bit of data[0]... 
         #if nn != 8 or data[0]&0x7F != 0x03 or data[1] != 0x04:#
@@ -138,29 +143,39 @@ class FridgeControl(Server):
         temp = 32+1.8*temp/10.
         humi = unpack('>h',data[2:4])[0]
         humi = humi/10.
-        print "Temp {} Humi {}".format(temp,humi)
+        #print "Temp {} Humi {}".format(temp,humi)
         return temp,humi
         
     def regulate(self):
         temp1,humi1 = self.read_AM()
         time.sleep(0.1)
         temp,humi = self.read_SHT()
+        self.temp,self.humi = round(temp,ndigits=2),round(humi,ndigits=2)
         if temp1 != None and humi1 != None:
-            self.temp,self.humi = round(temp1,ndigits=1),round(humi1,ndigits=1)
             self.t1,self.t2,self.h1,self.h2=temp1,temp,humi1,humi
         #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi)
         # Making this asymetrical because there's a lot of inertia when the fridge is on.
-        if self.temp < self.targetTemp - 0*self.tempDelta:
-            # Turn fridge off
-            if self.fridgeStatus: logging.info("Turning cooling off")
-            self.fridgeStatus = 0
-        if self.temp > self.targetTemp + self.tempDelta:
-            # Turn fridge on
-            if self.fridgeStatus == 0: logging.info("Turning cooling on")
-            self.fridgeStatus = 1
+        if self.coolingMode:
+            if self.temp < self.targetTemp - 0.5*self.tempDelta:
+                # Turn fridge off
+                if self.fridgeStatus: logging.info("Turning cooling off")
+                self.fridgeStatus = 0
+            if self.temp > self.targetTemp + .5*self.tempDelta:
+                # Turn fridge on
+                if self.fridgeStatus == 0: logging.info("Turning cooling on %.1f",self.temp)
+                self.fridgeStatus = 1
+        else:
+            if self.temp < self.targetTemp - 0.5*self.tempDelta:
+                # Turn heat on
+                if self.fridgeStatus == 0: logging.info("Turning heat on")
+                self.fridgeStatus = 1
+            if self.temp > self.targetTemp + .5*self.tempDelta:
+                # Turn heat off
+                if self.fridgeStatus == 1: logging.info("Turning heat off %.1f",self.temp)
+                self.fridgeStatus = 0
         if self.humi < self.targetHumi - self.humiDelta:
             # Turn humidifier on
-            if self.humidiStatus == 0: logging.info("Turning humidifier on")
+            if self.humidiStatus == 0: logging.info("Turning humidifier off %.1f",self.temp)
             self.humidiStatus = 1
         if self.humi > self.targetHumi + self.humiDelta:
             # Turn humidifier off
@@ -171,9 +186,9 @@ class FridgeControl(Server):
         tt = time.time()
         # Only log the temp every self.logDeltaS seconds...
         if tt-self.lastLogTime > self.logDeltaS and temp!=None and temp1 != None and humi != None and humi1 != None:
-            logging.info("Time: %.0f T1 %.2f T2 %.2f H1 %.1f H2 %.1f CC %d HH %d",tt,temp,temp1,humi,humi1,
-                self.fridgeStatus,self.humidiStatus)
+            logging.info("Time: %.0f T1 %.2f T2 %.2f H1 %.1f H2 %.1f CC %d HH %d TT %.2f TH %.2f",tt,temp,temp1,humi,humi1,self.fridgeStatus,self.humidiStatus,self.targetTemp,self.targetHumi)
             self.lastLogTime = tt
+        self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
 
     def getData(self,full=0):
         if full:
@@ -183,7 +198,7 @@ class FridgeControl(Server):
         uptime = self.GetUptime()+" {:.1f}F {:.1f}F {:.1f}% {:.1f}%".format(self.t1,self.t2,self.h1,self.h2)
         data = {"curTemp":self.temp,"curHumidity":self.humi,"targetHumidity":self.targetHumi,
             "targetTemp":self.targetTemp,"upTime":uptime,"fridgeStatus":self.fridgeStatus,"humStatus":self.humidiStatus,
-            "X":X,"Y":Y,"Z":Z} 
+            "X":X,"Y":Y,"Z":Z,"coolingMode":self.coolingMode} 
         return data
     
     def getPlotData(self):
@@ -191,7 +206,9 @@ class FridgeControl(Server):
         with open(self.logFile) as f:
             allLines = f.readlines()
         X,Y,Z = [],[],[]
-        minTime = time.time()-12*3600
+        curTime = time.time()
+        curHour = time.localtime().tm_hour+time.localtime().tm_min / 60.
+        minTime = curTime-12*3600
         prevTT=0
         for line in allLines:
             if "T1" not in line: continue
@@ -200,7 +217,7 @@ class FridgeControl(Server):
             TT,T1,T2,H1,H2,CC,HH = R.group(1),R.group(2),R.group(3),R.group(4),R.group(5),R.group(6),R.group(7)
             TT,T1,T2,H1,H2,CC,HH=int(TT),float(T1),float(T2),float(H1),float(H2),int(CC),int(HH)
             if TT < minTime or TT < prevTT + 60: continue
-            X.append((TT-minTime)/3600)
+            X.append(curHour+(TT-curTime)/3600)
             Y.append(T2)
             Z.append(H2)
             prevTT = TT
@@ -261,9 +278,9 @@ if __name__ == "__main__":
         t,h=fc.read_AM()
         if t != None: print t,h
         else: print "read error"
-        t,h=fc.read_SHT()
-        if t != None: print t,h
-        else: print "read error"
+        # t,h=fc.read_SHT()
+        # if t != None: print t,h
+        # else: print "read error"
         time.sleep(1)
     #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
 

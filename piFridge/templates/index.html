@@ -100,7 +100,10 @@ span {font-weight: bold;}
 				//$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);				
 				//$("#fridgeOnLengthS").text(data.fridgeOnLengthS);				
 				$("#upTime").text(data.upTime);
-				$("#fridgeStatus").text(data.fridgeStatus == 0 ? "OFF" : "ON");
+				if(data.coolingMode)
+					$("#fridgeStatus").text(data.fridgeStatus == 0 ? "Frige OFF" : "Fridge ON");
+				else
+					$("#fridgeStatus").text(data.fridgeStatus == 0 ? "Heat OFF" : "Heat ON");
 				$("#humStatus").text(data.humStatus == 0 ? "OFF" : "ON");
 				// To set a color, set the style to "color:red"
 				$("#fridgeStatus").attr('style',data.fridgeStatus == 0 ? 'color:white' : 'color:red');
@@ -131,11 +134,12 @@ span {font-weight: bold;}
 	
 	function redraw() {
 		$.getJSON('/getData/1', function(data) {
-			Plots = document.getElementById('Plots');
+			Plots = document.getElementById('PlotT');
 			//Plots.style = {width:window.innerWidth , height:150};
 			var X = data.X;
 			var Y = data.Y;
 			var Z = data.Z;
+			var TT = data.targetTemp
 			//var XLabels = data.heaterLabel;
 			//var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
@@ -166,7 +170,9 @@ span {font-weight: bold;}
 			$("#Stats").text(data.stats);
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
-			Plotly.newPlot( Plots, [{x: X,y: Y},{x: X,y: Z}], layout );
+			Plotly.newPlot( Plots, [{x: X,y: Y} , {x:[X[0],X[X.length-1]], y: [TT,TT]}], layout );
+			Plots = document.getElementById('PlotH');
+			Plotly.newPlot( Plots, [{x: X,y: Z}], layout );
 			});
 	}
 	
@@ -190,7 +196,7 @@ span {font-weight: bold;}
   </div>
   
   <div data-role="content">
-    <p><h2>Fridge: <span id="fridgeStatus" ></span> <br>Humidifier: <span id="humStatus" ></span></h2></p>
+    <p><h2><span id="fridgeStatus" ></span> <br>Humidifier: <span id="humStatus" ></span></h2></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-a">
 			<div class="ui-block-a"><button name="Up" id="Up" onclick="onHumiUp()" data-theme="d">Humidity +</button></div>
@@ -212,8 +218,10 @@ span {font-weight: bold;}
     <div ><h2>Temperature:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
-<div id="Plots" style="width:auto;height:250px;"></div>
- --><div ><h2>Stats Log:</h2></div>
+<div id="PlotT" style="width:auto;height:250px;"></div>
+<div ><h2>Humidity:</h2></div>
+<div id="PlotH" style="width:auto;height:250px;"></div>
+<div ><h2>Stats Log:</h2></div>
  <div>
  <pre id="Stats"></pre>
  </div>
