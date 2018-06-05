@@ -110,7 +110,7 @@ class FridgeControl(Server):
             time.sleep(0.1)
         if nn < 6:
             logging.warning("Read error in read_SHT")
-            return None,None
+            return -100,-100
         # Convert the value using the first 2 bytes for the temp
         temp = unpack('>H',data[0:2])[0]
         # temp = -45+175*(temp/65535.)
@@ -136,9 +136,9 @@ class FridgeControl(Server):
         # I'm not sure why I need to mask the top bit of data[0]... 
         #if nn != 8 or data[0]&0x7F != 0x03 or data[1] != 0x04:#
         if nn != 8 or data[1] != 0x04:
-            #logging.warning("Read error in read_AM")
-            print "Read error"
-            return None,None
+            logging.warning("Read error in read_AM")
+            #print "Read error"
+            return -100,-100
         temp = unpack('>h',data[4:6])[0]
         temp = 32+1.8*temp/10.
         humi = unpack('>h',data[2:4])[0]
@@ -147,13 +147,12 @@ class FridgeControl(Server):
         return temp,humi
         
     def regulate(self):
-        temp1,humi1 = self.read_AM()
+        temp_AM,humi_AM = self.read_AM()
         time.sleep(0.1)
-        temp,humi = self.read_SHT()
-        self.temp,self.humi = round(temp,ndigits=2),round(humi,ndigits=2)
-        if temp1 != None and humi1 != None:
-            self.t1,self.t2,self.h1,self.h2=temp1,temp,humi1,humi
-        #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi)
+        temp_SHT,humi_SHT = self.read_SHT()
+        self.temp,self.humi = round(temp_SHT,ndigits=2),round(humi_SHT,ndigits=2)
+        self.t1,self.t2,self.h1,self.h2=temp_AM,temp_SHT,humi_AM,humi_SHT
+        #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi_SHT)
         # Making this asymetrical because there's a lot of inertia when the fridge is on.
         if self.coolingMode:
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
@@ -185,8 +184,8 @@ class FridgeControl(Server):
         self.pi.write(humiGPIO,1-self.humidiStatus)
         tt = time.time()
         # Only log the temp every self.logDeltaS seconds...
-        if tt-self.lastLogTime > self.logDeltaS and temp!=None and temp1 != None and humi != None and humi1 != None:
-            logging.info("Time: %.0f T1 %.2f T2 %.2f H1 %.1f H2 %.1f CC %d HH %d TT %.2f TH %.2f",tt,temp,temp1,humi,humi1,self.fridgeStatus,self.humidiStatus,self.targetTemp,self.targetHumi)
+        if tt-self.lastLogTime > self.logDeltaS:
+            logging.info("Time: %.0f T1 %.2f T2 %.2f H1 %.1f H2 %.1f CC %d HH %d TT %.2f TH %.2f",tt,temp_SHT,temp_AM,humi_SHT,humi_AM,self.fridgeStatus,self.humidiStatus,self.targetTemp,self.targetHumi)
             self.lastLogTime = tt
         self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
 
@@ -223,7 +222,7 @@ class FridgeControl(Server):
             T.append(TT)
             H.append(TH)
             prevTI = TI
-        log = ''.join(allLines[-50:])
+        log = ''.join(reversed(allLines[-50:]))
         return X,Y,Z,T,H,log
         
 @app.route("/")
