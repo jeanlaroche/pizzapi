@@ -168,7 +168,7 @@ span {font-weight: bold;}
 			//title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
 			titlefont: {color: 'yellow'},
 			  };
-			$("#Stats").text(data.stats);
+			$("#Log").text(data.Log);
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
 			Plotly.newPlot( Plots, [{x: X,y: Y} , {x: X,y: TT}], layout );
@@ -222,8 +222,8 @@ span {font-weight: bold;}
 <div id="PlotT" style="width:auto;height:250px;"></div>
 <div ><h2>Humidity:</h2></div>
 <div id="PlotH" style="width:auto;height:250px;"></div>
-<div ><h2>Stats Log:</h2></div>
+<div ><h2>Log:</h2></div>
  <div>
- <pre id="Stats"></pre>
+ <pre id="Log"></pre>
  </div>
  </div>

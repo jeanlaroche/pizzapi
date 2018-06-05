@@ -192,13 +192,13 @@ class FridgeControl(Server):
 
     def getData(self,full=0):
         if full:
-            X,Y,Z,TT,TH = self.getPlotData()
+            X,Y,Z,TT,TH,Log = self.getPlotData()
         else:
-            X,Y,Z,TT,TH = [],[],[],[],[]
+            X,Y,Z,TT,TH,Log = [],[],[],[],[],''
         uptime = self.GetUptime()+" {:.1f}F {:.1f}F {:.1f}% {:.1f}%".format(self.t1,self.t2,self.h1,self.h2)
         data = {"curTemp":self.temp,"curHumidity":self.humi,"targetHumidity":self.targetHumi,
             "targetTemp":self.targetTemp,"upTime":uptime,"fridgeStatus":self.fridgeStatus,"humStatus":self.humidiStatus,
-            "X":X,"Y":Y,"Z":Z,"TT":TT,"TH":TH,"coolingMode":self.coolingMode} 
+            "X":X,"Y":Y,"Z":Z,"TT":TT,"TH":TH,"Log":Log,"coolingMode":self.coolingMode} 
         return data
     
     def getPlotData(self):
@@ -223,7 +223,8 @@ class FridgeControl(Server):
             T.append(TT)
             H.append(TH)
             prevTI = TI
-        return X,Y,Z,T,H
+        log = ''.join(allLines[-50:])
+        return X,Y,Z,T,H,log
         
 @app.route("/")
 def Index():
