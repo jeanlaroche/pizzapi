@@ -108,6 +108,10 @@ span {font-weight: bold;}
 				// To set a color, set the style to "color:red"
 				$("#fridgeStatus").attr('style',data.fridgeStatus == 0 ? 'color:white' : 'color:red');
 				$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
+				$("#cool")[0].checked=data.coolingMode==1
+				$("#heat")[0].checked=data.coolingMode==0
+			    // Without this the radio buttons don't change their state. Unbelievably fucked up.
+				$("input[type='radio']").checkboxradio("refresh");
 				redraw()
 				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
 				// various things in the console.
@@ -129,7 +133,18 @@ span {font-weight: bold;}
 			// You can also call a regular javascipt function:
 			getHumidity();
 			window. addEventListener ( "resize" , function ( event ) {redraw();});
-		}
+
+			$('#cool').change(function() {
+				if(this.checked) $.getJSON('/setMode/1')
+				else $.getJSON('/setMode/0')
+			});
+			$('#heat').change(function() {
+				if(this.checked) $.getJSON('/setMode/0')
+				else $.getJSON('/setMode/1')
+			});
+	}
+		
+		
     );
 	
 	function redraw() {
@@ -198,9 +213,9 @@ span {font-weight: bold;}
     </div>
 	<form>
 	  <div>
-		<input type="radio" id="cool" name="contact" value="cool">
+		<input type="radio" id="cool" name="ctrl" value="cool" >
 		<label for="cool">Cool</label>
-		<input type="radio" id="heat" name="contact" value="heat">
+		<input type="radio" id="heat" name="ctrl" value="heat">
 		<label for="heat">Heat</label>
 	  </div>
 	</form>  

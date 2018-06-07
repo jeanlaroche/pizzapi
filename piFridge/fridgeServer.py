@@ -239,6 +239,12 @@ def Index():
 def getData(param1):
     return jsonify(**fc.getData(param1))
     
+@app.route("/setMode/<int:mode>")
+def setMode(mode):
+    logging.info("COOLING MODE %d",mode)
+    fc.coolingMode = mode
+    return jsonify(**fc.getData())
+    
 @app.route("/tempUp")
 def tempUp():
     fc.incTargetTemp(1)
