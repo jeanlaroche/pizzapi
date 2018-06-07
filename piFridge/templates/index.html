@@ -191,11 +191,19 @@ span {font-weight: bold;}
 <!-- Simple JQuery Mobile page that display the getHumidity state on the breadoard -->
 <!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
 
+
 <div data-role="page" data-theme="b">
-  <div data-role="header">
+	<div data-role="header">
     <div><h2><center>FRIDGE CONTROL</center></h2></div>
-  </div>
-  
+    </div>
+	<form>
+	  <div>
+		<input type="radio" id="cool" name="contact" value="cool">
+		<label for="cool">Cool</label>
+		<input type="radio" id="heat" name="contact" value="heat">
+		<label for="heat">Heat</label>
+	  </div>
+	</form>  
   <div data-role="content">
     <p><h2><span id="fridgeStatus" ></span> <br>Humidifier: <span id="humStatus" ></span></h2></p>
 	<div data-role="fieldcontain">

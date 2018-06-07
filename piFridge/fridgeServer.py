@@ -37,6 +37,7 @@ class FridgeControl(Server):
     
     jsonFile = '.params.json'
     logFile = 'fridge.log'
+    readErrorCnt = 0
     
     def __init__(self,startThread=1):
         myLogger.setLogger(self.logFile,mode='a')
@@ -65,7 +66,7 @@ class FridgeControl(Server):
                 except Exception as e:
                     logging.error('Error in regulate: %s',e)
                     pass
-                time.sleep(2)
+                time.sleep(4)
             logging.info('Exiting regulate loop')            
         self.timerThread = threading.Thread(target=mainLoop)
         self.timerThread.daemon = True
@@ -110,6 +111,7 @@ class FridgeControl(Server):
             time.sleep(0.1)
         if nn < 6:
             logging.warning("Read error in read_SHT")
+            self.readErrorCnt += 1
             return -100,-100
         # Convert the value using the first 2 bytes for the temp
         temp = unpack('>H',data[0:2])[0]
@@ -136,8 +138,9 @@ class FridgeControl(Server):
         # I'm not sure why I need to mask the top bit of data[0]... 
         #if nn != 8 or data[0]&0x7F != 0x03 or data[1] != 0x04:#
         if nn != 8 or data[1] != 0x04:
-            logging.warning("Read error in read_AM")
+            #logging.warning("Read error in read_AM")
             #print "Read error"
+            self.readErrorCnt += 1
             return -100,-100
         temp = unpack('>h',data[4:6])[0]
         temp = 32+1.8*temp/10.
@@ -151,7 +154,7 @@ class FridgeControl(Server):
         time.sleep(0.1)
         temp_SHT,humi_SHT = self.read_SHT()
         self.temp,self.humi = round(temp_SHT,ndigits=2),round(humi_SHT,ndigits=2)
-        self.t1,self.t2,self.h1,self.h2=temp_AM,temp_SHT,humi_AM,humi_SHT
+        self.t1,self.t2,self.h1,self.h2=temp_SHT,temp_AM,humi_SHT,humi_AM
         #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi_SHT)
         # Making this asymetrical because there's a lot of inertia when the fridge is on.
         if self.coolingMode:
@@ -187,6 +190,9 @@ class FridgeControl(Server):
         if tt-self.lastLogTime > self.logDeltaS:
             logging.info("Time: %.0f T1 %.2f T2 %.2f H1 %.1f H2 %.1f CC %d HH %d TT %.2f TH %.2f",tt,temp_SHT,temp_AM,humi_SHT,humi_AM,self.fridgeStatus,self.humidiStatus,self.targetTemp,self.targetHumi)
             self.lastLogTime = tt
+        if self.readErrorCnt > 40:
+            logging.error("%d read errors detected",self.readErrorCnt)
+            self.readErrorCnt = 0
         self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
 
     def getData(self,full=0):
@@ -211,14 +217,14 @@ class FridgeControl(Server):
         prevTI=0
         for line in allLines:
             if "T1" not in line: continue
-            R = re.search('Time:\s+(\d*)\s+T1 ([\d\.]*)\s+T2 ([\d\.]*)\s+H1 ([\d\.]*)\s+H2 ([\d\.]*)\s+CC\s+(\d)\s+HH\s+(\d)\s+TT\s+([\d\.]*)\s+TH\s+([\d\.]*)',line)
+            R = re.search('Time:\s+(\d*)\s+T1 ([-\d\.]*)\s+T2 ([-\d\.]*)\s+H1 ([-\d\.]*)\s+H2 ([-\d\.]*)\s+CC\s+(\d)\s+HH\s+(\d)\s+TT\s+([\d\.]*)\s+TH\s+([\d\.]*)',line)
             if not R: continue
             TI,T1,T2,H1,H2,CC,HH,TT,TH = R.group(1),R.group(2),R.group(3),R.group(4),R.group(5),R.group(6),R.group(7),R.group(8),R.group(9)
             TI,T1,T2,H1,H2,CC,HH,TT,TH=int(TI),float(T1),float(T2),float(H1),float(H2),int(CC),int(HH),float(TT),float(TH)
             if TI < minTime or TI < prevTI + 60: continue
             X.append(curHour+(TI-curTime)/3600)
-            Y.append(T2)
-            Z.append(H2)
+            Y.append(T1)
+            Z.append(H1)
             T.append(TT)
             H.append(TH)
             prevTI = TI
