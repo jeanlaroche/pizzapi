@@ -17,6 +17,7 @@ app.config['SECRET_KEY'] = 'secret!'
 
 tempGPIO = 4
 humiGPIO = 17
+fanGPIO = 18
 
 class FridgeControl(Server):
     
@@ -29,9 +30,11 @@ class FridgeControl(Server):
     
     fridgeStatus = 0
     humidiStatus = 0
+    fanStatus = 0
     coolingMode = 1 # 0 for heating mode.
+    lastTimeOn=0
     
-    logDeltaS = 60  # Time interval in s between two data logs
+    logDeltaS = 120  # Time interval in s between two data logs
     lastLogTime = 0
     t1,t2,h1,h2=0,0,0,0
     
@@ -45,6 +48,7 @@ class FridgeControl(Server):
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
         self.pi.set_mode(humiGPIO, pigpio.OUTPUT)
+        self.pi.set_mode(fanGPIO, pigpio.OUTPUT)
         self.sht_handle = self.pi.i2c_open(1, 0x44)
         self.am_handle = self.pi.i2c_open(1, 0x5C)
         self.stopNow = 0
@@ -58,6 +62,7 @@ class FridgeControl(Server):
         self.humi = self.targetHumi
         self.pi.write(tempGPIO,1-self.fridgeStatus)
         self.pi.write(humiGPIO,1-self.humidiStatus)
+        self.pi.write(fanGPIO,self.fanStatus)
         
         def mainLoop():
             while self.stopNow==0:
@@ -89,6 +94,9 @@ class FridgeControl(Server):
         #logging.info("Inc temp %.0f",self.targetTemp)
         self.targetTemp += inc
         self.writeJson()
+        self.fanStatus = 1-self.fanStatus
+        self.pi.write(fanGPIO,self.fanStatus)
+
 
     def incTargetHumi(self,inc):
         #logging.info("Inc humi %.0f",self.targetHumi)
@@ -160,20 +168,24 @@ class FridgeControl(Server):
         if self.coolingMode:
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
                 # Turn fridge off
-                if self.fridgeStatus: logging.info("Turning cooling off")
+                if self.fridgeStatus: logging.info("Turning cooling off %.2fF on for %.1f minutes",self.temp,(time.time()-self.lastTimeOn)/60.)
                 self.fridgeStatus = 0
             if self.temp > self.targetTemp + .5*self.tempDelta:
                 # Turn fridge on
-                if self.fridgeStatus == 0: logging.info("Turning cooling on %.1f",self.temp)
+                if self.fridgeStatus == 0: 
+                    self.lastTimeOn=time.time()
+                    logging.info("Turning cooling on %.1fF",self.temp)
                 self.fridgeStatus = 1
         else:
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
                 # Turn heat on
-                if self.fridgeStatus == 0: logging.info("Turning heat on")
+                if self.fridgeStatus == 0: 
+                    logging.info("Turning heat on %.1fF",self.temp)
+                    self.lastTimeOn=time.time()
                 self.fridgeStatus = 1
             if self.temp > self.targetTemp + .5*self.tempDelta:
                 # Turn heat off
-                if self.fridgeStatus == 1: logging.info("Turning heat off %.1f",self.temp)
+                if self.fridgeStatus == 1: logging.info("Turning heat off %.2fF on for %.1f minutes",self.temp,(time.time()-self.lastTimeOn)/60.)
                 self.fridgeStatus = 0
         if self.humi < self.targetHumi - self.humiDelta:
             # Turn humidifier on
