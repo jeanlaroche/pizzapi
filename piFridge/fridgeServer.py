@@ -4,6 +4,7 @@ import time
 import json
 import os
 import re
+import pdb
 import threading
 from BaseClasses.baseServer import Server
 import logging
@@ -51,6 +52,7 @@ class FridgeControl(Server):
         self.pi.set_mode(fanGPIO, pigpio.OUTPUT)
         self.sht_handle = self.pi.i2c_open(1, 0x44)
         self.am_handle = self.pi.i2c_open(1, 0x5C)
+        self.hdc_handle = self.pi.i2c_open(1, 0x40)
         self.stopNow = 0
         if os.path.exists(self.jsonFile):
             with open(self.jsonFile) as f:
@@ -156,11 +158,38 @@ class FridgeControl(Server):
         humi = humi/10.
         #print "Temp {} Humi {}".format(temp,humi)
         return temp,humi
-        
+ 
+    def read_HDC1008(self,timeOutS=1):
+        # I write the raw device as that's easier. This is for no clock stretching.
+        #pdb.set_trace()
+        self.pi.i2c_write_device(self.hdc_handle, [0x02, 0x10])
+        self.pi.i2c_write_device(self.hdc_handle, [0x00])
+        nn=0
+        t0=time.time()
+        # Read 6 bytes, returned as TMSB|TLSB|CRC|HMSB|HLSB|CRC
+        while time.time()-t0 < timeOutS:
+            nn,data = self.pi.i2c_read_device(self.hdc_handle, 4)
+            if nn==4: break
+            time.sleep(0.1)
+        if nn < 4:
+            logging.warning("Read error in read_HDC1008")
+            self.readErrorCnt += 1
+            return -100,-100
+        #pdb.set_trace()
+        # Convert the value using the first 2 bytes for the temp
+        temp = unpack('>H',data[0:2])[0]
+        # temp = -45+175*(temp/65535.)
+        temp = -40+297*(temp/65536.)
+        # Convert the value using the bytes 3 and 4 for the humidity
+        humi = unpack('>H',data[2:4])[0]
+        humi = 100.*humi/65536.
+        return temp,humi
+  
     def regulate(self):
         temp_AM,humi_AM = self.read_AM()
         time.sleep(0.1)
-        temp_SHT,humi_SHT = self.read_SHT()
+        #temp_SHT,humi_SHT = self.read_SHT()
+        temp_SHT,humi_SHT = self.read_HDC1008()
         self.temp,self.humi = round(temp_SHT,ndigits=2),round(humi_SHT,ndigits=2)
         self.t1,self.t2,self.h1,self.h2=temp_SHT,temp_AM,humi_SHT,humi_AM
         #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi_SHT)
@@ -170,12 +199,14 @@ class FridgeControl(Server):
                 # Turn fridge off
                 if self.fridgeStatus: logging.info("Turning cooling off %.2fF on for %.1f minutes",self.temp,(time.time()-self.lastTimeOn)/60.)
                 self.fridgeStatus = 0
+                self.fanStatus = 0
             if self.temp > self.targetTemp + .5*self.tempDelta:
                 # Turn fridge on
                 if self.fridgeStatus == 0: 
                     self.lastTimeOn=time.time()
                     logging.info("Turning cooling on %.1fF",self.temp)
                 self.fridgeStatus = 1
+                self.fanStatus = 1
         else:
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
                 # Turn heat on
@@ -197,6 +228,7 @@ class FridgeControl(Server):
             self.humidiStatus = 0
         self.pi.write(tempGPIO,1-self.fridgeStatus)
         self.pi.write(humiGPIO,1-self.humidiStatus)
+        self.pi.write(fanGPIO,self.fanStatus)
         tt = time.time()
         # Only log the temp every self.logDeltaS seconds...
         if tt-self.lastLogTime > self.logDeltaS:
@@ -301,7 +333,7 @@ fc = FridgeControl()
 
 if __name__ == "__main__":
     for ii in range(100):
-        t,h=fc.read_AM()
+        t,h=fc.read_HDC1008()
         if t != None: print t,h
         else: print "read error"
         # t,h=fc.read_SHT()
