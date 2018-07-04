@@ -78,3 +78,15 @@ class myTimer(object):
         self.timerThread.daemon = True
         self.timerThread.start()
     
+def printSeconds(nSecs):
+    days,nSecs = divmod(nSecs,3600*24)
+    hours,nSecs = divmod(nSecs,3600)
+    minutes,nSecs = divmod(nSecs,60)
+    str = ''
+    if days: str += '{:.0f}d:'.format(days)
+    if days or hours: str += '{:.0f}h:'.format(hours)
+    if hours or minutes: str += '{:.0f}m:'.format(minutes)
+    str += '{:.0f}s'.format(nSecs)
+    return str
+    
+    
