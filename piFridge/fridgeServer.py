@@ -10,7 +10,7 @@ from BaseClasses.baseServer import Server
 import logging
 from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from BaseClasses.utils import myTimer
+from BaseClasses.utils import myTimer, printSeconds
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
@@ -292,7 +292,7 @@ class FridgeControl(Server):
         if full:
             X,Y,Z,TT,TH,Log = self.getPlotData()
             uptime = self.GetUptime()+" {:.1f}F {:.1f}%".format(self.t1,self.h1)
-            onTime = "On time today {:.0f}m -- yesterday {:.0f}m".format(self.totalOnTimeS/60.,self.lastTotalOnTimeS/60.)
+            onTime = "On time today {} -- yesterday {}".format(printSeconds(self.totalOnTimeS),printSeconds(self.lastTotalOnTimeS))
         else:
             X,Y,Z,TT,TH,Log = [],[],[],[],[],''
             uptime,onTime = '',''
