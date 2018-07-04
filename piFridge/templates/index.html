@@ -17,6 +17,7 @@ span {font-weight: bold;}
 
 <script type=text/javascript>
 	
+	var targetHumid;
 	// Javascript function for up button
 	function onHumiUp() {
 		$.getJSON('/humiUp', function(data)
@@ -27,9 +28,11 @@ span {font-weight: bold;}
 	
 	// Javascript function for down button
 	function onHumiDown() {
-		$.getJSON('/humiDown', function(data)
+			targetHumid -= 1;
+			$("#targetHumidity").text(targetHumid);		
+			$.getJSON('/humiDown', function(data)
 		{
-			$("#targetHumidity").text(data.targetHumidity);
+			
 		});
 	}
 
@@ -49,37 +52,6 @@ span {font-weight: bold;}
 		});
 	}
 	
-	function onFridgeTest() {
-		$.getJSON('/fridgeTest');
-	}
-
-	function onFridgeUp() {
-		$.getJSON('/fridgeUp', function(data)
-		{
-			$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);
-		});
-	}
-	
-	function onFridgeDown() {
-		$.getJSON('/fridgeDown', function(data)
-		{
-			$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);
-		});
-	}
-	
-	function onFridgeDurUp() {
-		$.getJSON('/fridgeDurUp', function(data)
-		{
-			$("#fridgeOnLengthS").text(data.fridgeOnLengthS);
-		});
-	}
-	
-	function onFridgeDurDown() {
-		$.getJSON('/fridgeDurDown', function(data)
-		{
-			$("#fridgeOnLengthS").text(data.fridgeOnLengthS);
-		});
-	}
 	
 	// Flask allows you to decode URLs like /onDayPrev and /onDayNext so they're sent to the same function.
 	// It would be a bit more succint on the python side.
@@ -95,6 +67,7 @@ span {font-weight: bold;}
 				$("#targetTemp").text(data.targetTemp);
 				$("#curTemp").text(data.curTemp);
 				$("#targetHumidity").text(data.targetHumidity);
+				targetHumid = data.targetHumidity;
 				$("#curHumidity").text(data.curHumidity);
 				//$("#temp").text(data.temp);
 				//$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);				

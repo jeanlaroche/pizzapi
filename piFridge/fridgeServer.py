@@ -27,7 +27,7 @@ class FridgeControl(Server):
     targetTemp = 52
     targetHumi = 70
     tempDelta = .5
-    humiDelta = 5
+    humiDelta = 2
     
     fridgeStatus = 0
     humidiStatus = 0
@@ -38,6 +38,7 @@ class FridgeControl(Server):
     logDeltaS = 120  # Time interval in s between two data logs
     lastLogTime = 0
     t1,t2,h1,h2=0,0,0,0
+    totalOnTimeS = 0
     
     jsonFile = '.params.json'
     logFile = 'fridge.log'
@@ -53,6 +54,7 @@ class FridgeControl(Server):
         self.sht_handle = self.pi.i2c_open(1, 0x44)
         self.am_handle = self.pi.i2c_open(1, 0x5C)
         self.hdc_handle = self.pi.i2c_open(1, 0x40)
+        self.bme_handle = self.pi.i2c_open(1, 0x76)
         self.stopNow = 0
         if os.path.exists(self.jsonFile):
             with open(self.jsonFile) as f:
@@ -64,7 +66,14 @@ class FridgeControl(Server):
         self.humi = self.targetHumi
         self.pi.write(tempGPIO,1-self.fridgeStatus)
         self.pi.write(humiGPIO,1-self.humidiStatus)
+        self.fanStatus = self.fridgeStatus
         self.pi.write(fanGPIO,self.fanStatus)
+        
+        self.timer = myTimer()
+        def foo():
+            logging.info("Total on-time: %.0fm",self.totalOnTimeS/60.)
+            self.totalOnTimeS=0
+        self.timer.addEvent(0,0,foo,name='reset total time',params=[])
         
         def mainLoop():
             while self.stopNow==0:
@@ -96,8 +105,6 @@ class FridgeControl(Server):
         #logging.info("Inc temp %.0f",self.targetTemp)
         self.targetTemp += inc
         self.writeJson()
-        self.fanStatus = 1-self.fanStatus
-        self.pi.write(fanGPIO,self.fanStatus)
 
 
     def incTargetHumi(self,inc):
@@ -184,12 +191,45 @@ class FridgeControl(Server):
         humi = unpack('>H',data[2:4])[0]
         humi = 100.*humi/65536.
         return temp,humi
-  
+
+    def read_BME280(self,timeOutS=1):
+        # I write the raw device as that's easier. This is for no clock stretching.
+        #pdb.set_trace()
+        # Write upsampling for humidity 
+        # Oversample setting - page 27
+        OVERSAMPLE_TEMP = 2
+        OVERSAMPLE_PRES = 2
+        MODE = 1
+        control = OVERSAMPLE_TEMP<<5 | OVERSAMPLE_PRES<<2 | MODE
+        self.pi.i2c_write_device(self.bme_handle, [0xF2, 0x02])
+        self.pi.i2c_write_device(self.bme_handle, [0xF4, control])
+        nn=0
+        t0=time.time()
+        # Read 6 bytes, returned as TMSB|TLSB|CRC|HMSB|HLSB|CRC
+        while time.time()-t0 < timeOutS:
+            nn,data = self.pi.i2c_read_device(self.bme_handle, 8)
+            if nn==8: break
+            time.sleep(0.1)
+        if nn < 8:
+            logging.warning("Read error in read_HDC1008")
+            self.readErrorCnt += 1
+            return -100,-100
+        pdb.set_trace()
+        # Convert the value using the first 2 bytes for the temp
+        temp = unpack('>H',data[0:2])[0]
+        # temp = -45+175*(temp/65535.)
+        temp = -40+297*(temp/65536.)
+        # Convert the value using the bytes 3 and 4 for the humidity
+        humi = unpack('>H',data[2:4])[0]
+        humi = 100.*humi/65536.
+        return temp,humi
+        
     def regulate(self):
-        temp_AM,humi_AM = self.read_AM()
+        #temp_AM,humi_AM = self.read_AM()
         time.sleep(0.1)
-        #temp_SHT,humi_SHT = self.read_SHT()
-        temp_SHT,humi_SHT = self.read_HDC1008()
+        temp_SHT,humi_SHT = self.read_SHT()
+        temp_AM,humi_AM = temp_SHT,humi_SHT
+        # temp_SHT,humi_SHT = self.read_AM()
         self.temp,self.humi = round(temp_SHT,ndigits=2),round(humi_SHT,ndigits=2)
         self.t1,self.t2,self.h1,self.h2=temp_SHT,temp_AM,humi_SHT,humi_AM
         #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi_SHT)
@@ -197,7 +237,9 @@ class FridgeControl(Server):
         if self.coolingMode:
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
                 # Turn fridge off
-                if self.fridgeStatus: logging.info("Turning cooling off %.2fF on for %.1f minutes",self.temp,(time.time()-self.lastTimeOn)/60.)
+                if self.fridgeStatus:
+                    self.totalOnTimeS += (time.time()-self.lastTimeOn)
+                    logging.info("Turning cooling off %.2fF on for %.1f minutes. Tot time: %.1f mins",self.temp,(time.time()-self.lastTimeOn)/60.,self.totalOnTimeS/60.)
                 self.fridgeStatus = 0
                 self.fanStatus = 0
             if self.temp > self.targetTemp + .5*self.tempDelta:
@@ -220,11 +262,11 @@ class FridgeControl(Server):
                 self.fridgeStatus = 0
         if self.humi < self.targetHumi - self.humiDelta:
             # Turn humidifier on
-            if self.humidiStatus == 0: logging.info("Turning humidifier off %.1f",self.temp)
+            if self.humidiStatus == 0: logging.info("Turning humidifier on %.1f",self.humi)
             self.humidiStatus = 1
         if self.humi > self.targetHumi + self.humiDelta:
             # Turn humidifier off
-            if self.humidiStatus: logging.info("Turning humidifier off")
+            if self.humidiStatus: logging.info("Turning humidifier off %.1f",self.humi)
             self.humidiStatus = 0
         self.pi.write(tempGPIO,1-self.fridgeStatus)
         self.pi.write(humiGPIO,1-self.humidiStatus)
@@ -242,9 +284,10 @@ class FridgeControl(Server):
     def getData(self,full=0):
         if full:
             X,Y,Z,TT,TH,Log = self.getPlotData()
+            uptime = self.GetUptime()+" {:.1f}F {:.1f}F {:.1f}% {:.1f}%".format(self.t1,self.t2,self.h1,self.h2)
         else:
             X,Y,Z,TT,TH,Log = [],[],[],[],[],''
-        uptime = self.GetUptime()+" {:.1f}F {:.1f}F {:.1f}% {:.1f}%".format(self.t1,self.t2,self.h1,self.h2)
+            uptime = ''
         data = {"curTemp":self.temp,"curHumidity":self.humi,"targetHumidity":self.targetHumi,
             "targetTemp":self.targetTemp,"upTime":uptime,"fridgeStatus":self.fridgeStatus,"humStatus":self.humidiStatus,
             "X":X,"Y":Y,"Z":Z,"TT":TT,"TH":TH,"Log":Log,"coolingMode":self.coolingMode} 
@@ -266,6 +309,7 @@ class FridgeControl(Server):
             TI,T1,T2,H1,H2,CC,HH,TT,TH = R.group(1),R.group(2),R.group(3),R.group(4),R.group(5),R.group(6),R.group(7),R.group(8),R.group(9)
             TI,T1,T2,H1,H2,CC,HH,TT,TH=int(TI),float(T1),float(T2),float(H1),float(H2),int(CC),int(HH),float(TT),float(TH)
             if TI < minTime or TI < prevTI + 60: continue
+            if T1 <= -100: continue
             X.append(curHour+(TI-curTime)/3600)
             Y.append(T1)
             Z.append(H1)
@@ -306,7 +350,9 @@ def humiUp():
     
 @app.route("/humiDown")
 def humiDown():
+    print "HUMI DOWN"
     fc.incTargetHumi(-1)
+    print "HUMI DIBE"
     return jsonify(**fc.getData())
     
 fc = FridgeControl()
@@ -333,7 +379,7 @@ fc = FridgeControl()
 
 if __name__ == "__main__":
     for ii in range(100):
-        t,h=fc.read_HDC1008()
+        t,h=fc.read_SHT()
         if t != None: print t,h
         else: print "read error"
         # t,h=fc.read_SHT()
