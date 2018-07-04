@@ -40,6 +40,7 @@ class FridgeControl(Server):
     t1,t2,h1,h2=0,0,0,0
     totalOnTimeS = 0
     lastTotalOnTimeS = 0
+    warnOnTimeS = 20*60 # Warn if fridge is on for more than this time.
     
     jsonFile = '.params.json'
     logFile = 'fridge.log'
@@ -69,7 +70,6 @@ class FridgeControl(Server):
         self.humi = self.targetHumi
         self.pi.write(tempGPIO,1-self.fridgeStatus)
         self.pi.write(humiGPIO,1-self.humidiStatus)
-        self.fanStatus = self.fridgeStatus
         self.pi.write(fanGPIO,self.fanStatus)
         
         self.timer = myTimer()
@@ -248,14 +248,14 @@ class FridgeControl(Server):
                     logging.info("Turning cooling off %.2fF on for %.1f minutes. Tot time: %.1f mins",self.temp,(time.time()-self.lastTimeOn)/60.,self.totalOnTimeS/60.)
                     self.writeJson()
                 self.fridgeStatus = 0
-                self.fanStatus = 0
             if self.temp > self.targetTemp + .5*self.tempDelta:
                 # Turn fridge on
                 if self.fridgeStatus == 0: 
                     self.lastTimeOn=time.time()
                     logging.info("Turning cooling on %.1fF",self.temp)
                 self.fridgeStatus = 1
-                self.fanStatus = 1
+            if self.fridgeStatus and self.warnOnTimeS < time.time()-self.lastTimeOn:
+                self.warnOnTooLong(time.time()-self.lastTimeOn)
         else:
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
                 # Turn heat on
@@ -275,6 +275,7 @@ class FridgeControl(Server):
             # Turn humidifier off
             if self.humidiStatus: logging.info("Turning humidifier off %.1f",self.humi)
             self.humidiStatus = 0
+        self.fanStatus = 1 if self.humidiStatus or self.fridgeStatus else 0
         self.pi.write(tempGPIO,1-self.fridgeStatus)
         self.pi.write(humiGPIO,1-self.humidiStatus)
         self.pi.write(fanGPIO,self.fanStatus)
@@ -288,6 +289,9 @@ class FridgeControl(Server):
             self.readErrorCnt = 0
         self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
 
+    def warnOnTooLong(self,onTime):
+        logging.error("Fridge on for too long! {}",printSeconds(onTime))
+        
     def getData(self,full=0):
         if full:
             X,Y,Z,TT,TH,Log = self.getPlotData()
