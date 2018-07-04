@@ -63,7 +63,7 @@ class FridgeControl(Server):
                 self.targetTemp = data['targetTemp']
                 self.targetHumi = data['targetHumi']
                 self.coolingMode = data['coolingMode']
-                self.totalOnTime = data['totalOnTime']
+                self.totalOnTimeS = data['totalOnTimeS']
                 self.lastTotalOnTimeS = data['lastTotalOnTimeS']
         self.temp = self.targetTemp
         self.humi = self.targetHumi
@@ -73,11 +73,12 @@ class FridgeControl(Server):
         self.pi.write(fanGPIO,self.fanStatus)
         
         self.timer = myTimer()
+        # Timer to reset the total on time, and memorize the previous one.
         def foo():
             logging.info("Total on-time: %.0fm",self.totalOnTimeS/60.)
             self.lastTotalOnTimeS = self.totalOnTimeS
             self.totalOnTimeS=0
-        self.timer.addEvent(11,0,foo,name='reset total time',params=[])
+        self.timer.addEvent(0,10,foo,name='reset total time',params=[])
         self.timer.start()
         
         def mainLoop():
@@ -95,7 +96,7 @@ class FridgeControl(Server):
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode, 'totalOnTime':self.totalOnTime,'lastTotalOnTimeS':self.lastTotalOnTimeS},f)
+            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode, 'totalOnTimeS':self.totalOnTimeS,'lastTotalOnTimeS':self.lastTotalOnTimeS},f)
     
     def stop(self):
         self.stopNow=1
@@ -245,6 +246,7 @@ class FridgeControl(Server):
                 if self.fridgeStatus:
                     self.totalOnTimeS += (time.time()-self.lastTimeOn)
                     logging.info("Turning cooling off %.2fF on for %.1f minutes. Tot time: %.1f mins",self.temp,(time.time()-self.lastTimeOn)/60.,self.totalOnTimeS/60.)
+                    self.writeJson()
                 self.fridgeStatus = 0
                 self.fanStatus = 0
             if self.temp > self.targetTemp + .5*self.tempDelta:
