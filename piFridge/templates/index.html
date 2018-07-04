@@ -73,6 +73,7 @@ span {font-weight: bold;}
 				//$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);				
 				//$("#fridgeOnLengthS").text(data.fridgeOnLengthS);				
 				$("#upTime").text(data.upTime);
+				$("#onTime").text(data.onTime);
 				if(data.coolingMode)
 					$("#fridgeStatus").text(data.fridgeStatus == 0 ? "Frige OFF" : "Fridge ON");
 				else
@@ -212,6 +213,7 @@ span {font-weight: bold;}
  <div data-role="footer">
     <div ><h4><span id="lastMessage" ></span></h4></div>
     <div><h4><span id="upTime" ></span></h4></div>
+    <div><h4><span id="onTime" ></span></h4></div>
     <div ><h2>Temperature:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>

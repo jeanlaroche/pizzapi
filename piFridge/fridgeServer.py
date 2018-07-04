@@ -39,6 +39,7 @@ class FridgeControl(Server):
     lastLogTime = 0
     t1,t2,h1,h2=0,0,0,0
     totalOnTimeS = 0
+    lastTotalOnTimeS = 0
     
     jsonFile = '.params.json'
     logFile = 'fridge.log'
@@ -62,6 +63,8 @@ class FridgeControl(Server):
                 self.targetTemp = data['targetTemp']
                 self.targetHumi = data['targetHumi']
                 self.coolingMode = data['coolingMode']
+                self.totalOnTime = data['totalOnTime']
+                self.lastTotalOnTimeS = data['lastTotalOnTimeS']
         self.temp = self.targetTemp
         self.humi = self.targetHumi
         self.pi.write(tempGPIO,1-self.fridgeStatus)
@@ -72,8 +75,10 @@ class FridgeControl(Server):
         self.timer = myTimer()
         def foo():
             logging.info("Total on-time: %.0fm",self.totalOnTimeS/60.)
+            self.lastTotalOnTimeS = self.totalOnTimeS
             self.totalOnTimeS=0
-        self.timer.addEvent(0,0,foo,name='reset total time',params=[])
+        self.timer.addEvent(11,0,foo,name='reset total time',params=[])
+        self.timer.start()
         
         def mainLoop():
             while self.stopNow==0:
@@ -90,7 +95,7 @@ class FridgeControl(Server):
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode},f)
+            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode, 'totalOnTime':self.totalOnTime,'lastTotalOnTimeS':self.lastTotalOnTimeS},f)
     
     def stop(self):
         self.stopNow=1
@@ -284,13 +289,14 @@ class FridgeControl(Server):
     def getData(self,full=0):
         if full:
             X,Y,Z,TT,TH,Log = self.getPlotData()
-            uptime = self.GetUptime()+" {:.1f}F {:.1f}F {:.1f}% {:.1f}%".format(self.t1,self.t2,self.h1,self.h2)
+            uptime = self.GetUptime()+" {:.1f}F {:.1f}%".format(self.t1,self.h1)
+            onTime = "On time today {:.0f}m -- yesterday {:.0f}m".format(self.totalOnTimeS/60.,self.lastTotalOnTimeS/60.)
         else:
             X,Y,Z,TT,TH,Log = [],[],[],[],[],''
-            uptime = ''
+            uptime,onTime = '',''
         data = {"curTemp":self.temp,"curHumidity":self.humi,"targetHumidity":self.targetHumi,
             "targetTemp":self.targetTemp,"upTime":uptime,"fridgeStatus":self.fridgeStatus,"humStatus":self.humidiStatus,
-            "X":X,"Y":Y,"Z":Z,"TT":TT,"TH":TH,"Log":Log,"coolingMode":self.coolingMode} 
+            "X":X,"Y":Y,"Z":Z,"TT":TT,"TH":TH,"Log":Log,"coolingMode":self.coolingMode,"onTime":onTime} 
         return data
     
     def getPlotData(self):
@@ -316,7 +322,9 @@ class FridgeControl(Server):
             T.append(TT)
             H.append(TH)
             prevTI = TI
-        log = ''.join(reversed(allLines[-50:]))
+        # For the log in the UI, don't show the temp log.
+        allLines = [item for item in allLines if not "TT" in item]
+        log = ''.join(reversed(allLines[-200:]))
         return X,Y,Z,T,H,log
         
 @app.route("/")
