@@ -1,77 +1,28 @@
-import sys
-import os
-from PIL import ImageFont
-
+from luma.core.interface.serial import i2c, spi
 from luma.core.render import canvas
-from luma.core.sprite_system import framerate_regulator
-from luma.core import cmdline, error
+from luma.oled.device import ssd1306, ssd1325, ssd1331, sh1106
+from PIL import ImageFont, ImageDraw
+import os
 
+# rev.1 users set port=0
+# substitute spi(device=0, port=0) below if using that interface
+serial = i2c(port=1, address=0x3C)
 
-def get_device(actual_args=None):
-    """
-    Create device from command-line arguments and return it.
-    """
-    if actual_args is None:
-        actual_args = sys.argv[1:]
-    parser = cmdline.create_parser(description='luma.examples arguments')
-    args = parser.parse_args(actual_args)
+# See https://luma-oled.readthedocs.io/en/latest/python-usage.html
+# substitute ssd1331(...) or sh1106(...) below if using that device
+device = ssd1306(serial)
 
-    if args.config:
-        # load config from file
-        config = cmdline.load_config(args.config)
-        args = parser.parse_args(config + actual_args)
-
-    print(display_settings(args))
-
-    # create device
-    try:
-        device = cmdline.create_device(args)
-    except error.Error as e:
-        parser.error(e)
-
-    return device
-
-def display_settings(args):
-    """
-    Display a short summary of the settings.
-
-    :rtype: str
-    """
-    iface = ''
-    display_types = cmdline.get_display_types()
-    if args.display not in display_types['emulator']:
-        iface = 'Interface: {}\n'.format(args.interface)
-
-    lib_name = cmdline.get_library_for_display_type(args.display)
-    if lib_name is not None:
-        lib_version = cmdline.get_library_version(lib_name)
-    else:
-        lib_name = lib_version = 'unknown'
-
-    import luma.core
-    version = 'luma.{} {} (luma.core {})'.format(
-        lib_name, lib_version, luma.core.__version__)
-
-    return 'Version: {}\nDisplay: {}\n{}Dimensions: {} x {}\n{}'.format(
-        version, args.display, iface, args.width, args.height, '-' * 60)
-        
-def make_font(name, size):
-    font_path = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), 'fonts', name))
-    font_path = os.path.join('luma.oled/examples/luma.examples/examples/fonts',name)
-    return ImageFont.truetype(font_path, size)
-
-    
-device = get_device()
-regulator = framerate_regulator(fps=1)
-font = make_font("fontawesome-webfont.ttf", device.height - 10)
-
-while 1:
-    with regulator:
-        code = "B"
+# draw.text is here: https://pillow.readthedocs.io/en/latest/reference/ImageDraw.html#module-PIL.ImageDraw
+for dirpath, dirnames, filenames in os.walk('/usr/share/fonts/truetype'):
+    for file in filenames:
+        if not '.ttf' in file: continue
+        fontName = os.path.join(dirpath,file)
+        print fontName
         with canvas(device) as draw:
-            print "draw"
-            w, h = draw.textsize(text=code, font=font)
-            left = (device.width - w) / 2
-            top = (device.height - h) / 2
-            draw.text((left, top), text=code, font=font, fill="white")
+            #font = ImageFont.load("arial.pil")
+            # Lots of fonts here: /usr/share/fonts/truetype
+            
+            font =  ImageFont.truetype(font=fontName, size=10, index=0, encoding='', layout_engine=None)
+            #draw.rectangle(device.bounding_box, outline="white", fill="black")
+            draw.text((30, 40), "Temp = 82F", fill="white",font=font)
+        raw_input("asdf")
