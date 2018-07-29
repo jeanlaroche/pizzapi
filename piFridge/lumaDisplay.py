@@ -19,6 +19,8 @@ class Luma(object):
         self.font =  ImageFont.truetype(font=self.fontPath, size=size, index=0, encoding='', layout_engine=None)
     
     def printText(self,text):
+        if not isinstance(text,list):
+            text = text.split('\n')
         with canvas(self.device) as draw:
             for ii,txt in enumerate(text):
                 draw.text((0,ii*self.newLine),txt,fill="white",font=self.font)

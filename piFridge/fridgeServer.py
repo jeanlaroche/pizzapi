@@ -243,8 +243,6 @@ class FridgeControl(Server):
         self.temp,self.humi = round(temp_SHT,ndigits=2),round(humi_SHT,ndigits=2)
         self.t1,self.t2,self.h1,self.h2=temp_SHT,temp_AM,humi_SHT,humi_AM
         #logging.info("temp: %.2f humid %.2f%%",self.temp,self.humi_SHT)
-        timeStr = time.strftime("%H:%M:%S",time.localtime())
-        self.luma.printText(['Temp: {:.1f}F'.format(self.temp),'Humi: {:.0f}%'.format(self.humi),timeStr])
         # Making this asymetrical because there's a lot of inertia when the fridge is on.
         if self.coolingMode:
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
@@ -286,6 +284,9 @@ class FridgeControl(Server):
         self.pi.write(humiGPIO,1-self.humidiStatus)
         self.pi.write(fanGPIO,self.fanStatus)
         tt = time.time()
+        timeStr = time.strftime("%H:%M:%S",time.localtime())
+        onOffStr = "Heat on" if self.fridgeStatus else "Heat off"
+        self.luma.printText('Temp:   {:.1f}F\nTarget: {:.1f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr))
         # Only log the temp every self.logDeltaS seconds...
         if tt-self.lastLogTime > self.logDeltaS:
             logging.info("Time: %.0f T1 %.2f T2 %.2f H1 %.1f H2 %.1f CC %d HH %d TT %.2f TH %.2f",tt,temp_SHT,temp_AM,humi_SHT,humi_AM,self.fridgeStatus,self.humidiStatus,self.targetTemp,self.targetHumi)
