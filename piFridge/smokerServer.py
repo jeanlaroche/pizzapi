@@ -229,12 +229,12 @@ def getData(param1):
         
 @app.route("/tempUp")
 def tempUp():
-    fc.incTargetTemp(1)
+    fc.incTargetTemp(5)
     return jsonify(**fc.getData())
     
 @app.route("/tempDown")
 def tempDown():
-    fc.incTargetTemp(-1)
+    fc.incTargetTemp(-5)
     return jsonify(**fc.getData())
 
 @app.route("/start")

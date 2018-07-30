@@ -17,25 +17,6 @@ span {font-weight: bold;}
 
 <script type=text/javascript>
 	
-	var targetHumid;
-	// Javascript function for up button
-	function onHumiUp() {
-		$.getJSON('/humiUp', function(data)
-		{
-			$("#targetHumidity").text(data.targetHumidity);
-		});
-	}
-	
-	// Javascript function for down button
-	function onHumiDown() {
-			targetHumid -= 1;
-			$("#targetHumidity").text(targetHumid);		
-			$.getJSON('/humiDown', function(data)
-		{
-			
-		});
-	}
-
 	// Javascript function for down button
 	function onTempDown() {
 		$.getJSON('/tempDown', function(data)
@@ -52,6 +33,11 @@ span {font-weight: bold;}
 		});
 	}
 	
+	function onStart() {
+		$.getJSON('/start', function(data)
+		{
+		});
+	}
 	
 	// Flask allows you to decode URLs like /onDayPrev and /onDayNext so they're sent to the same function.
 	// It would be a bit more succint on the python side.
@@ -66,26 +52,16 @@ span {font-weight: bold;}
 				// Since many elements might match.
 				$("#targetTemp").text(data.targetTemp);
 				$("#curTemp").text(data.curTemp);
-				$("#targetHumidity").text(data.targetHumidity);
-				targetHumid = data.targetHumidity;
-				$("#curHumidity").text(data.curHumidity);
-				//$("#temp").text(data.temp);
-				//$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);				
-				//$("#fridgeOnLengthS").text(data.fridgeOnLengthS);				
 				$("#upTime").text(data.upTime);
 				$("#onTime").text(data.onTime);
-				if(data.coolingMode)
-					$("#fridgeStatus").text(data.fridgeStatus == 0 ? "Frige OFF" : "Fridge ON");
-				else
-					$("#fridgeStatus").text(data.fridgeStatus == 0 ? "Heat OFF" : "Heat ON");
-				$("#humStatus").text(data.humStatus == 0 ? "OFF" : "ON");
+				var foo = data.lumaText.split('\n')
+				$("#lumaText0").text(foo[0]);
+				$("#lumaText1").text(foo[1]);
+				$("#lumaText2").text(foo[2]);
+				$("#lumaText3").text(foo[3]);
+				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
 				// To set a color, set the style to "color:red"
-				$("#fridgeStatus").attr('style',data.fridgeStatus == 0 ? 'color:white' : 'color:red');
-				$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
-				$("#cool")[0].checked=data.coolingMode==1
-				$("#heat")[0].checked=data.coolingMode==0
-			    // Without this the radio buttons don't change their state. Unbelievably fucked up.
-				$("input[type='radio']").checkboxradio("refresh");
+				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
 				redraw()
 				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
 				// various things in the console.
@@ -107,15 +83,6 @@ span {font-weight: bold;}
 			// You can also call a regular javascipt function:
 			getHumidity();
 			window. addEventListener ( "resize" , function ( event ) {redraw();});
-
-			$('#cool').change(function() {
-				if(this.checked) $.getJSON('/setMode/1')
-				else $.getJSON('/setMode/0')
-			});
-			$('#heat').change(function() {
-				if(this.checked) $.getJSON('/setMode/0')
-				else $.getJSON('/setMode/1')
-			});
 	}
 		
 		
@@ -127,13 +94,11 @@ span {font-weight: bold;}
 			//Plots.style = {width:window.innerWidth , height:150};
 			var X = data.X;
 			var Y = data.Y;
-			var Z = data.Z;
 			var TT = data.TT
-			var TH = data.TH
 			//var XLabels = data.heaterLabel;
 			//var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
-			var layout = { margin: { t: 30, l:20, r:20 },
+			var layout = { margin: { t: 30, l:30, r:20 },
 			  xaxis: {
 				title: 'Hour',
 				showgrid: true,
@@ -161,8 +126,6 @@ span {font-weight: bold;}
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
 			Plotly.newPlot( Plots, [{x: X,y: Y} , {x: X,y: TT}], layout );
-			Plots = document.getElementById('PlotH');
-			Plotly.newPlot( Plots, [{x: X,y: Z},{x: X,y: TH}], layout );
 			});
 	}
 	
@@ -183,43 +146,32 @@ span {font-weight: bold;}
 
 <div data-role="page" data-theme="b">
 	<div data-role="header">
-    <div><h2><center>FRIDGE CONTROL</center></h2></div>
+    <div><h2><center>SMOKER CONTROL</center></h2></div>
     </div>
-	<form>
-	  <div>
-		<input type="radio" id="cool" name="ctrl" value="cool" >
-		<label for="cool">Cool</label>
-		<input type="radio" id="heat" name="ctrl" value="heat">
-		<label for="heat">Heat</label>
-	  </div>
-	</form>  
   <div data-role="content">
-    <p><h2><span id="fridgeStatus" ></span> <br>Humidifier: <span id="humStatus" ></span></h2></p>
+    <p><h2><span id="SmokerStatus" ></span> </h2></p>
 	<div data-role="fieldcontain">
-		<fieldset class="ui-grid-a">
-			<div class="ui-block-a"><button name="Up" id="Up" onclick="onHumiUp()" data-theme="d">Humidity +</button></div>
-			<div class="ui-block-b"><button name="Down" id="Down" onclick="onHumiDown()" data-theme="d">Humidity -</button></div>
-	    </fieldset>
 		<fieldset class="ui-grid-a">
 			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">Temp. +</button></div>
 			<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">Temp. -</button></div>
 	    </fieldset>
-		<p><h2>Target Humidity: <span id="targetHumidity"></span> %</h2></p>
-		<p><h2>Current Humidity: <span id="curHumidity"></span> %</h2></p>
 		<p><h2>Target Temp: <span id="targetTemp"></span> F</h2></p>
 		<p><h2>Current Temp: <span id="curTemp"></span> F</h2></p>
 	</div>
   </div>
+<div><button name="Start" id="Start Program" onclick="onStart()" data-theme="d">Start</button></div>  
  <div data-role="footer">
     <div ><h4><span id="lastMessage" ></span></h4></div>
     <div><h4><span id="upTime" ></span></h4></div>
     <div><h4><span id="onTime" ></span></h4></div>
+    <div><h4><span id="lumaText0" ></span></h4></div>
+    <div><h4><span id="lumaText1" ></span></h4></div>
+    <div><h4><span id="lumaText2" ></span></h4></div>
+    <div><h4><span id="lumaText3" ></span></h4></div>
     <div ><h2>Temperature:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
 <div id="PlotT" style="width:auto;height:250px;"></div>
-<div ><h2>Humidity:</h2></div>
-<div id="PlotH" style="width:auto;height:250px;"></div>
 <div ><h2>Log:</h2></div>
  <div>
  <pre id="Log"></pre>
