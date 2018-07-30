@@ -96,6 +96,7 @@ class SmokerControl(Server):
         self.pi.stop()
         
     def startProgram(self):
+        self.timer.removeEvents('Period')
         def incPeriod():
             self.curPeriod += 1
             if self.curPeriod >= len(self.periods): 
