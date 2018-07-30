@@ -220,7 +220,7 @@ class SmokerControl(Server):
         
 @app.route("/")
 def Index():
-    return fc.Index()
+    return fc.Index(pageFile='index_smoker.html')
         
 @app.route("/getData/<int:param1>")
 def getData(param1):
