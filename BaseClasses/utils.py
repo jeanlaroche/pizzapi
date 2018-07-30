@@ -26,6 +26,12 @@ class myTimer(object):
         #pdb.set_trace()
         eventTime = datetime.datetime.now()+datetime.timedelta(minutes=delayM)
         self.timedEvents.append({'hour':eventTime.hour,'min':eventTime.minute,'func':func,'params':params,'done':0,'name':name,'remove':1})
+        
+    def removeEvents(self,pattern):
+        for event in self.timedEvents:
+            if pattern in event['name']: 
+                logging.info('Removing %s',event['name'])
+                self.timedEvents.pop(self.timedEvents.index(event))
 
     def getSunsetTime(self):
         import ephem  
