@@ -12,7 +12,6 @@ from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
 logging.basicConfig(level=logging.INFO)
-from lumaDisplay import Luma
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -49,8 +48,6 @@ class FridgeControl(Server):
     
     def __init__(self,startThread=1):
         myLogger.setLogger(self.logFile,mode='a')
-        logging.info('Setting up display')
-        self.luma = Luma()
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
@@ -236,8 +233,7 @@ class FridgeControl(Server):
     def regulate(self):
         #temp_AM,humi_AM = self.read_AM()
         time.sleep(0.1)
-        # temp_SHT,humi_SHT = self.read_SHT()
-        temp_SHT,humi_SHT = self.read_HDC1008()
+        temp_SHT,humi_SHT = self.read_SHT()
         temp_AM,humi_AM = temp_SHT,humi_SHT
         # temp_SHT,humi_SHT = self.read_AM()
         self.temp,self.humi = round(temp_SHT,ndigits=2),round(humi_SHT,ndigits=2)
@@ -280,13 +276,10 @@ class FridgeControl(Server):
             if self.humidiStatus: logging.info("Turning humidifier off %.1f",self.humi)
             self.humidiStatus = 0
         self.fanStatus = 1 if self.humidiStatus or self.fridgeStatus else 0
-        self.pi.write(tempGPIO,self.fridgeStatus)
+        self.pi.write(tempGPIO,1-self.fridgeStatus)
         self.pi.write(humiGPIO,1-self.humidiStatus)
         self.pi.write(fanGPIO,self.fanStatus)
         tt = time.time()
-        timeStr = time.strftime("%H:%M:%S",time.localtime())
-        onOffStr = "Heat on" if self.fridgeStatus else "Heat off"
-        self.luma.printText('Temp:   {:.1f}F\nTarget: {:.1f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr))
         # Only log the temp every self.logDeltaS seconds...
         if tt-self.lastLogTime > self.logDeltaS:
             logging.info("Time: %.0f T1 %.2f T2 %.2f H1 %.1f H2 %.1f CC %d HH %d TT %.2f TH %.2f",tt,temp_SHT,temp_AM,humi_SHT,humi_AM,self.fridgeStatus,self.humidiStatus,self.targetTemp,self.targetHumi)
@@ -399,15 +392,15 @@ fc = FridgeControl()
 # pi.stop()
 
 if __name__ == "__main__":
-    for ii in range(0):
-        t,h=fc.read_HDC1008()
+    for ii in range(100):
+        t,h=fc.read_SHT()
         if t != None: print t,h
         else: print "read error"
         # t,h=fc.read_SHT()
         # if t != None: print t,h
         # else: print "read error"
         time.sleep(1)
-    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+    #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
 
     time.sleep(1)
     # for ii in range(100):
