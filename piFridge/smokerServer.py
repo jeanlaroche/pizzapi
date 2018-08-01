@@ -29,7 +29,7 @@ class SmokerControl(Server):
     smokerStatus = 0
     lastTimeOn=0
     
-    logDeltaS = 120  # Time interval in s between two data logs
+    logDeltaS = 30  # Time interval in s between two data logs
     lastLogTime = 0
     totalOnTimeS = 0
     lastTotalOnTimeS = 0
@@ -71,6 +71,29 @@ class SmokerControl(Server):
             self.totalOnTimeS=0
         self.timer.addEvent(0,10,foo,name='reset total time',params=[])
         self.timer.start()
+        
+        # I'm finding that the temp overshoots dramatically if the heater is on for a significant amount of time.
+        def pulseHeat():
+            while self.stopNow==0:
+                print "status: {}".format(self.smokerStatus)
+                sleepS = 2
+                if self.smokerStatus == 0: 
+                    print "Writing off"
+                    self.pi.write(tempGPIO,self.smokerStatus)
+                else:
+                # Pulse the heater if the temp is close enough to the target temp.
+                    if self.temp + 35 < self.targetTemp:
+                        self.pi.write(tempGPIO,self.smokerStatus)
+                    else:
+                        on = self.pi.read(tempGPIO)
+                        toggle = 1 - on
+                        sleepS = 20 if on else 5
+                        print("Toggle {}".format(toggle))
+                        self.pi.write(tempGPIO,toggle)
+                time.sleep(sleepS)
+        self.pulseThread = threading.Thread(target=pulseHeat)
+        self.pulseThread.daemon = True
+        if startThread: self.pulseThread.start()         
         
         def mainLoop():
             while self.stopNow==0:
@@ -160,7 +183,7 @@ class SmokerControl(Server):
             # Turn heat off
             if self.smokerStatus == 1: logging.info("Turning heat off %.2fF on for %.1f minutes",self.temp,(time.time()-self.lastTimeOn)/60.)
             self.smokerStatus = 0
-        self.pi.write(tempGPIO,self.smokerStatus)
+        if not self.smokerStatus: self.pi.write(tempGPIO,self.smokerStatus)
         tt = time.time()
         if not self.runProgram:
             timeStr = time.strftime("%H:%M:%S",time.localtime())
