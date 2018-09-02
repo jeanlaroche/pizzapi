@@ -1,0 +1,191 @@
+<!doctype html>
+<head>
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+
+<style>
+h3 {text-align: center;}
+h4 {text-align: left; color: green}
+span {font-weight: bold;}
+</style>
+
+<script type=text/javascript>
+	
+	// Javascript function for down button
+	function onTempDown() {
+		$.getJSON('/tempDown', function(data)
+		{
+			$("#targetTemp").text(data.targetTemp);
+		});
+	}
+	
+	// Javascript function for up button
+	function onTempUp() {
+		$.getJSON('/tempUp', function(data)
+		{
+			$("#targetTemp").text(data.targetTemp);
+		});
+	}
+	
+	function onStart() {
+		$.getJSON('/start', function(data)
+		{
+		});
+	}
+	
+	// Flask allows you to decode URLs like /onDayPrev and /onDayNext so they're sent to the same function.
+	// It would be a bit more succint on the python side.
+	
+	// This is called at regular intervals when the page is loaded.
+	function getAllData() 
+	{
+		$.getJSON('/getData/1', function(data)
+			{
+				// The text() is a method of the selector to set the text of the selected elements.
+				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
+				// Since many elements might match.
+				$("#targetTemp").text(data.targetTemp);
+				$("#curTemp").text(data.curTemp);
+				$("#upTime").text(data.upTime);
+				$("#onTime").text(data.onTime);
+				var foo = data.lumaText.split('\n')
+				$("#lumaText0").text(foo[0]);
+				$("#lumaText1").text(foo[1]);
+				$("#lumaText2").text(foo[2]);
+				$("#lumaText3").text(foo[3]);
+				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
+				// To set a color, set the style to "color:red"
+				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
+				redraw(data)
+				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
+				// various things in the console.
+				setTimeout(function(){getAllData();},10000);
+			});
+	}
+
+	function quickUpdate() 
+	{
+		$.getJSON('/getData/0', function(data)
+			{
+				$("#targetTemp").text(data.targetTemp);
+				$("#curTemp").text(data.curTemp);
+				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
+				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
+				$("#upTime").text(data.upTime);
+				setTimeout(function(){quickUpdate();},1000);
+			});
+	}
+	
+
+	// This is a JQuery shorthand to define a function that's called when the page is loaded.
+    $(
+		function() 
+		{
+			// Binds the ajax request pageUnload to onbeforeunload of the window.
+			window.onbeforeunload = function(){
+				// The ajax request must return something, but it's OK to ignore it.
+				$.get('/pageUnload');
+			};
+			
+			// You can also call a regular javascipt function:
+			setTimeout(function(){getAllData();},2);
+			quickUpdate()
+			window. addEventListener ( "resize" , function ( event ) {redraw();});
+	}
+		
+		
+    );
+	
+	function redraw(data) {
+			Plots = document.getElementById('PlotT');
+			//Plots.style = {width:window.innerWidth , height:150};
+			var X = data.X;
+			var Y = data.Y;
+			var TT = data.TT
+			//var XLabels = data.heaterLabel;
+			//var XTicks = data.heaterTicks;
+			// second arg is data, third arg is layout.
+			var layout = { margin: { t: 30, l:30, r:20 },
+			  xaxis: {
+				title: 'Hour',
+				showgrid: true,
+				showline: true,
+				color: 'rgba(256,256,0,1)',
+				//tickvals: XTicks,
+				//ticktext: XLabels,
+				//tickangle: 0,
+			  },
+				paper_bgcolor : 'rgba(0,0,0,0)',
+				plot_bgcolor : 'rgba(0,0,0,0)',
+			yaxis: {
+				title: '',
+				showline: true,
+				showgrid: true,
+				//tickvals: [0,1],
+				//ticktext: ['0','1'],
+				color: 'rgba(256,256,0,1)'
+			  },
+			showlegend : false,
+			//title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
+			titlefont: {color: 'yellow'},
+			  };
+			$("#Log").text(data.Log);
+			var d = new Date()
+			var hours = d.getHours() + d.getMinutes()/60.0
+			Plotly.newPlot( Plots, [{x: X,y: Y} , {x: X,y: TT}], layout );
+	}
+	
+    $(
+		// You can put more code to be executed at page loading in here but it has to be inside a function.
+//		function () {
+//		$.getJSON('/humidityUp');
+//		}
+		function() {
+			//redraw()
+		}
+    );
+	
+</script>
+<!-- Simple JQuery Mobile page that display the getHumidity state on the breadoard -->
+<!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
+
+
+<div data-role="page" data-theme="b">
+	<div data-role="header">
+    <div><h2><center>SMOKER CONTROL</center></h2></div>
+    </div>
+  <div data-role="content">
+    <p><h2><span id="SmokerStatus" ></span> </h2></p>
+	<div data-role="fieldcontain">
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onTempUp()" data-theme="d">Temp. +</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onTempDown()" data-theme="d">Temp. -</button></div>
+	    </fieldset>
+		<p><h2>Target Temp: <span id="targetTemp"></span> F</h2></p>
+		<p><h2>Current Temp: <span id="curTemp"></span> F</h2></p>
+	</div>
+  </div>
+<div><button name="Start" id="Start" onclick="onStart()" data-theme="d">Start</button></div>  
+ <div data-role="footer">
+    <div ><h4><span id="lastMessage" ></span></h4></div>
+    <div><h4><span id="upTime" ></span></h4></div>
+    <div><h4><span id="onTime" ></span></h4></div>
+    <div><h4><span id="lumaText0" ></span></h4></div>
+    <div><h4><span id="lumaText1" ></span></h4></div>
+    <div><h4><span id="lumaText2" ></span></h4></div>
+    <div><h4><span id="lumaText3" ></span></h4></div>
+    <div ><h2>Temperature:</h2></div>
+    <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
+  </div>
+<div id="PlotT" style="width:auto;height:250px;"></div>
+<div ><h2>Log:</h2></div>
+ <div>
+ <pre id="Log"></pre>
+ </div>
+ </div>
