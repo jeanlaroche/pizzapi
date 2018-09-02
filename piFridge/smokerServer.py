@@ -22,17 +22,17 @@ tempGPIO = 4
 class SmokerControl(Server):
     
     temp = 0
-    targetTemp = 52
-    tempDelta = .5
+    targetTemp = 50
+    tempDelta = 1
     lumaText = ''
+    
+    dirty = 0           # Flag to indicate json file should be written
     
     smokerStatus = 0
     lastTimeOn=0
     
     logDeltaS = 30  # Time interval in s between two data logs
     lastLogTime = 0
-    totalOnTimeS = 0
-    lastTotalOnTimeS = 0
     warnOnTimeS = 20*60 # Warn if smoker is on for more than this time.
     
     jsonFile = '.params.json'
@@ -55,30 +55,22 @@ class SmokerControl(Server):
         if os.path.exists(self.jsonFile):
             with open(self.jsonFile) as f:
                 data = json.load(f)
-                self.targetTemp = data['targetTemp']
-                self.totalOnTimeS = data['totalOnTimeS']
-                self.lastTotalOnTimeS = data['lastTotalOnTimeS']
+                #self.targetTemp = data['targetTemp']
                 if 'periods' in data: self.periods = data['periods']
                 else: self.writeJson()
         self.temp = self.targetTemp
         self.pi.write(tempGPIO,1-self.smokerStatus)
         
         self.timer = myTimer()
-        # Timer to reset the total on time, and memorize the previous one.
-        def foo():
-            logging.info("Total on-time: %.0fm",self.totalOnTimeS/60.)
-            self.lastTotalOnTimeS = self.totalOnTimeS
-            self.totalOnTimeS=0
-        self.timer.addEvent(0,10,foo,name='reset total time',params=[])
         self.timer.start()
         
         # I'm finding that the temp overshoots dramatically if the heater is on for a significant amount of time.
         def pulseHeat():
             while self.stopNow==0:
-                print "status: {}".format(self.smokerStatus)
+                #print "status: {}".format(self.smokerStatus)
                 sleepS = 2
                 if self.smokerStatus == 0: 
-                    print "Writing off"
+                    #print "Writing off"
                     self.pi.write(tempGPIO,self.smokerStatus)
                 else:
                 # Pulse the heater if the temp is close enough to the target temp.
@@ -87,8 +79,8 @@ class SmokerControl(Server):
                     else:
                         on = self.pi.read(tempGPIO)
                         toggle = 1 - on
-                        sleepS = 20 if on else 5
-                        print("Toggle {}".format(toggle))
+                        sleepS = 15 if on else 5
+                        #print("Toggle {}".format(toggle))
                         self.pi.write(tempGPIO,toggle)
                 time.sleep(sleepS)
         self.pulseThread = threading.Thread(target=pulseHeat)
@@ -111,7 +103,7 @@ class SmokerControl(Server):
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'targetTemp':self.targetTemp, 'totalOnTimeS':self.totalOnTimeS,'lastTotalOnTimeS':self.lastTotalOnTimeS, 'periods':self.periods},f)
+            json.dump({'targetTemp':self.targetTemp, 'periods':self.periods},f)
     
     def stop(self):
         self.stopNow=1
@@ -136,12 +128,12 @@ class SmokerControl(Server):
         
     def setTargetTemp(self,targetTemp):
         self.targetTemp = targetTemp
-        self.writeJson()
+        self.dirty = 1
         
     def incTargetTemp(self,inc):
         #logging.info("Inc temp %.0f",self.targetTemp)
         self.targetTemp += inc
-        self.writeJson()
+        self.dirty = 1
  
     def read_HDC1008(self,timeOutS=1):
         # I write the raw device as that's easier. This is for no clock stretching.
@@ -202,15 +194,18 @@ class SmokerControl(Server):
             logging.error("%d read errors detected",self.readErrorCnt)
             self.readErrorCnt = 0
         self.temp = round(self.temp,ndigits=1)
+        if self.dirty: self.writeJson()
+        self.dirty = 0
 
     def getData(self,full=0):
         if full:
             X,Y,TT,Log = self.getPlotData()
             uptime = self.GetUptime()
-            onTime = "On time today {} -- yesterday {}".format(printSeconds(self.totalOnTimeS),printSeconds(self.lastTotalOnTimeS))
+            onTime = ""
         else:
             X,Y,TT,Log = [],[],[],[]
-            uptime,onTime = '',''
+            onTime = ''
+            uptime = self.GetUptime()
         data = {"curTemp":self.temp,
             "targetTemp":self.targetTemp,"upTime":uptime,"smokerStatus":self.smokerStatus,
             "X":X,"Y":Y,"TT":TT,"Log":Log,"onTime":onTime,"lumaText":self.lumaText} 
@@ -253,11 +248,13 @@ def getData(param1):
 @app.route("/tempUp")
 def tempUp():
     fc.incTargetTemp(5)
+    print "INC"
     return jsonify(**fc.getData())
     
 @app.route("/tempDown")
 def tempDown():
     fc.incTargetTemp(-5)
+    print "DEC"
     return jsonify(**fc.getData())
 
 @app.route("/start")

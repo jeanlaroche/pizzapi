@@ -43,7 +43,7 @@ span {font-weight: bold;}
 	// It would be a bit more succint on the python side.
 	
 	// This is called at regular intervals when the page is loaded.
-	function getHumidity() 
+	function getAllData() 
 	{
 		$.getJSON('/getData/1', function(data)
 			{
@@ -62,10 +62,23 @@ span {font-weight: bold;}
 				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
 				// To set a color, set the style to "color:red"
 				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
-				redraw()
+				redraw(data)
 				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
 				// various things in the console.
-				setTimeout(function(){getHumidity();},4000);
+				setTimeout(function(){getAllData();},10000);
+			});
+	}
+
+	function quickUpdate() 
+	{
+		$.getJSON('/getData/0', function(data)
+			{
+				$("#targetTemp").text(data.targetTemp);
+				$("#curTemp").text(data.curTemp);
+				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
+				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
+				$("#upTime").text(data.upTime);
+				setTimeout(function(){quickUpdate();},1000);
 			});
 	}
 	
@@ -81,15 +94,15 @@ span {font-weight: bold;}
 			};
 			
 			// You can also call a regular javascipt function:
-			getHumidity();
+			setTimeout(function(){getAllData();},2);
+			quickUpdate()
 			window. addEventListener ( "resize" , function ( event ) {redraw();});
 	}
 		
 		
     );
 	
-	function redraw() {
-		$.getJSON('/getData/1', function(data) {
+	function redraw(data) {
 			Plots = document.getElementById('PlotT');
 			//Plots.style = {width:window.innerWidth , height:150};
 			var X = data.X;
@@ -126,7 +139,6 @@ span {font-weight: bold;}
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
 			Plotly.newPlot( Plots, [{x: X,y: Y} , {x: X,y: TT}], layout );
-			});
 	}
 	
     $(
@@ -135,7 +147,7 @@ span {font-weight: bold;}
 //		$.getJSON('/humidityUp');
 //		}
 		function() {
-			redraw()
+			//redraw()
 		}
     );
 	
