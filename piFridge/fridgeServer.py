@@ -26,8 +26,8 @@ class FridgeControl(Server):
     humi = 0
     targetTemp = 52
     targetHumi = 70
-    tempDelta = .5
-    humiDelta = 2
+    tempDelta = 1
+    humiDelta = 3
     
     fridgeStatus = 0
     humidiStatus = 0
@@ -41,6 +41,7 @@ class FridgeControl(Server):
     totalOnTimeS = 0
     lastTotalOnTimeS = 0
     warnOnTimeS = 20*60 # Warn if fridge is on for more than this time.
+    fridgePowerW = 85
     
     jsonFile = '.params.json'
     logFile = 'fridge.log'
@@ -300,6 +301,7 @@ class FridgeControl(Server):
         else:
             X,Y,Z,TT,TH,Log = [],[],[],[],[],''
             uptime,onTime = '',''
+            uptime = self.GetUptime()+" {:.1f}F {:.1f}%".format(self.t1,self.h1)
         data = {"curTemp":self.temp,"curHumidity":self.humi,"targetHumidity":self.targetHumi,
             "targetTemp":self.targetTemp,"upTime":uptime,"fridgeStatus":self.fridgeStatus,"humStatus":self.humidiStatus,
             "X":X,"Y":Y,"Z":Z,"TT":TT,"TH":TH,"Log":Log,"coolingMode":self.coolingMode,"onTime":onTime} 
@@ -392,15 +394,15 @@ fc = FridgeControl()
 # pi.stop()
 
 if __name__ == "__main__":
-    for ii in range(100):
-        t,h=fc.read_SHT()
-        if t != None: print t,h
-        else: print "read error"
+    # for ii in range(100):
         # t,h=fc.read_SHT()
         # if t != None: print t,h
         # else: print "read error"
-        time.sleep(1)
-    #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+        # # t,h=fc.read_SHT()
+        # # if t != None: print t,h
+        # # else: print "read error"
+        # time.sleep(1)
+    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
 
     time.sleep(1)
     # for ii in range(100):

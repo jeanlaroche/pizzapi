@@ -86,13 +86,36 @@ span {font-weight: bold;}
 				$("#heat")[0].checked=data.coolingMode==0
 			    // Without this the radio buttons don't change their state. Unbelievably fucked up.
 				$("input[type='radio']").checkboxradio("refresh");
-				redraw()
+				redraw(data)
 				// You can use this to write to the console (view it on the browser) console.log("asdfasdfasdf"); You can put breakpoints in your javascript and inspect
 				// various things in the console.
-				setTimeout(function(){getHumidity();},4000);
+				setTimeout(function(){getHumidity();},10000);
 			});
 	}
 	
+	function quickUpdate() 
+	{
+		$.getJSON('/getData/0', function(data)
+			{
+				$("#targetTemp").text(data.targetTemp);
+				$("#curTemp").text(data.curTemp);
+				$("#targetHumidity").text(data.targetHumidity);
+				targetHumid = data.targetHumidity;
+				$("#curHumidity").text(data.curHumidity);
+				$("#upTime").text(data.upTime);
+				if(data.coolingMode)
+					$("#fridgeStatus").text(data.fridgeStatus == 0 ? "Frige OFF" : "Fridge ON");
+				else
+					$("#fridgeStatus").text(data.fridgeStatus == 0 ? "Heat OFF" : "Heat ON");
+				$("#humStatus").text(data.humStatus == 0 ? "OFF" : "ON");
+				// To set a color, set the style to "color:red"
+				$("#fridgeStatus").attr('style',data.fridgeStatus == 0 ? 'color:white' : 'color:red');
+				$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
+				$("#cool")[0].checked=data.coolingMode==1
+				$("#heat")[0].checked=data.coolingMode==0
+				setTimeout(function(){quickUpdate();},1000);
+			});
+	}
 
 	// This is a JQuery shorthand to define a function that's called when the page is loaded.
     $(
@@ -105,7 +128,8 @@ span {font-weight: bold;}
 			};
 			
 			// You can also call a regular javascipt function:
-			getHumidity();
+			setTimeout(function(){getHumidity();},2000);		
+			quickUpdate();
 			window. addEventListener ( "resize" , function ( event ) {redraw();});
 
 			$('#cool').change(function() {
@@ -121,8 +145,7 @@ span {font-weight: bold;}
 		
     );
 	
-	function redraw() {
-		$.getJSON('/getData/1', function(data) {
+	function redraw(data) {
 			Plots = document.getElementById('PlotT');
 			//Plots.style = {width:window.innerWidth , height:150};
 			var X = data.X;
@@ -163,7 +186,6 @@ span {font-weight: bold;}
 			Plotly.newPlot( Plots, [{x: X,y: Y} , {x: X,y: TT}], layout );
 			Plots = document.getElementById('PlotH');
 			Plotly.newPlot( Plots, [{x: X,y: Z},{x: X,y: TH}], layout );
-			});
 	}
 	
     $(
@@ -171,9 +193,9 @@ span {font-weight: bold;}
 //		function () {
 //		$.getJSON('/humidityUp');
 //		}
-		function() {
-			redraw()
-		}
+//		function() {
+//			redraw()
+//		}
     );
 	
 </script>
