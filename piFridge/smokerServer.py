@@ -49,7 +49,6 @@ class SmokerControl(Server):
     
     def setButCallback(self):
         def cbf(gpio, level, tick):
-            logging.info("Button %d pressed",gpio)
             if gpio == buttonGPIO1: self.incTargetTemp(5)
             if gpio == buttonGPIO4: self.incTargetTemp(-5)
             self.displayStuff()
