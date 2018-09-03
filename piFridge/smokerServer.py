@@ -18,6 +18,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
 tempGPIO = 4
+buttonGPIO1 = 15
+buttonGPIO2 = 18
+buttonGPIO3 = 17
+buttonGPIO4 = 14
 
 class SmokerControl(Server):
     
@@ -42,6 +46,23 @@ class SmokerControl(Server):
     periods = [{},{'temp':120,'durMn':10,'startT':0},{'temp':150,'durMn':5,'startT':0},{'temp':175,'durMn':2,'startT':0}]
     curPeriod = 0
     runProgram = 0
+    
+    def setButCallback(self):
+        def cbf(gpio, level, tick):
+            logging.info("Button %d pressed",gpio)
+            if gpio == buttonGPIO1: self.incTargetTemp(5)
+            if gpio == buttonGPIO4: self.incTargetTemp(-5)
+            self.displayStuff()
+
+        def setup(but):
+            self.pi.set_mode(but, pigpio.INPUT)
+            self.pi.set_pull_up_down(but, pigpio.PUD_DOWN)
+            self.pi.set_glitch_filter(but, 10e3)
+            self.pi.callback(but, 1, cbf)
+        setup(buttonGPIO1)
+        setup(buttonGPIO2)
+        setup(buttonGPIO3)
+        setup(buttonGPIO4)
     
     def __init__(self,startThread=1):
         myLogger.setLogger(self.logFile,mode='a')
@@ -99,6 +120,8 @@ class SmokerControl(Server):
         self.timerThread = threading.Thread(target=mainLoop)
         self.timerThread.daemon = True
         if startThread: self.timerThread.start()
+        self.lock = threading.Lock()
+        self.setButCallback()
         #self.startProgram()
         
     def writeJson(self):
@@ -161,6 +184,20 @@ class SmokerControl(Server):
         humi = 100.*humi/65536.
         return temp,humi
         
+    def displayStuff(self,):
+        tt = time.time()
+        if not self.runProgram:
+            timeStr = time.strftime("%H:%M:%S",time.localtime())
+        else:
+            remainingS = self.periods[self.curPeriod]['durMn']*60 - (time.time() - self.periods[self.curPeriod]['startT'])
+            timeStr = "Rem: {}".format(printSeconds(remainingS))
+        prog = "P{} ".format(self.curPeriod) if self.runProgram else ""
+        onOffStr = "{}Heat on".format(prog) if self.smokerStatus else "{}Heat off".format(prog)
+        self.lumaText = 'Temp:   {:.1f}F\nTarget: {:.0f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr)
+        self.lock.acquire()
+        self.luma.printText(self.lumaText)
+        self.lock.release()
+        
     def regulate(self):
         time.sleep(0.1)
         temp_SHT,humi_SHT = self.read_HDC1008()
@@ -177,15 +214,7 @@ class SmokerControl(Server):
             self.smokerStatus = 0
         if not self.smokerStatus: self.pi.write(tempGPIO,self.smokerStatus)
         tt = time.time()
-        if not self.runProgram:
-            timeStr = time.strftime("%H:%M:%S",time.localtime())
-        else:
-            remainingS = self.periods[self.curPeriod]['durMn']*60 - (time.time() - self.periods[self.curPeriod]['startT'])
-            timeStr = "Rem: {}".format(printSeconds(remainingS))
-        prog = "P{} ".format(self.curPeriod) if self.runProgram else ""
-        onOffStr = "{}Heat on".format(prog) if self.smokerStatus else "{}Heat off".format(prog)
-        self.lumaText = 'Temp:   {:.1f}F\nTarget: {:.0f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr)
-        self.luma.printText(self.lumaText)
+        self.displayStuff()
         # Only log the temp every self.logDeltaS seconds...
         if tt-self.lastLogTime > self.logDeltaS:
             logging.info("Time: %.0f T1 %.2f CC %d TT %.2f",tt,temp_SHT,self.smokerStatus,self.targetTemp)
