@@ -51,7 +51,6 @@ class SmokerControl(Server):
         def cbf(gpio, level, tick):
             if gpio == buttonGPIO1: self.incTargetTemp(5)
             if gpio == buttonGPIO4: self.incTargetTemp(-5)
-            self.displayStuff()
 
         def setup(but):
             self.pi.set_mode(but, pigpio.INPUT)
@@ -151,11 +150,13 @@ class SmokerControl(Server):
     def setTargetTemp(self,targetTemp):
         self.targetTemp = targetTemp
         self.dirty = 1
+        self.displayStuff()
         
     def incTargetTemp(self,inc):
         #logging.info("Inc temp %.0f",self.targetTemp)
         self.targetTemp += inc
         self.dirty = 1
+        self.displayStuff()
  
     def read_HDC1008(self,timeOutS=1):
         # I write the raw device as that's easier. This is for no clock stretching.
@@ -226,13 +227,13 @@ class SmokerControl(Server):
         self.dirty = 0
 
     def getData(self,full=0):
-        if full:
+        X,Y,TT,Log = [],[],[],[]
+        onTime = ''
+        uptime = ''
+        if full==1:
             X,Y,TT,Log = self.getPlotData()
             uptime = self.GetUptime()
-            onTime = ""
-        else:
-            X,Y,TT,Log = [],[],[],[]
-            onTime = ''
+        if full==0:
             uptime = self.GetUptime()
         data = {"curTemp":self.temp,
             "targetTemp":self.targetTemp,"upTime":uptime,"smokerStatus":self.smokerStatus,
@@ -277,18 +278,18 @@ def getData(param1):
 def tempUp():
     fc.incTargetTemp(5)
     print "INC"
-    return jsonify(**fc.getData())
+    return jsonify(**fc.getData(-1))
     
 @app.route("/tempDown")
 def tempDown():
     fc.incTargetTemp(-5)
     print "DEC"
-    return jsonify(**fc.getData())
+    return jsonify(**fc.getData(-1))
 
 @app.route("/start")
 def start():
     fc.startProgram()
-    return jsonify(**fc.getData())
+    return jsonify(**fc.getData(-1))
     
 fc = SmokerControl()
 
