@@ -45,18 +45,64 @@ class SmokerControl(Server):
     
     periods = [{},{'temp':120,'durMn':10,'startT':0},{'temp':150,'durMn':5,'startT':0},{'temp':175,'durMn':2,'startT':0}]
     curPeriod = 0
-    runProgram = 0
+    runStatus = 0 # 0 is normal, 1 is run program, and 2 is programming
     
     def setButCallback(self):
         def cbf(gpio, level, tick):
-            if gpio == buttonGPIO1: self.incTargetTemp(5)
-            if gpio == buttonGPIO4: self.incTargetTemp(-5)
+            longPress = 0
+            while self.pi.read(gpio) == 1 and longPress == 0:
+                longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
+                time.sleep(0.010)
+            if self.runStatus in [0,1]:
+                # This is the regular button handling
+                if longPress:
+                    if gpio == buttonGPIO1:
+                        self.runStatus = 2
+                        self.curPeriod = 1
+                        self.displayProgram()
+                        return
+                    if gpio == buttonGPIO2:
+                        if self.runStatus==0:
+                            self.startProgram()
+                        else:
+                            self.stopProgram()
+                        self.displayStuff()
+                        return
+                        
+                if gpio == buttonGPIO1: self.incTargetTemp(5)
+                if gpio == buttonGPIO4: self.incTargetTemp(-5)
+                # if self.runStatus == 1:
+                    # curPeriod = self.periods[self.curPeriod]
+                    # if gpio == buttonGPIO2: curPeriod['durMn'] += 10
+                    # if gpio == buttonGPIO3: curPeriod['durMn'] -= 10
+                    # if curPeriod['durMn'] <= 0:
+                        # self.curPeriod += 1
+                        # if self.curPeriod > 3:      
+                            # self.stopProgram()
+                        # else: self.startProgram(0)
+                        # self.displayStuff()
+            elif self.runStatus == 2:
+                # This is the programming handling.
+                if longPress: 
+                    self.curPeriod = self.curPeriod + 1
+                    if self.curPeriod > 3:
+                        self.stopProgram()
+                        self.displayStuff()
+                        return
+                curPeriod = self.periods[self.curPeriod]
+                if gpio == buttonGPIO1: curPeriod['temp'] += 5
+                if gpio == buttonGPIO4: curPeriod['temp'] -= 5
+                if gpio == buttonGPIO2: curPeriod['durMn'] += 10
+                if gpio == buttonGPIO3: curPeriod['durMn'] -= 10
+                self.writeJson()
+                self.displayProgram()
+                
 
         def setup(but):
             self.pi.set_mode(but, pigpio.INPUT)
             self.pi.set_pull_up_down(but, pigpio.PUD_DOWN)
-            self.pi.set_glitch_filter(but, 10e3)
-            self.pi.callback(but, 1, cbf)
+            self.pi.set_glitch_filter(but, 10000)
+            self.pi.callback(but, 0, cbf)
         setup(buttonGPIO1)
         setup(buttonGPIO2)
         setup(buttonGPIO3)
@@ -131,21 +177,33 @@ class SmokerControl(Server):
         logging.info("Disconnecting from pigpio")
         self.pi.stop()
         
-    def startProgram(self):
+    def startProgram(self,fromScratch=1):
         self.timer.removeEvents('Period')
         def incPeriod():
             self.curPeriod += 1
             if self.curPeriod >= len(self.periods): 
                 self.setTargetTemp(50)
-                self.runProgram = 0
+                self.runStatus = 0
                 return
             self.setTargetTemp(self.periods[self.curPeriod]['temp'])
             self.periods[self.curPeriod]['startT'] = time.time()
             delayMn = self.periods[self.curPeriod]['durMn']
             self.timer.addDelayedEvent(delayMn,incPeriod,[],'Period {}'.format(self.curPeriod+1))
+        if fromScratch: 
+            self.curPeriod = 0
+            self.runStatus = 1
+            incPeriod()
+        else:
+            self.curPeriod -= 1
+            self.runStatus = 1
+            incPeriod()
+            
+        
+    def stopProgram(self):
         self.curPeriod = 0
-        self.runProgram = 1
-        incPeriod()
+        self.runStatus = 0
+        self.timer.removeEvents('Period')
+        self.targetTemp = 50
         
     def setTargetTemp(self,targetTemp):
         self.targetTemp = targetTemp
@@ -185,15 +243,26 @@ class SmokerControl(Server):
         return temp,humi
         
     def displayStuff(self,):
+        if self.runStatus == 2: 
+            self.displayProgram()
+            return
         tt = time.time()
-        if not self.runProgram:
+        if not self.runStatus:
             timeStr = time.strftime("%H:%M:%S",time.localtime())
-        else:
+        elif self.runStatus == 1:
             remainingS = self.periods[self.curPeriod]['durMn']*60 - (time.time() - self.periods[self.curPeriod]['startT'])
             timeStr = "Rem: {}".format(printSeconds(remainingS))
-        prog = "P{} ".format(self.curPeriod) if self.runProgram else ""
+        prog = "P{} ".format(self.curPeriod) if self.runStatus else ""
         onOffStr = "{}Heat on".format(prog) if self.smokerStatus else "{}Heat off".format(prog)
         self.lumaText = 'Temp:   {:.1f}F\nTarget: {:.0f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr)
+        self.lock.acquire()
+        self.luma.printText(self.lumaText)
+        self.lock.release()
+
+    def displayProgram(self,):
+        prog = "P{} ".format(self.curPeriod)
+        curPer = self.periods[self.curPeriod]
+        self.lumaText = '{}\nTemp {}F\nTime {}mn'.format(prog,curPer['temp'],curPer['durMn'])
         self.lock.acquire()
         self.luma.printText(self.lumaText)
         self.lock.release()
