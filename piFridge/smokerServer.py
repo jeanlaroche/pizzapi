@@ -23,6 +23,8 @@ buttonGPIO2 = 18
 buttonGPIO3 = 17
 buttonGPIO4 = 14
 
+errorReturn = -100  # Value returned upon error
+
 class SmokerControl(Server):
     
     temp = 0
@@ -219,8 +221,14 @@ class SmokerControl(Server):
     def read_HDC1008(self,timeOutS=1):
         # I write the raw device as that's easier. This is for no clock stretching.
         #pdb.set_trace()
-        self.pi.i2c_write_device(self.hdc_handle, [0x02, 0x10])
-        self.pi.i2c_write_device(self.hdc_handle, [0x00])
+        try:
+            self.pi.i2c_write_device(self.hdc_handle, [0x02, 0x10])
+            self.pi.i2c_write_device(self.hdc_handle, [0x00])
+        except:
+            logging.warning("Read error in read_HDC1008")
+            self.readErrorCnt += 1
+            self.luma.printText("Error Reading\nTemp...\nTurning heat\noff")
+            return errorReturn,errorReturn
         nn=0
         t0=time.time()
         # Read 6 bytes, returned as TMSB|TLSB|CRC|HMSB|HLSB|CRC
@@ -231,7 +239,7 @@ class SmokerControl(Server):
         if nn < 4:
             logging.warning("Read error in read_HDC1008")
             self.readErrorCnt += 1
-            return -100,-100
+            return errorReturn,errorReturn
         #pdb.set_trace()
         # Convert the value using the first 2 bytes for the temp
         temp = unpack('>H',data[0:2])[0]
@@ -270,6 +278,10 @@ class SmokerControl(Server):
     def regulate(self):
         time.sleep(0.1)
         temp_SHT,humi_SHT = self.read_HDC1008()
+        if temp_SHT == errorReturn:
+            self.smokerStatus = 0
+            self.pi.write(tempGPIO,0)
+            return
         self.temp = round(temp_SHT,ndigits=2)
         if self.temp < self.targetTemp - 0.5*self.tempDelta:
             # Turn heat on
@@ -325,7 +337,7 @@ class SmokerControl(Server):
             TI,T1,CC,TT = R.group(1),R.group(2),R.group(3),R.group(4)
             TI,T1,CC,TT=int(TI),float(T1),int(CC),float(TT)
             if TI < minTime or TI < prevTI + 60: continue
-            if T1 <= -100: continue
+            if T1 <= errorReturn: continue
             X.append(curHour+(TI-curTime)/3600)
             Y.append(T1)
             T.append(TT)
