@@ -172,7 +172,7 @@ class SmokerControl(Server):
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'targetTemp':self.targetTemp, 'periods':self.periods},f)
+            json.dump({'targetTemp':self.targetTemp, 'periods':self.periods},f,indent=1)
     
     def stop(self):
         self.stopNow=1
@@ -182,11 +182,12 @@ class SmokerControl(Server):
     def startProgram(self,fromScratch=1):
         self.timer.removeEvents('Period')
         def incPeriod():
-            self.curPeriod += 1
-            if self.curPeriod >= len(self.periods): 
+            if self.curPeriod >= len(self.periods) - 1: 
                 self.setTargetTemp(50)
                 self.runStatus = 0
+                self.curPeriod = 0
                 return
+            self.curPeriod += 1
             self.setTargetTemp(self.periods[self.curPeriod]['temp'])
             self.periods[self.curPeriod]['startT'] = time.time()
             delayMn = self.periods[self.curPeriod]['durMn']
