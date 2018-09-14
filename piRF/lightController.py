@@ -9,7 +9,8 @@ from BaseClasses.utils import myTimer
 import random
 
 TX_GPIO = 18
-BUTTON_GPIO = 17
+BUTTON_GPIO_LV = 17
+BUTTON_GPIO_BACK = 21
 # Codes for our light remote. > 0 means turn on, < 0 means turn off
 codesLivRoom = {1:5510451,-1:5510460,2:5510595,-2:5510604,3:5510915,-3:5510924,4:5512451,-4:5512460,5:5518595,-5:5518604}
 codesBedRoom = {6:283955,-6:283964,7:284099,-7:284108,8:284419,-8:284428,9:285955,-9:285964,10:292099,-10:292108}
@@ -43,7 +44,7 @@ class lightController(baseServer.Server):
     pushCount = 10 # so the first callback does nothing. I'm not sure why I'm getting one anyway!
     pushDelayS = .7
     actionTimer = None
-    scheduleRandomLight = 1     # Flag to start or not start the random light scheduling
+    scheduleRandomLight = 0     # Flag to start or not start the random light scheduling
     stopRandomLight = 0         # Flag to stop the current random light loop
     
     lightStatus = {key:0 for key in codes.keys() if key > 0}
@@ -54,9 +55,12 @@ class lightController(baseServer.Server):
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.transmitter = tx(self.pi,gpio = TX_GPIO, repeats=10)
-        self.pi.set_mode(BUTTON_GPIO, pigpio.INPUT)
-        self.pi.set_pull_up_down(BUTTON_GPIO, pigpio.PUD_UP)
-        self.pi.set_glitch_filter(BUTTON_GPIO, 10e3)
+        self.pi.set_mode(BUTTON_GPIO_LV, pigpio.INPUT)
+        self.pi.set_mode(BUTTON_GPIO_BACK, pigpio.INPUT)
+        self.pi.set_pull_up_down(BUTTON_GPIO_LV, pigpio.PUD_UP)
+        self.pi.set_glitch_filter(BUTTON_GPIO_LV, 10e3)
+        self.pi.set_pull_up_down(BUTTON_GPIO_BACK, pigpio.PUD_UP)
+        self.pi.set_glitch_filter(BUTTON_GPIO_BACK, 10e3)
         
         self.myTimer = myTimer()
         def turnOff():
@@ -84,7 +88,13 @@ class lightController(baseServer.Server):
         # Button callback
         def buttonCallback(GPIO, level, tick):
             self.onButton()
-        self.pi.callback(BUTTON_GPIO, pigpio.FALLING_EDGE, buttonCallback)
+        self.pi.callback(BUTTON_GPIO_LV, pigpio.FALLING_EDGE, buttonCallback)
+        self.backFlip = 0
+        def backButtonCallback(GPIO, level, tick):
+            print "BACK BUTTON"
+            self.backFlip = 1-self.backFlip
+            self.turnLightOnOff(yardLightNum,self.backFlip)
+        self.pi.callback(BUTTON_GPIO_BACK, pigpio.FALLING_EDGE, backButtonCallback)
 
     def randomOnOff(self):
         # pdb.set_trace()
@@ -131,7 +141,7 @@ class lightController(baseServer.Server):
                 self.turnLightOnOff(100,1)
                 self.turnLightOnOff(102,1)
             if pushCount == 2: 
-                if self.pi.read(BUTTON_GPIO) == 0:
+                if self.pi.read(BUTTON_GPIO_LV) == 0:
                     self.turnLightOnOff(102,0)
                     time.sleep(5)
                     self.turnLightOnOff(100,0)
