@@ -314,8 +314,6 @@ class tx():
         self.pi.wave_delete(self._wid0)
         self.pi.wave_delete(self._wid1)
 
-codes = {1:5510451,-1:5510460,2:5510595,-2:5510604,3:5510915,-3:5510924,4:5512451,-4:5512460,5:5518595,-5:5518604}
-
 if __name__ == "__main__":
 
     import sys
@@ -323,18 +321,45 @@ if __name__ == "__main__":
     import pigpio
     import _433
 
-    RX=27
+    RX=18
     TX=17
 
     # define optional callback for received codes.
+    startBut = 21
+    button = startBut
+    learned = {}
+    prevCode = 0
+    numSameCode = 0
+    def learnRemote():
+        def rx_callback1(code, bits, gap, t0, t1):
+            global prevCode, codes, numSameCode, button
+            print("code={} bits={} (gap={} t0={} t1={})".
+                format(code, bits, gap, t0, t1))
+            if code == prevCode: numSameCode += 1
+            if numSameCode == 5:
+                print "Memorizing code, button {}".format(button)
+                learned[button]=code
+                button += 1
+            if code != prevCode or code in learned.values(): numSameCode = 0
+            prevCode = code
+            if button == startBut+10:
+                print "codes = {",
+                for ii in range(0,5):
+                    print "{}:{},{}:{},".format(startBut+ii,learned[startBut+2*ii],-startBut-ii,learned[startBut+2*ii+1]),
+                print "}"
+                
+        pi = pigpio.pi() # Connect to local Pi.
+        return pi,_433.rx(pi, gpio=RX, callback=rx_callback1)
+        
 
     args = len(sys.argv)
     if args == 1:
-        def rx_callback(code, bits, gap, t0, t1):
-            print("code={} bits={} (gap={} t0={} t1={})".
-                format(code, bits, gap, t0, t1))
-        pi = pigpio.pi() # Connect to local Pi.
-        rx=_433.rx(pi, gpio=RX, callback=rx_callback)
+        pi,rx = learnRemote()
+        # def rx_callback(code, bits, gap, t0, t1):
+            # print("code={} bits={} (gap={} t0={} t1={})".
+                # format(code, bits, gap, t0, t1))
+        # pi = pigpio.pi() # Connect to local Pi.
+        # rx=_433.rx(pi, gpio=RX, callback=rx_callback)
     if args > 1:
 
         # If the script has arguments they are assumed to codes

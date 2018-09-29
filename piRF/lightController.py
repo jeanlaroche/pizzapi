@@ -15,6 +15,7 @@ BUTTON_GPIO_BACK = 21
 codesLivRoom = {1:5510451,-1:5510460,2:5510595,-2:5510604,3:5510915,-3:5510924,4:5512451,-4:5512460,5:5518595,-5:5518604}
 codesBedRoom = {6:283955,-6:283964,7:284099,-7:284108,8:284419,-8:284428,9:285955,-9:285964,10:292099,-10:292108}
 codesFamRoom = {11:4461875,-11:4461884,12:4462019,-12:4462028,13:4462339,-13:4462348,14:4463875,-14:4463884,15:4470019,-15:4470028}
+codesExtraLights = { 21:267571,-21:267580, 22:267715,-22:267724, 23:268035,-23:268044, 24:269571,-24:269580, 25:275715,-25:275724}
 
 codes = codesLivRoom
 codes.update(codesBedRoom)
@@ -25,9 +26,10 @@ codes[-gateLightNum]=4468884
 pathLightNum = 17
 codes[pathLightNum]= 4464536
 codes[-pathLightNum]=4464572
-yardLightNum = 18
-codes[yardLightNum]= 4469605
-codes[-yardLightNum]=4469635
+yardLightNum = 21
+# codes[yardLightNum]= 4469605
+# codes[-yardLightNum]=4469635
+codes.update(codesExtraLights)
 
 #codes = codesBedRoom
 
