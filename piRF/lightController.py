@@ -27,6 +27,7 @@ pathLightNum = 17
 codes[pathLightNum]= 4464536
 codes[-pathLightNum]=4464572
 yardLightNum = 21
+frontLightNum = 22
 # codes[yardLightNum]= 4469605
 # codes[-yardLightNum]=4469635
 codes.update(codesExtraLights)
@@ -46,7 +47,7 @@ class lightController(baseServer.Server):
     pushCount = 10 # so the first callback does nothing. I'm not sure why I'm getting one anyway!
     pushDelayS = .7
     actionTimer = None
-    scheduleRandomLight = 0     # Flag to start or not start the random light scheduling
+    scheduleRandomLight = 1     # Flag to start or not start the random light scheduling
     stopRandomLight = 0         # Flag to stop the current random light loop
     
     lightStatus = {key:0 for key in codes.keys() if key > 0}
@@ -73,22 +74,33 @@ class lightController(baseServer.Server):
         def turnLightOnOffRepeat(lightNum,onOff):
             # This is to make 100% sure that we're trying to turn the light on/off
             for ii in range(5):
-                self.turnLightOnOff(lightNum,onOff)
-                time.sleep(1)
-        self.myTimer.addEvent('sunset',5,turnLightOnOffRepeat,[gateLightNum,1],'Turn on gate light')
-        self.myTimer.addEvent(1,0,turnLightOnOffRepeat,[gateLightNum,0],'Turn off gate light')
-        self.myTimer.addEvent('sunset',10,turnLightOnOffRepeat,[pathLightNum,1],'Turn on path light')
-        self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[pathLightNum,0],'Turn off path light')
-        self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[yardLightNum,0],'Turn off yard light')
-        self.myTimer.addEvent(23,10,self.randomOnOff,[],'Light randomizer start')
+                for num in lightNum:
+                    self.turnLightOnOff(num,onOff)
+                    time.sleep(1)
+        self.myTimer.addEvent('sunset',5,turnLightOnOffRepeat,[[gateLightNum],1],'Turn on gate light')
+        self.myTimer.addEvent(1,0,turnLightOnOffRepeat,[[gateLightNum],0],'Turn off gate light')
+        self.myTimer.addEvent('sunset',10,turnLightOnOffRepeat,[[pathLightNum,frontLightNum],1],'Turn on path light')
+        self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[[pathLightNum,frontLightNum],0],'Turn off path light')
+        self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[[yardLightNum],0],'Turn off yard light')
+        ## RANDOM STUFF. The randomizer is always scheduled to start at night. However, if scheduleRandomLight is 0
+        # Nothing happens. scheduleRandomLight is set to 1 every morning, but will be set to zero if any button 
+        # is pushed. 
+        # Start randomizer every night
+        self.myTimer.addEvent(19,30,self.randomOnOff,[],'Light randomizer start')
+        # Stop it a bit later
         self.myTimer.addEvent(23,30,lambda x: setattr(self,'stopRandomLight',1),[None],'Light randomizer end')
+        # Reset scheduleRandomLight to 1 every morning. It's set to 0 when a button is pushed for example.
+        self.myTimer.addEvent(2,00,lambda x: setattr(self,'scheduleRandomLight',1),[None],'Re-enable randomizer')
         self.myTimer.start()
         
-        turnLightOnOffRepeat(pathLightNum,0)
-        turnLightOnOffRepeat(yardLightNum,0)
+        turnLightOnOffRepeat([pathLightNum],0)
+        turnLightOnOffRepeat([yardLightNum],0)
         
         # Button callback
         def buttonCallback(GPIO, level, tick):
+            # Cancel random for the day, and stop current random.
+            self.scheduleRandomLight = 0
+            self.stopRandomLight = 1
             self.onButton()
         self.pi.callback(BUTTON_GPIO_LV, pigpio.FALLING_EDGE, buttonCallback)
         self.backFlip = 0
