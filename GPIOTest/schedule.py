@@ -85,13 +85,14 @@ def computeGraphData():
     startHour = today+statsDay*24
     endHour = today+statsDay*24+24
     
-    airTime = [item[0] for item in airData if item[0] > startHour and item[0] < endHour]
+    airTime = [item[0]-startHour for item in airData if item[0] > startHour and item[0] < endHour]
     airVal = [item[1] for item in airData if item[0] > startHour and item[0] < endHour]
     
     # Extract the part of the log that correspond to the period we're interested in.
     stats = ''
     for line in allLines[-1:0:-1]:
         if not line: continue
+        if line[0]=='A': continue
         allFields = line.split()
         lineHour = float(allFields[1])
         # In fact, go back 4 more hours in the past.
@@ -105,7 +106,7 @@ def computeGraphData():
         B[-1][1] = 1-B[-1][1]    # Flip value.
         B.append(item[:])
     heaterTime = [item[0]-startHour for item in B]
-    heaterValue = [item[1] for item in B]
+    heaterValue = [item[1]*80 for item in B]
     heaterUsage = 0
     heaterCost = 0
     heaterTotalUsage = 0

@@ -147,10 +147,10 @@ span {font-weight: bold;}
 			var XLabels = data.heaterLabel;
 			var XTicks = data.heaterTicks;
 			// second arg is data, third arg is layout.
-			var layout = { margin: { t: 30, l:20, r:20 },
+			var layout = { margin: { t: 30, l:30, r:20 },
 			  xaxis: {
 				title: 'Hour',
-				showgrid: false,
+				showgrid: true,
 				zeroline: false,
 				color: 'rgba(256,256,0,1)',
 				tickvals: XTicks,
@@ -162,9 +162,10 @@ span {font-weight: bold;}
 			yaxis: {
 				title: '',
 				showline: true,
-				showgrid: false,
-				tickvals: [0,1],
-				ticktext: ['0','1'],
+				showgrid: true,
+				range:[29, 101],
+				//tickvals: [0,1],
+				//ticktext: ['0','1'],
 				color: 'rgba(256,256,0,1)'
 			  },
 			showlegend : false,
@@ -179,6 +180,7 @@ span {font-weight: bold;}
 			Plotly.plot( Plots, [{x: [12,12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
 			Plotly.plot( Plots, [{x: [hours,hours],y: [0,1], mode: 'lines', line : {color : 'white', width : 2, dash : 'dash'}}], layout );
 			//Plotly.plot( Plots, [{x: [24,24],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
+			Plotly.plot(Plots,[{x:data.airTime, y:data.airVal,line : {color : 'cyan', width : 2}}], layout );
 			});
 	}
 	
