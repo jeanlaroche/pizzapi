@@ -5,9 +5,7 @@ import pdb
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(15, GPIO.OUT)
 GPIO.output(15,0)
-pdb.set_trace()
 GPIO.output(15,1)
-pdb.set_trace()
 
 
 # Function to evaluate the sampling rate for reading GPIOs.
@@ -50,3 +48,14 @@ def faa(speed):
       foo(float(ii)/N)
     for ii in range(N):
       foo(float(N-ii)/N)
+
+airTempGPIO 	= 2		# GPIO used to read the temp sensor outside
+GPIO.setup(airTempGPIO, GPIO.IN)
+import Adafruit_DHT
+sensor = Adafruit_DHT.DHT22
+# while 1:
+    # print GPIO.input(airTempGPIO)
+    
+hum, air = Adafruit_DHT.read_retry(sensor, airTempGPIO)
+print hum, air
+
