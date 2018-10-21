@@ -63,13 +63,13 @@ def _getTubStatus():
     allowControl = True if request.referrer != None and ('192.168' in request.referrer) else False
     #print "IP: {} Allow: {}".format(request.referrer,allowControl)
     heatValStr = "ON" if rt.heaterVal else "OFF"
-    heaterTime,heaterValue,heaterUsage,heaterTotalUsage,thisDayStr,prevDayStr,nextDayStr,stats = sc.computeGraphData()
+    heaterTime,heaterValue,heaterUsage,heaterTotalUsage,thisDayStr,prevDayStr,nextDayStr,stats,airTime,airVal = sc.computeGraphData()
     heaterTicks = range(0,25)
     heaterLabel = ["{:}".format(ii) for ii in range(0,25)]
     fileUpdated = sc.fileUpdated
     sc.fileUpdated = 0
     tempAdjust = rt.setTempThread and rt.setTempThread.isAlive()
-    return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow,outsideTemperature=rt.airTemp,minAirTemp=rt.minAirTemp,maxAirTemp=rt.maxAirTemp,tempAdjust=tempAdjust,isAdjustingTemp=rt.isAdjustingTemp)
+    return jsonify(temperatureValue=rt.temperatureVal,heaterValueStr = heatValStr,targetTemperatureValue=rt.targetTemperatureVal,setTemperatureValue=rt.setTemperatureVal,upTime = GetUptime(),lastMessage=rt.lastMessage,heaterStats = [heaterUsage,heaterTotalUsage], heaterTime = heaterTime, heaterValue = heaterValue,heaterLabel = heaterLabel,heaterTicks=heaterTicks,thisDayStr=thisDayStr,prevDayStr=prevDayStr,nextDayStr=nextDayStr,newHeaterData = fileUpdated, stats=stats, allowControl=allowControl or alwaysAllow,outsideTemperature=rt.airTemp,minAirTemp=rt.minAirTemp,maxAirTemp=rt.maxAirTemp,tempAdjust=tempAdjust,isAdjustingTemp=rt.isAdjustingTemp,airTime=airTime,airVal=airVal)
 
 @app.route("/_getFullData")
 def _getFullData():
