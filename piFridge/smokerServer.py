@@ -337,10 +337,16 @@ class SmokerControl(Server):
         prevTI=0
         for line in allLines:
             if "T1" not in line: continue
-            R = re.search('Time:\s+(\d*)\s+T1 ([-\d\.]*)\s+CC\s+(\d)\s+TT\s+([\d\.]*)',line)
+            R = re.search('Time:\s+(\d*)\s+T1 ([-\d\.]*)\s+CC\s+(\d)\s+TT\s+([-\d\.]*)',line)
             if not R: continue
-            TI,T1,CC,TT = R.group(1),R.group(2),R.group(3),R.group(4)
-            TI,T1,CC,TT=int(TI),float(T1),int(CC),float(TT)
+            try:
+                TI,T1,CC,TT = R.group(1),R.group(2),R.group(3),R.group(4)
+                TI,T1,CC,TT=int(TI),float(T1),int(CC),float(TT)
+            except Exception as e:
+                print e, line, T1,CC,TT
+                # import pdb
+                # pdb.set_trace()
+                continue
             if TI < minTime or TI < prevTI + 60: continue
             if T1 <= errorReturn: continue
             X.append(curHour+(TI-curTime)/3600)
