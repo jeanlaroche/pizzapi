@@ -94,8 +94,12 @@ class SmokerControl(Server):
                 curPeriod = self.periods[self.curPeriod]
                 if gpio == buttonGPIO1: curPeriod['temp'] += 5
                 if gpio == buttonGPIO4: curPeriod['temp'] -= 5
-                if gpio == buttonGPIO2: curPeriod['durMn'] += 10
-                if gpio == buttonGPIO3: curPeriod['durMn'] -= 10
+                def incMins(oneOrMinusOne):
+                    if curPeriod['durMn'] < 10: curPeriod['durMn'] += oneOrMinusOne
+                    else: curPeriod['durMn'] += oneOrMinusOne*10
+                    curPeriod['durMn'] = max(0,curPeriod['durMn'])
+                if gpio == buttonGPIO2: incMins(1)
+                if gpio == buttonGPIO3: incMins(-1)
                 self.writeJson()
                 self.displayProgram()
                 
