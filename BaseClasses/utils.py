@@ -38,6 +38,7 @@ class myTimer(object):
         logging.info( "Next sunrise: {}".format(ephem.localtime(o.next_rising(s))))
         logging.info( "Next sunset: {}".format(ephem.localtime(o.next_setting(s))))
         self.sunset = ephem.localtime(o.next_setting(s))                
+        self.sunrise = ephem.localtime(o.next_rising(s))                
 
     def start(self):
         # Helper function for the timer loop
@@ -54,6 +55,11 @@ class myTimer(object):
                             sunset = self.sunset+datetime.timedelta(minutes=min)
                             hour,min = sunset.hour,sunset.minute
                             # logging.info('Sunset hour %d -- %d',hour,min)
+                        # Special case for sunrise.
+                        if hour == 'sunrise':
+                            sunrise = self.sunrise+datetime.timedelta(minutes=min)
+                            hour,min = sunrise.hour,sunrise.minute
+                            # logging.info('Sunrise hour %d -- %d',hour,min)
                         if locTime.tm_hour == hour and locTime.tm_min == min:
                             if done==0:
                                 todo.append(event)

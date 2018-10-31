@@ -28,8 +28,9 @@ codes[pathLightNum]= 4464536
 codes[-pathLightNum]=4464572
 yardLightNum = 21
 frontLightNum = 22
-# codes[yardLightNum]= 4469605
-# codes[-yardLightNum]=4469635
+yardFountainNum=26
+codes[yardFountainNum]= 4469605
+codes[-yardFountainNum]=4469635
 codes.update(codesExtraLights)
 
 #codes = codesBedRoom
@@ -77,11 +78,19 @@ class lightController(baseServer.Server):
                 for num in lightNum:
                     self.turnLightOnOff(num,onOff)
                     time.sleep(1)
+        # Side gate:
         self.myTimer.addEvent('sunset',5,turnLightOnOffRepeat,[[gateLightNum],1],'Turn on gate light')
         self.myTimer.addEvent(1,0,turnLightOnOffRepeat,[[gateLightNum],0],'Turn off gate light')
+        # Path lights
         self.myTimer.addEvent('sunset',10,turnLightOnOffRepeat,[[pathLightNum,frontLightNum],1],'Turn on path light')
         self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[[pathLightNum,frontLightNum],0],'Turn off path light')
+        # Yard lights
         self.myTimer.addEvent(23,20,turnLightOnOffRepeat,[[yardLightNum],0],'Turn off yard light')
+        # Yard fountain
+        self.myTimer.addEvent('sunrise',120,turnLightOnOffRepeat,[[yardFountainNum],1],'Turn on yard fountain')
+        self.myTimer.addEvent('sunset',10,turnLightOnOffRepeat,[[yardFountainNum],0],'Turn off yard fountain')
+        
+        
         ## RANDOM STUFF. The randomizer is always scheduled to start at night. However, if scheduleRandomLight is 0
         # Nothing happens. scheduleRandomLight is set to 1 every morning, but will be set to zero if any button 
         # is pushed. 
