@@ -2,6 +2,9 @@ import logging
 import datetime
 import time, threading
 
+weekDays = {1:"Mon",2:"Tue",3:"Wed",4:"Thu",5:"Fri",6:"Sat",7:"Sun"}
+allDays = ''.join(weekDays.values())
+
 class myTimer(object):
     ''' Useful class for timing events'''
     
@@ -13,19 +16,19 @@ class myTimer(object):
         def getST(): return self.getSunsetTime()
         self.addEvent(3,0,getST,[],"Update sunset time")
         
-    def addEvent(self,hour,min,func,params,name):
+    def addEvent(self,hour,min,func,params,name,days=allDays):
         if type(hour)==int:
-            logging.info('Adding event %s at %d:%d',name,hour,min)
+            logging.info('Adding event %s at %d:%d days: %s',name,hour,min,days)
         else:
-            logging.info('Adding event %s at %s:%d',name,hour,min)
-        self.timedEvents.append({'hour':hour,'min':min,'func':func,'params':params,'done':0,'name':name,'remove':0})
+            logging.info('Adding event %s at %s:%d days %s',name,hour,min,days)
+        self.timedEvents.append({'hour':hour,'min':min,'func':func,'params':params,'done':0,'name':name,'remove':0,'days':days})
         
-    def addDelayedEvent(self,delayM,func,params,name):
+    def addDelayedEvent(self,delayM,func,params,name,days=allDays):
         logging.info('Adding delayed event %s, delay %.0f',name,delayM)
         import pdb
         #pdb.set_trace()
         eventTime = datetime.datetime.now()+datetime.timedelta(minutes=delayM)
-        self.timedEvents.append({'hour':eventTime.hour,'min':eventTime.minute,'func':func,'params':params,'done':0,'name':name,'remove':1})
+        self.timedEvents.append({'hour':eventTime.hour,'min':eventTime.minute,'func':func,'params':params,'done':0,'name':name,'remove':1,'days':days})
         
     def removeEvents(self,pattern):
         for event in self.timedEvents:
@@ -55,7 +58,7 @@ class myTimer(object):
                     # Make a list of events to trigger. This way if one takes a long time to complete, the other will still run.
                     todo = []
                     for event in self.timedEvents:
-                        hour,min,func,params,done = event['hour'],event['min'],event['func'],event['params'],event['done']
+                        hour,min,func,params,done,days = event['hour'],event['min'],event['func'],event['params'],event['done'],event['days']
                         # Special case for sunset.
                         if hour == 'sunset':
                             sunset = self.sunset+datetime.timedelta(minutes=min)
@@ -66,7 +69,7 @@ class myTimer(object):
                             sunrise = self.sunrise+datetime.timedelta(minutes=min)
                             hour,min = sunrise.hour,sunrise.minute
                             # logging.info('Sunrise hour %d -- %d',hour,min)
-                        if locTime.tm_hour == hour and locTime.tm_min == min:
+                        if locTime.tm_hour == hour and locTime.tm_min == min and weekDays[locTime.tm_wday].lower() in days.lower():
                             if done==0:
                                 todo.append(event)
                                 event['done']=1
