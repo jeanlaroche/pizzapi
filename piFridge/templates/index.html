@@ -113,7 +113,7 @@ span {font-weight: bold;}
 				$("#humStatus").attr('style',data.humStatus == 0 ? 'color:white' : 'color:red');
 				$("#cool")[0].checked=data.coolingMode==1
 				$("#heat")[0].checked=data.coolingMode==0
-				setTimeout(function(){quickUpdate();},1000);
+				setTimeout(function(){quickUpdate();},5000);
 			});
 	}
 

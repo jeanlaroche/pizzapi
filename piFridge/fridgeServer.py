@@ -26,7 +26,7 @@ class FridgeControl(Server):
     humi = 0
     targetTemp = 52
     targetHumi = 70
-    tempDelta = 1
+    tempDelta = 1.
     humiDelta = 3
     
     fridgeStatus = 0
@@ -43,7 +43,7 @@ class FridgeControl(Server):
     warnOnTimeS = 20*60 # Warn if fridge is on for more than this time.
     fridgePowerW = 85
     
-    jsonFile = '.params.json'
+    jsonFile = 'fridge.json'
     logFile = 'fridge.log'
     readErrorCnt = 0
     
@@ -112,12 +112,13 @@ class FridgeControl(Server):
         #logging.info("Inc temp %.0f",self.targetTemp)
         self.targetTemp += inc
         self.writeJson()
-
+        return self.targetTemp
 
     def incTargetHumi(self,inc):
         #logging.info("Inc humi %.0f",self.targetHumi)
         self.targetHumi += inc
         self.writeJson()
+        return self.targetHumi
 
     def setTargetHumi(self,targetHumi):
         self.targetHumi = targetHumi
@@ -294,6 +295,10 @@ class FridgeControl(Server):
         logging.error("Fridge on for too long! {}",printSeconds(onTime))
         
     def getData(self,full=0):
+        if full==-1:
+            data = {"curTemp":self.temp,"curHumidity":self.humi,"targetHumidity":self.targetHumi,
+            "targetTemp":self.targetTemp,"fridgeStatus":self.fridgeStatus,"humStatus":self.humidiStatus}
+            return data
         if full:
             X,Y,Z,TT,TH,Log = self.getPlotData()
             uptime = self.GetUptime()+" {:.1f}F {:.1f}%".format(self.t1,self.h1)
@@ -309,6 +314,8 @@ class FridgeControl(Server):
     
     def getPlotData(self):
         # Read the log file, extract the temp and humidity data...
+        print "GET PLOT"
+        t1 = time.time()
         with open(self.logFile) as f:
             allLines = f.readlines()
         X,Y,Z,T,H = [],[],[],[],[]
@@ -333,6 +340,7 @@ class FridgeControl(Server):
         # For the log in the UI, don't show the temp log.
         allLines = [item for item in allLines if not "TT" in item]
         log = ''.join(reversed(allLines[-200:]))
+        print "DONE elapsed {}".format(time.time()-t1)
         return X,Y,Z,T,H,log
         
 @app.route("/")
@@ -352,24 +360,22 @@ def setMode(mode):
 @app.route("/tempUp")
 def tempUp():
     fc.incTargetTemp(1)
-    return jsonify(**fc.getData())
+    return jsonify(**fc.getData(-1))
     
 @app.route("/tempDown")
 def tempDown():
     fc.incTargetTemp(-1)
-    return jsonify(**fc.getData())
+    return jsonify(**fc.getData(-1))
     
 @app.route("/humiUp")
 def humiUp():
     fc.incTargetHumi(1)
-    return jsonify(**fc.getData())
+    return jsonify(**fc.getData(-1))
     
 @app.route("/humiDown")
 def humiDown():
-    print "HUMI DOWN"
     fc.incTargetHumi(-1)
-    print "HUMI DIBE"
-    return jsonify(**fc.getData())
+    return jsonify(**fc.getData(-1))
     
 fc = FridgeControl()
 
