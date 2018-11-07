@@ -101,12 +101,20 @@ span {font-weight: bold;}
 		
 		
     );
-	
+	var X=[0];
+	var Y=[0];
 	function redraw(data) {
 			Plots = document.getElementById('PlotT');
 			//Plots.style = {width:window.innerWidth , height:150};
-			var X = data.X;
-			var Y = data.Y;
+			console.log("TEST")
+			console.log(data.X[0])
+			console.log(data.Y[0])
+			// This does not work because the temp display scrolls as minutes go by... I was trying to not draw
+			// if it wasn't necessary...
+			if (JSON.stringify(X) == JSON.stringify(data.X) && JSON.stringify(Y) == JSON.stringify(data.Y))
+				return;
+			X = data.X;
+			Y = data.Y;
 			var TT = data.TT
 			//var XLabels = data.heaterLabel;
 			//var XTicks = data.heaterTicks;

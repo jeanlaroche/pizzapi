@@ -18,10 +18,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
 tempGPIO = 4
-buttonGPIO1 = 15
-buttonGPIO2 = 18
-buttonGPIO3 = 17
-buttonGPIO4 = 14
+buttonGPIO1 = 15    # Top left
+buttonGPIO2 = 18    # Top right
+buttonGPIO3 = 17    # Bot right
+buttonGPIO4 = 14    # Bot left
 
 errorReturn = -100  # Value returned upon error
 
@@ -55,6 +55,11 @@ class SmokerControl(Server):
             while self.pi.read(gpio) == 1 and longPress == 0:
                 longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
                 time.sleep(0.010)
+            if gpio == buttonGPIO4 and longPress:
+                # Cancel everything
+                self.stopProgram()
+                self.displayStuff()
+                return
             if self.runStatus in [0,1]:
                 # This is the regular button handling
                 if longPress:
