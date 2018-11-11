@@ -52,9 +52,11 @@ class SmokerControl(Server):
     def setButCallback(self):
         def cbf(gpio, level, tick):
             longPress = 0
+            logging.debug('cfb0 %d %d %d %d',gpio, level, tick, self.runStatus)
             while self.pi.read(gpio) == 1 and longPress == 0:
                 longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
                 time.sleep(0.010)
+            logging.debug('cfb1')
             if gpio == buttonGPIO4 and longPress:
                 # Cancel everything
                 self.stopProgram()
@@ -62,6 +64,7 @@ class SmokerControl(Server):
                 return
             if self.runStatus in [0,1]:
                 # This is the regular button handling
+                logging.debug('cfb2 %d',longPress)
                 if longPress:
                     if gpio == buttonGPIO1:
                         self.runStatus = 2
@@ -387,7 +390,27 @@ def tempDown():
 def start():
     fc.startProgram()
     return jsonify(**fc.getData(-1))
+
+@app.route("/debug")
+def debug():
+    logging.info("Entering debug mode")
+    myLogger.setLoggingLevel(logging.DEBUG)
+    logging.debug("Now in debug mode")
+    return jsonify(**fc.getData(-1))
     
+@app.route("/normal")
+def normal():
+    logging.info("Exiting debug mode")
+    myLogger.setLoggingLevel(logging.INFO)
+    logging.info("Now in normal mode")
+    return jsonify(**fc.getData(-1))
+    
+@app.route("/getLog")
+def getLog():
+    return jsonify(log=fc.getPlotData()[-1])
+    
+
+
 fc = SmokerControl()
 
 if __name__ == "__main__":
