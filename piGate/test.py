@@ -19,10 +19,8 @@ while 1:
         print "Starting: val = {}".format(val)
     if val != prevVal:
         t2 = time.time()
-        logging.info("Val -> %d ... Elapsed %s",val,printSeconds(t2-t1))
+        if val==1: logging.info("Detection ... Elapsed %s",printSeconds(t2-t1))
         t1 = t2
-        if val == 1:
-            logging.info("Detection")
     prevVal = val
     time.sleep(1)
    
