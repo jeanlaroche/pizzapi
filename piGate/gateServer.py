@@ -8,6 +8,8 @@ import logging
 import time
 from threading import Timer
 import threading
+import BaseClasses.utils as utils
+
 # Don't use G14 unless you disable UART!
 # 1   2   3   4   5   6   7   8   9   10  11  12  13
 #                 dow up
@@ -37,38 +39,6 @@ ledGPIO = 4
 statusIdle = 0
 statusMovingUp = 1
 statusMovingDown = 2
-
-noBlinkOff=0
-slowBlink=1
-fastBlink=2
-noBlinkOn=3
-
-class blinker(object):
-    blinkStat = noBlinkOff
-    loopPerSec = 20
-    exitBlink = 0
-    def  __init__(self,pi,blinkGPIO):
-        self.blinkGPIO = blinkGPIO
-        self.pi = pi
-        self.pi.set_mode(self.blinkGPIO, pigpio.OUTPUT)
-        def doBlink():
-            i = 0
-            while self.exitBlink == 0:
-                try:
-                    i = (i + 1) % self.loopPerSec
-                    if self.blinkStat == slowBlink: on,off = [0,],[2,]
-                    elif self.blinkStat == fastBlink: on, off = range(0,self.loopPerSec,2), range(1,self.loopPerSec,2)
-                    elif self.blinkStat == noBlinkOn: on,off = range(self.loopPerSec),[]
-                    elif self.blinkStat == noBlinkOff: on,off = [],range(self.loopPerSec)
-                    else: on,off = [],range(self.loopPerSec)
-                    if i in on: self.pi.write(self.blinkGPIO,1)
-                    if i in off: self.pi.write(self.blinkGPIO,0)
-                    time.sleep(1./self.loopPerSec)
-                except:
-                    pass
-        self.blinkStat = noBlinkOff
-        t = threading.Thread(target=doBlink)
-        t.start()
 
 class gateServer(Server):
     runStatus = statusIdle
@@ -128,16 +98,16 @@ class gateServer(Server):
         setup(pauseGPIO)
         self.pi.set_mode(motorPosGPIO, pigpio.OUTPUT)
         self.pi.set_mode(motorNegGPIO, pigpio.OUTPUT)
-        self.blinker = blinker(self.pi,ledGPIO)
-        self.blinker.blinkStat = fastBlink
+        self.blinker = utils.blinker(self.pi,ledGPIO)
+        self.blinker.blinkStat = utils.fastBlink
         time.sleep(1)
-        self.blinker.blinkStat = noBlinkOff
+        self.blinker.blinkStat = utils.noBlinkOff
         self.stop()
             
     def moveUp(self):
         self.pi.write(motorNegGPIO,0)
         self.pi.write(motorPosGPIO,1)
-        self.blinker.blinkStat = slowBlink
+        self.blinker.blinkStat = utils.slowBlink
         logging.debug("Move up")
         self.stopTimer.cancel()
         self.status = statusMovingUp
@@ -148,7 +118,7 @@ class gateServer(Server):
     def moveDown(self):
         self.pi.write(motorNegGPIO,1)
         self.pi.write(motorPosGPIO,0)
-        self.blinker.blinkStat = slowBlink
+        self.blinker.blinkStat = utils.slowBlink
         logging.debug("Move down")
         self.stopTimer.cancel()
         self.status = statusMovingDown
@@ -159,7 +129,7 @@ class gateServer(Server):
     def stop(self):
         logging.debug("Stop")
         self.stopTimer.cancel()
-        self.blinker.blinkStat = noBlinkOff
+        self.blinker.blinkStat = utils.noBlinkOff
         self.pi.write(motorPosGPIO,0)
         self.pi.write(motorNegGPIO,0)
         self.status = statusIdle
@@ -168,7 +138,7 @@ class gateServer(Server):
     def pause(self):
         self.stopTimer.cancel()
         logging.debug("Pause")
-        self.blinker.blinkStat = fastBlink
+        self.blinker.blinkStat = utils.fastBlink
         self.pi.write(motorPosGPIO,0)
         self.pi.write(motorNegGPIO,0)
         self.paused = 1
