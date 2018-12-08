@@ -7,37 +7,74 @@ import pigpio
 import logging
 import time
 from threading import Timer
+import threading
+# Don't use G14 unless you disable UART!
 # 1   2   3   4   5   6   7   8   9   10  11  12  13
-#             up  dow 
+#                 dow up
 # 5V  5V  Gnd G14 G15 G18 Gnd G23 G24 Gnd G25 G08 G07
-# 3V  G02 G03 G05 Gnd G17 G27 G22 3V  G10 G09 G11 Gnd
+# 3V  G02 G03 G04 Gnd G17 G27 G22 3V  G10 G09 G11 Gnd
 #     Mo+ Mo-         bot top pau
 #
 
 app = Flask(__name__)
 
 # Button GPIOS
-upButton = 14
-downButton = 15
+upButton = 27
+downButton = 22
 
 # Motor GPIOS
-motorPosGPIO = 02
-motorNegGPIO = 03
+motorPosGPIO = 24
+motorNegGPIO = 18
 
 # Sensor GPIOS
-bottomGPIO = 17
-topGPIO = 27
-pauseGPIO = 22
+bottomGPIO = 16
+topGPIO = 20
+pauseGPIO = 21
+
+# LED:
+ledGPIO = 4
 
 statusIdle = 0
 statusMovingUp = 1
 statusMovingDown = 2
 
+noBlinkOff=0
+slowBlink=1
+fastBlink=2
+noBlinkOn=3
+
+class blinker(object):
+    blinkStat = noBlinkOff
+    loopPerSec = 20
+    exitBlink = 0
+    def  __init__(self,pi,blinkGPIO):
+        self.blinkGPIO = blinkGPIO
+        self.pi = pi
+        self.pi.set_mode(self.blinkGPIO, pigpio.OUTPUT)
+        def doBlink():
+            i = 0
+            while self.exitBlink == 0:
+                try:
+                    i = (i + 1) % self.loopPerSec
+                    if self.blinkStat == slowBlink: on,off = [0,],[2,]
+                    elif self.blinkStat == fastBlink: on, off = range(0,self.loopPerSec,2), range(1,self.loopPerSec,2)
+                    elif self.blinkStat == noBlinkOn: on,off = range(self.loopPerSec),[]
+                    elif self.blinkStat == noBlinkOff: on,off = [],range(self.loopPerSec)
+                    else: on,off = [],range(self.loopPerSec)
+                    if i in on: self.pi.write(self.blinkGPIO,1)
+                    if i in off: self.pi.write(self.blinkGPIO,0)
+                    time.sleep(1./self.loopPerSec)
+                except:
+                    pass
+        self.blinkStat = noBlinkOff
+        t = threading.Thread(target=doBlink)
+        t.start()
 
 class gateServer(Server):
     runStatus = statusIdle
     paused = 0
     motorRunTime = 20
+    status = statusIdle
     
     def onUp(self):
         logging.debug("On Up")
@@ -50,7 +87,8 @@ class gateServer(Server):
         elif self.status == statusIdle: self.moveDown()
 
     def  __init__(self):
-        myLogger.setLogger('gate.log',level=logging.DEBUG)
+        #myLogger.setLogger('gate.log',level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG)
         # This is for scheduling
         self.scheduler = myTimer()
         # This stops the motor after a few seconds
@@ -65,10 +103,11 @@ class gateServer(Server):
         # Button and GPIO callback function
         def cbf(gpio, level, tick):
             longPress = 0
-            logging.debug('Callback %d %d %d run Stat: %d',gpio, level, tick, self.runStatus)
-            while self.pi.read(gpio) == 1 and longPress == 0:
-                longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
-                time.sleep(0.010)
+            print 'Callback {} {} {} run Stat: {}'.format(gpio, level, tick, self.runStatus)
+            #logging.debug('Callback %d %d %d run Stat: %d',gpio, level, tick, self.runStatus)
+            # while self.pi.read(gpio) == 1 and longPress == 0:
+                # longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
+                # time.sleep(0.010)
             if gpio == upButton: self.onUp()
             if gpio == downButton: self.onDown()
             if gpio == bottomGPIO and self.status == statusMovingDown: self.stop()
@@ -80,7 +119,7 @@ class gateServer(Server):
             self.pi.set_mode(but, pigpio.INPUT)
             self.pi.set_pull_up_down(but, pigpio.PUD_DOWN)
             self.pi.set_glitch_filter(but, 10000)
-            self.pi.callback(but, 0, cbf)
+            self.pi.callback(but, pigpio.RISING_EDGE, cbf)
         # setup all the buttons.
         setup(upButton)
         setup(downButton)
@@ -89,23 +128,29 @@ class gateServer(Server):
         setup(pauseGPIO)
         self.pi.set_mode(motorPosGPIO, pigpio.OUTPUT)
         self.pi.set_mode(motorNegGPIO, pigpio.OUTPUT)
+        self.blinker = blinker(self.pi,ledGPIO)
+        self.blinker.blinkStat = fastBlink
+        time.sleep(1)
+        self.blinker.blinkStat = noBlinkOff
         self.stop()
             
     def moveUp(self):
-        logging.debug("Move up")
-        self.stopTimer.cancel()
         self.pi.write(motorNegGPIO,0)
         self.pi.write(motorPosGPIO,1)
+        self.blinker.blinkStat = slowBlink
+        logging.debug("Move up")
+        self.stopTimer.cancel()
         self.status = statusMovingUp
         self.paused = 0
         self.stopTimer = Timer(self.motorRunTime, self.stop)
         self.stopTimer.start()
 
     def moveDown(self):
-        logging.debug("Move down")
-        self.stopTimer.cancel()
         self.pi.write(motorNegGPIO,1)
         self.pi.write(motorPosGPIO,0)
+        self.blinker.blinkStat = slowBlink
+        logging.debug("Move down")
+        self.stopTimer.cancel()
         self.status = statusMovingDown
         self.paused = 0
         self.stopTimer = Timer(self.motorRunTime, self.stop)
@@ -114,6 +159,7 @@ class gateServer(Server):
     def stop(self):
         logging.debug("Stop")
         self.stopTimer.cancel()
+        self.blinker.blinkStat = noBlinkOff
         self.pi.write(motorPosGPIO,0)
         self.pi.write(motorNegGPIO,0)
         self.status = statusIdle
@@ -122,6 +168,7 @@ class gateServer(Server):
     def pause(self):
         self.stopTimer.cancel()
         logging.debug("Pause")
+        self.blinker.blinkStat = fastBlink
         self.pi.write(motorPosGPIO,0)
         self.pi.write(motorNegGPIO,0)
         self.paused = 1
@@ -175,4 +222,6 @@ def funcName(param1,param2):
 if __name__ == "__main__":
     #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
     app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=True)
+    # while 1:
+        # time.sleep(1)
 
