@@ -1,6 +1,7 @@
 import logging
 import datetime
 import time, threading
+import pigpio
 
 weekDays = {0:"Mon",1:"Tue",2:"Wed",3:"Thu",4:"Fri",5:"Sat",6:"Sun"}
 allDays = ''.join(weekDays.values())
@@ -104,4 +105,35 @@ def printSeconds(nSecs):
     str += '{:.0f}s'.format(nSecs)
     return str
     
+    
+noBlinkOff=0
+slowBlink=1
+fastBlink=2
+noBlinkOn=3
+class blinker(object):
+    blinkStat = noBlinkOff
+    loopPerSec = 20
+    exitBlink = 0
+    def  __init__(self,pi,blinkGPIO):
+        self.blinkGPIO = blinkGPIO
+        self.pi = pi
+        self.pi.set_mode(self.blinkGPIO, pigpio.OUTPUT)
+        def doBlink():
+            i = 0
+            while self.exitBlink == 0:
+                try:
+                    i = (i + 1) % self.loopPerSec
+                    if self.blinkStat == slowBlink: on,off = [0,],[2,]
+                    elif self.blinkStat == fastBlink: on, off = range(0,self.loopPerSec,2), range(1,self.loopPerSec,2)
+                    elif self.blinkStat == noBlinkOn: on,off = range(self.loopPerSec),[]
+                    elif self.blinkStat == noBlinkOff: on,off = [],range(self.loopPerSec)
+                    else: on,off = [],range(self.loopPerSec)
+                    if i in on: self.pi.write(self.blinkGPIO,1)
+                    if i in off: self.pi.write(self.blinkGPIO,0)
+                    time.sleep(1./self.loopPerSec)
+                except:
+                    pass
+        self.blinkStat = noBlinkOff
+        t = threading.Thread(target=doBlink)
+        t.start()    
     
