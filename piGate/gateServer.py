@@ -18,11 +18,26 @@ import BaseClasses.utils as utils
 #     Mo+ Mo-         bot top pau
 #
 
+# Left top connector.
+# +3.3V
+# 2X
+# 3
+# 4
+# Gnd
+# 17
+# 27
+# 22
+# +3V
+# 10
+# X
+# 23 ?
+# 15 ?
+
 app = Flask(__name__)
 
 # Button GPIOS
-upButton = 27
-downButton = 22
+upButton = 22
+downButton = 10
 
 # Motor GPIOS
 motorPosGPIO = 24
@@ -31,7 +46,7 @@ motorNegGPIO = 18
 # Sensor GPIOS
 bottomGPIO = 16
 topGPIO = 20
-pauseGPIO = 21
+pauseGPIO = 27
 
 # LED:
 ledGPIO = 4
@@ -101,7 +116,7 @@ class gateServer(Server):
         self.blinker = utils.blinker(self.pi,ledGPIO)
         self.blinker.blinkStat = utils.fastBlink
         time.sleep(1)
-        self.blinker.blinkStat = utils.noBlinkOff
+        self.blinker.blinkStat = utils.flashBlink
         self.stop()
             
     def moveUp(self):
@@ -129,7 +144,7 @@ class gateServer(Server):
     def stop(self):
         logging.debug("Stop")
         self.stopTimer.cancel()
-        self.blinker.blinkStat = utils.noBlinkOff
+        self.blinker.blinkStat = utils.flashBlink
         self.pi.write(motorPosGPIO,0)
         self.pi.write(motorNegGPIO,0)
         self.status = statusIdle
@@ -191,7 +206,7 @@ def funcName(param1,param2):
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
     #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
-    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=True)
-    # while 1:
-        # time.sleep(1)
+    #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=True)
+    while 1:
+        time.sleep(1)
 
