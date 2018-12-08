@@ -110,28 +110,46 @@ noBlinkOff=0
 slowBlink=1
 fastBlink=2
 noBlinkOn=3
+flashBlink=4
 class blinker(object):
     blinkStat = noBlinkOff
-    loopPerSec = 20
+    sampT = 0.010
+    flashDurS = 0.050
+    slowFreq = 1
+    fastFreq = 4
+    cycleS = 2
     exitBlink = 0
     def  __init__(self,pi,blinkGPIO):
         self.blinkGPIO = blinkGPIO
         self.pi = pi
         self.pi.set_mode(self.blinkGPIO, pigpio.OUTPUT)
+        self.cycleLen = int(self.cycleS/self.sampT)
+        self.sleepTimeS = self.sampT
+        self.nSlow = int(round(1./self.sampT/self.slowFreq))
+        self.nFast = int(round(1./self.sampT/self.fastFreq))
+        print self.cycleLen
+        print self.nSlow
+        print self.nFast
         def doBlink():
             i = 0
+            onSlow = [uu for uu in range(self.cycleLen) if uu%(self.nSlow)<self.nSlow/2]
+            offSlow = [uu for uu in range(self.cycleLen) if uu%(self.nSlow)>=self.nSlow/2]
+            onFast = [uu for uu in range(self.cycleLen) if uu%(self.nFast)<self.nFast/2]
+            offFast = [uu for uu in range(self.cycleLen) if uu%(self.nFast)>=self.nFast/2]
+            iFlash = int(self.flashDurS/self.sampT)
             while self.exitBlink == 0:
-                try:
-                    i = (i + 1) % self.loopPerSec
-                    if self.blinkStat == slowBlink: on,off = [0,],[2,]
-                    elif self.blinkStat == fastBlink: on, off = range(0,self.loopPerSec,2), range(1,self.loopPerSec,2)
-                    elif self.blinkStat == noBlinkOn: on,off = range(self.loopPerSec),[]
-                    elif self.blinkStat == noBlinkOff: on,off = [],range(self.loopPerSec)
-                    else: on,off = [],range(self.loopPerSec)
+                if 1:
+                    i = (i + 1) % self.cycleLen
+                    if self.blinkStat == slowBlink: on,off = onSlow,offSlow
+                    elif self.blinkStat == fastBlink: on, off = onFast,offFast
+                    elif self.blinkStat == noBlinkOn: on,off = range(self.cycleLen),[]
+                    elif self.blinkStat == noBlinkOff: on,off = [],range(self.cycleLen)
+                    elif self.blinkStat == flashBlink: on,off = range(0,iFlash),range(iFlash,self.cycleLen)
+                    else: on,off = [],range(self.cycleLen)
                     if i in on: self.pi.write(self.blinkGPIO,1)
                     if i in off: self.pi.write(self.blinkGPIO,0)
-                    time.sleep(1./self.loopPerSec)
-                except:
+                    time.sleep(self.sleepTimeS)
+                else:
                     pass
         self.blinkStat = noBlinkOff
         t = threading.Thread(target=doBlink)
