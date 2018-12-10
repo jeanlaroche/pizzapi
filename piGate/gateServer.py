@@ -177,6 +177,13 @@ class gateServer(Server):
         uptime = self.GetUptime()
         return jsonify(uptime=uptime,status=self.status,top=self.pi.read(topGPIO),bottom=self.pi.read(bottomGPIO),pause=
             self.pi.read(pauseGPIO))
+            
+    def getLog(self):
+        with open('gate.log') as f:
+            allLines = f.readlines()
+            allLines = list(reversed(allLines))
+            return jsonify(log = ''.join(allLines[0:100]))
+            
         
         
 gs = gateServer()
@@ -198,6 +205,10 @@ def kg():
 @app.route('/getData')
 def getData():
     return gs.getData()
+
+@app.route('/getLog')
+def getLog():
+    return gs.getLog()
 
 @app.route('/move/<int:updown>')
 def move(updown):
