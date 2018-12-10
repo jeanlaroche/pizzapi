@@ -36,8 +36,8 @@ import BaseClasses.utils as utils
 app = Flask(__name__)
 
 # Button GPIOS
-upButton = 22
-downButton = 10
+upButton = 17
+downButton = 27
 
 # Motor GPIOS
 motorPosGPIO = 24
@@ -45,8 +45,8 @@ motorNegGPIO = 18
 
 # Sensor GPIOS
 bottomGPIO = 16
-topGPIO = 20
-pauseGPIO = 27
+topGPIO = 22
+pauseGPIO = 10
 
 # LED:
 ledGPIO = 4
@@ -58,7 +58,8 @@ statusMovingDown = 2
 class gateServer(Server):
     runStatus = statusIdle
     paused = 0
-    motorRunTime = 20
+    motorRunTimeUp = 20
+    motorRunTimeDown = 35
     status = statusIdle
     
     def onUp(self):
@@ -72,18 +73,20 @@ class gateServer(Server):
         elif self.status == statusIdle: self.moveDown()
 
     def  __init__(self):
-        #myLogger.setLogger('gate.log',level=logging.DEBUG)
-        logging.basicConfig(level=logging.DEBUG)
+        myLogger.setLogger('gate.log',level=logging.DEBUG)
+        #logging.basicConfig(level=logging.DEBUG)
+        self.pi = pigpio.pi()
+        self.blinker = utils.blinker(self.pi,ledGPIO)
+
         # This is for scheduling
         self.scheduler = myTimer()
+        # Timer to close the window at 23:00 and at 4am
+        self.scheduler.addEvent(4,0,self.onUp,[],'Open window')
+        self.scheduler.addEvent(5,0,self.onDown,[],'Close window')
+        self.scheduler.start()
+        
         # This stops the motor after a few seconds
         self.stopTimer = Timer(0,self.stop)
-        
-        # Timer to close the window at 23:00 and at 4am
-        self.scheduler.addEvent(20,13,self.onDown,[],"Down")
-        self.scheduler.addEvent(20,14,self.onUp,[],"Up")
-        self.pi = pigpio.pi()
-        self.scheduler.start()
         
         # Button and GPIO callback function
         def cbf(gpio, level, tick):
@@ -113,13 +116,13 @@ class gateServer(Server):
         setup(pauseGPIO)
         self.pi.set_mode(motorPosGPIO, pigpio.OUTPUT)
         self.pi.set_mode(motorNegGPIO, pigpio.OUTPUT)
-        self.blinker = utils.blinker(self.pi,ledGPIO)
+        self.stop()
         self.blinker.blinkStat = utils.fastBlink
         time.sleep(1)
         self.blinker.blinkStat = utils.flashBlink
-        self.stop()
             
     def moveUp(self):
+        if self.pi.read(topGPIO): return
         self.pi.write(motorNegGPIO,0)
         self.pi.write(motorPosGPIO,1)
         self.blinker.blinkStat = utils.slowBlink
@@ -127,10 +130,11 @@ class gateServer(Server):
         self.stopTimer.cancel()
         self.status = statusMovingUp
         self.paused = 0
-        self.stopTimer = Timer(self.motorRunTime, self.stop)
+        self.stopTimer = Timer(self.motorRunTimeUp, self.stop)
         self.stopTimer.start()
 
     def moveDown(self):
+        if self.pi.read(bottomGPIO): return
         self.pi.write(motorNegGPIO,1)
         self.pi.write(motorPosGPIO,0)
         self.blinker.blinkStat = utils.slowBlink
@@ -138,7 +142,7 @@ class gateServer(Server):
         self.stopTimer.cancel()
         self.status = statusMovingDown
         self.paused = 0
-        self.stopTimer = Timer(self.motorRunTime, self.stop)
+        self.stopTimer = Timer(self.motorRunTimeDown, self.stop)
         self.stopTimer.start()
         
     def stop(self):
@@ -169,6 +173,11 @@ class gateServer(Server):
         if self.status == statusMovingUp: self.moveUp()
         if self.status == statusMovingDown: self.moveDown()
         
+    def getData(self):
+        uptime = self.GetUptime()
+        return jsonify(uptime=uptime,status=self.status,top=self.pi.read(topGPIO),bottom=self.pi.read(bottomGPIO),pause=
+            self.pi.read(pauseGPIO))
+        
         
 gs = gateServer()
 
@@ -186,8 +195,13 @@ def kg():
     gs.kg()
     return ('', 204)
 
+@app.route('/getData')
+def getData():
+    return gs.getData()
+
 @app.route('/move/<int:updown>')
 def move(updown):
+    logging.info("HTTP request move: %d",updown)
     if updown > 0: gs.onUp()
     if updown <= 0: gs.onDown()
     return ('', 204)
@@ -205,8 +219,8 @@ def funcName(param1,param2):
 # NOTE: When using gunicorn, apparently server.py is loaded, and then the app is run. If you want to initialize stuff, you have
 # to do it as above, by a call to "prestart"
 if __name__ == "__main__":
-    #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
+    app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
     #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=True)
-    while 1:
-        time.sleep(1)
+    # while 1:
+        # time.sleep(1)
 
