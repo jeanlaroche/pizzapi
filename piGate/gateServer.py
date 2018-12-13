@@ -12,24 +12,24 @@ import BaseClasses.utils as utils
 
 # Don't use G14 unless you disable UART!
 # 1   2   3   4   5   6   7   8   9   10  11  12  13
-#                 dow up
+#                 
 # 5V  5V  Gnd G14 G15 G18 Gnd G23 G24 Gnd G25 G08 G07
 # 3V  G02 G03 G04 Gnd G17 G27 G22 3V  G10 G09 G11 Gnd
-#     Mo+ Mo-         bot top pau
+#              
 #
 
 # Left top connector.
 # +3.3V
 # 2X
-# 3
-# 4
+# 3X    
+# 4     LED
 # Gnd
-# 17
-# 27
-# 22
+# 17    UP
+# 27    DOWN
+# 22    TOP
 # +3V
-# 10
-# X
+# 10    PAUSE
+# 9?
 # 23 ?
 # 15 ?
 
@@ -44,9 +44,9 @@ motorPosGPIO = 24
 motorNegGPIO = 18
 
 # Sensor GPIOS
-bottomGPIO = 16
+bottomGPIO = 10
 topGPIO = 22
-pauseGPIO = 10
+pauseGPIO = 8
 
 # LED:
 ledGPIO = 4
@@ -58,7 +58,7 @@ statusMovingDown = 2
 class gateServer(Server):
     runStatus = statusIdle
     paused = 0
-    motorRunTimeUp = 20
+    motorRunTimeUp = 27
     motorRunTimeDown = 35
     status = statusIdle
     
