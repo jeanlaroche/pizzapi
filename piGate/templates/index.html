@@ -32,6 +32,13 @@ span {font-weight: bold;}
 			refresh();
 		});
 	}
+	function onLog() {
+		$.getJSON('/getLog', function(data)
+		{
+			$("#Log").text(data.log);
+		});
+	}
+	
 	// Read all temps, when the page is reloaded.
 	function getFullData() {
 		$.getJSON('/getData');
@@ -46,7 +53,7 @@ span {font-weight: bold;}
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
 				// Since many elements might match.
 				$("#uptime").text(data.uptime);
-				$("#status").text(data.status);
+				$("#status").text(data.statusStr);
 				$("#top").text(data.top);
 				$("#bottom").text(data.bottom);
 				$("#pause").text(data.pause);
@@ -65,6 +72,7 @@ span {font-weight: bold;}
 				$.get('/_pageUnload');
 			};
 			refresh();
+			onLog();
 
 			// This does an Ajax request for /_getFullData.
 			//$.getJSON('/_getData');
@@ -89,17 +97,24 @@ span {font-weight: bold;}
 		<fieldset class="ui-grid-a">
 			<div class="ui-block-a"><button name="Up" id="Up" onclick="onUp()" data-theme="d">Open</button></div>
 			<div class="ui-block-b"><button name="Down" id="Down" onclick="onDown()" data-theme="d">Close</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onLog()" data-theme="d">Log</button></div>
 	    </fieldset>
 	</div>
   </div>
  <div data-role="footer">
     <div><h4><span id="uptime" ></span></h4></div>
-    <div>Status: <h4><span id="status" ></span></h4></div>
+<!--     <div>Status: <h4><span id="status" ></span></h4></div>
     <div>Top: <h4><span id="top" >Top: </span></h4></div>
     <div>Bottom: <h4><span id="bottom" >Bottom: </span></h4></div>
     <div>Pause: <h4><span id="pause" >Pause: </span></h4></div>
+ -->    
+ <div>Status: <h4><span id="status" ></span></h4> Top: <h4><span id="top" >Top: </span></h4> Bottom: <h4><span id="bottom" >Bottom: </span></h4>Pause: <h4><span id="pause" >Pause: </span></h4></div>
   </div>
 
- <pre id="Stats"></pre>
+<div ><h2>Log:</h2></div>
+ <div>
+ <pre id="Log"></pre>
+ </div>
+
  </div>
  </div>

@@ -73,7 +73,7 @@ class gateServer(Server):
         elif self.status == statusIdle: self.moveDown()
 
     def  __init__(self):
-        myLogger.setLogger('gate.log',level=logging.DEBUG)
+        myLogger.setLogger('gate.log',level=logging.INFO)
         #logging.basicConfig(level=logging.DEBUG)
         self.pi = pigpio.pi()
         self.blinker = utils.blinker(self.pi,ledGPIO)
@@ -126,7 +126,7 @@ class gateServer(Server):
         self.pi.write(motorNegGPIO,0)
         self.pi.write(motorPosGPIO,1)
         self.blinker.blinkStat = utils.slowBlink
-        logging.debug("Move up")
+        logging.info("Move up")
         self.stopTimer.cancel()
         self.status = statusMovingUp
         self.paused = 0
@@ -138,7 +138,7 @@ class gateServer(Server):
         self.pi.write(motorNegGPIO,1)
         self.pi.write(motorPosGPIO,0)
         self.blinker.blinkStat = utils.slowBlink
-        logging.debug("Move down")
+        logging.info("Move down")
         self.stopTimer.cancel()
         self.status = statusMovingDown
         self.paused = 0
@@ -156,7 +156,7 @@ class gateServer(Server):
         
     def pause(self):
         self.stopTimer.cancel()
-        logging.debug("Pause")
+        logging.info("Pause")
         self.blinker.blinkStat = utils.fastBlink
         self.pi.write(motorPosGPIO,0)
         self.pi.write(motorNegGPIO,0)
@@ -166,7 +166,7 @@ class gateServer(Server):
         t.start()
         
     def resume(self):
-        logging.debug("Resume")
+        logging.info("Resume")
         if self.pi.read(pauseGPIO) == 1: 
             self.pause()
             return
@@ -175,8 +175,9 @@ class gateServer(Server):
         
     def getData(self):
         uptime = self.GetUptime()
+        statusStr = "Top switch: {} Bot switch: {} Pause switch: {}".format(self.pi.read(topGPIO),self.pi.read(bottomGPIO),self.pi.read(pauseGPIO))
         return jsonify(uptime=uptime,status=self.status,top=self.pi.read(topGPIO),bottom=self.pi.read(bottomGPIO),pause=
-            self.pi.read(pauseGPIO))
+            self.pi.read(pauseGPIO),statusStr=statusStr)
             
     def getLog(self):
         with open('gate.log') as f:
