@@ -179,7 +179,13 @@ class gateServer(Server):
         
     def getData(self):
         uptime = self.GetUptime()
-        statusStr = "Top switch: {} Bot switch: {} Pause switch: {}".format(self.pi.read(topGPIO),self.pi.read(bottomGPIO),self.pi.read(pauseGPIO))
+        if self.status == statusIdle: stat = 'Idle'
+        if self.status == statusMovingUp: stat = 'Opening'
+        if self.status == statusMovingDown: stat = 'Closing'
+        if self.pi.read(topGPIO): stat = 'Fully opened'
+        if self.pi.read(bottomGPIO): stat = 'Fully closed'
+        if self.paused: stat += ' (paused)'
+        statusStr = "{} Top switch: {} Bot switch: {} Pause switch: {}".format(stat,self.pi.read(topGPIO),self.pi.read(bottomGPIO),self.pi.read(pauseGPIO))
         return jsonify(uptime=uptime,status=self.status,top=self.pi.read(topGPIO),bottom=self.pi.read(bottomGPIO),pause=
             self.pi.read(pauseGPIO),statusStr=statusStr)
             
