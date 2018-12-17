@@ -120,8 +120,14 @@ class blinker(object):
     cycleS = 2
     exitBlink = 0
     prevOnOff = 0
-    def  __init__(self,pi,blinkGPIO):
+    def  __init__(self,pi,blinkGPIO,checkFunc=None):
+        '''
+        blinkGPIO is the GPIO used for the blinking LED
+        checkFunc is an optional function that's called around each loop and must return one of the available blinkStatus
+        Note that the return does not affect self.blinkStatus. 
+        '''
         self.blinkGPIO = blinkGPIO
+        self.checkFunc = None
         self.pi = pi
         self.pi.set_mode(self.blinkGPIO, pigpio.OUTPUT)
         self.pi.set_PWM_frequency(self.blinkGPIO,256)
@@ -141,12 +147,15 @@ class blinker(object):
             iFlash = int(self.flashDurS/self.sampT)
             while self.exitBlink == 0:
                 if 1:
+                    # Call the check function. 
+                    blinkStat = self.blinkStat
+                    if self.checkFunc: blinkStat = self.checkFunc()                        
                     i = (i + 1) % self.cycleLen
-                    if self.blinkStat == slowBlink: on,off = onSlow,offSlow
-                    elif self.blinkStat == fastBlink: on, off = onFast,offFast
-                    elif self.blinkStat == noBlinkOn: on,off = range(self.cycleLen),[]
-                    elif self.blinkStat == noBlinkOff: on,off = [],range(self.cycleLen)
-                    elif self.blinkStat == flashBlink: on,off = range(0,iFlash),range(iFlash,self.cycleLen)
+                    if blinkStat == slowBlink: on,off = onSlow,offSlow
+                    elif blinkStat == fastBlink: on, off = onFast,offFast
+                    elif blinkStat == noBlinkOn: on,off = range(self.cycleLen),[]
+                    elif blinkStat == noBlinkOff: on,off = [],range(self.cycleLen)
+                    elif blinkStat == flashBlink: on,off = range(0,iFlash),range(iFlash,self.cycleLen)
                     else: on,off = [],range(self.cycleLen)
                     # if i in on: self.pi.write(self.blinkGPIO,1)
                     # if i in off: self.pi.write(self.blinkGPIO,0)

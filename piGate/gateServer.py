@@ -28,10 +28,10 @@ import BaseClasses.utils as utils
 # 27    DOWN
 # 22    TOP
 # +3V
-# 10    PAUSE
+# 10    BOTTOM
 # 9?
 # 23 ?
-# 15 ?
+# 15    PAUSE
 
 app = Flask(__name__)
 
@@ -46,7 +46,7 @@ motorNegGPIO = 18
 # Sensor GPIOS
 bottomGPIO = 10
 topGPIO = 22
-pauseGPIO = 8
+pauseGPIO = 15
 
 # LED:
 ledGPIO = 4
@@ -120,6 +120,10 @@ class gateServer(Server):
         self.blinker.blinkStat = utils.fastBlink
         time.sleep(1)
         self.blinker.blinkStat = utils.flashBlink
+        def checkFunc():
+            if self.pi.read(pauseGPIO): return utils.fastBlink
+            else: return self.blinker.blinkStat
+        self.blinker.checkFunc = checkFunc
             
     def moveUp(self):
         if self.pi.read(topGPIO): return
