@@ -13,6 +13,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
 logging.basicConfig(level=logging.INFO)
 from lumaDisplay import Luma
+from readBM280 import readData
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -230,7 +231,10 @@ class SmokerControl(Server):
         self.targetTemp += inc
         self.dirty = 1
         self.displayStuff()
- 
+
+    def read_BME280(self,timeOutS=1):
+        return readData()
+
     def read_HDC1008(self,timeOutS=1):
         # I write the raw device as that's easier. This is for no clock stretching.
         #pdb.set_trace()
@@ -290,7 +294,7 @@ class SmokerControl(Server):
         
     def regulate(self):
         time.sleep(0.1)
-        temp_SHT,humi_SHT = self.read_HDC1008()
+        temp_SHT,humi_SHT = self.read_BME280()
         if temp_SHT == errorReturn:
             self.smokerStatus = 0
             self.pi.write(tempGPIO,0)
