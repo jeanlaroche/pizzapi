@@ -12,13 +12,22 @@ from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
 logging.basicConfig(level=logging.INFO)
-from lumaDisplay import Luma
+#from lumaDisplay import Luma
 from readBM280 import readData
+
+class Luma(object):
+    lock = None
+    def __init__(self):
+        self.lock = threading.Lock()
+        pass
+    def printText(self,text):
+        #logging.info(text)
+        pass
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
-tempGPIO = 4
+tempGPIO = 26
 buttonGPIO1 = 15    # Top left
 buttonGPIO2 = 18    # Top right
 buttonGPIO3 = 17    # Bot right
@@ -233,6 +242,7 @@ class SmokerControl(Server):
         self.displayStuff()
 
     def read_BME280(self,timeOutS=1):
+        # return 0,0
         return readData()
 
     def read_HDC1008(self,timeOutS=1):
