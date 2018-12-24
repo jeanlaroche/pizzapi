@@ -13,7 +13,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
 logging.basicConfig(level=logging.INFO)
 #from lumaDisplay import Luma
-from readBM280 import readData
+#from readBM280 import readData
 
 class Luma(object):
     lock = None
@@ -139,7 +139,9 @@ class SmokerControl(Server):
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
-        self.hdc_handle = self.pi.i2c_open(1, 0x40)
+        #self.hdc_handle = self.pi.i2c_open(1, 0x40)
+        self.am_handle = self.pi.i2c_open(1, 0x5C)
+
         self.stopNow = 0
         if os.path.exists(self.jsonFile):
             with open(self.jsonFile) as f:
@@ -241,6 +243,33 @@ class SmokerControl(Server):
         self.dirty = 1
         self.displayStuff()
 
+    def read_AM(self,timeOutS=1):
+        t0=time.time()
+        nn=0
+        while time.time()-t0 < timeOutS:
+            try:
+                self.pi.i2c_write_device(self.am_handle, [0x03, 0x00, 0x04])
+                nn,data = self.pi.i2c_read_device(self.am_handle,8)
+                if nn != 8 or data[1] != 0x04: continue
+                break
+            except:
+                time.sleep(0.001)
+        # print "Elapsed: {:.0f}ms".format(1000*(time.time()-t0))
+        #print nn,data[0],data[1]
+        # I'm not sure why I need to mask the top bit of data[0]... 
+        #if nn != 8 or data[0]&0x7F != 0x03 or data[1] != 0x04:#
+        if nn != 8 or data[1] != 0x04:
+            #logging.warning("Read error in read_AM")
+            #print "Read error"
+            self.readErrorCnt += 1
+            return -100,-100
+        temp = unpack('>h',data[4:6])[0]
+        temp = 32+1.8*temp/10.
+        humi = unpack('>h',data[2:4])[0]
+        humi = humi/10.
+        #print "Temp {} Humi {}".format(temp,humi)
+        return temp,humi
+        
     def read_BME280(self,timeOutS=1):
         # return 0,0
         return readData()
@@ -304,7 +333,8 @@ class SmokerControl(Server):
         
     def regulate(self):
         time.sleep(0.1)
-        temp_SHT,humi_SHT = self.read_BME280()
+        temp_SHT,humi_SHT = self.read_AM()
+        # temp_SHT,humi_SHT = self.read_BME280()
         if temp_SHT == errorReturn:
             self.smokerStatus = 0
             self.pi.write(tempGPIO,0)
