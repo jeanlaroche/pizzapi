@@ -48,6 +48,8 @@ bottomGPIO = 10
 topGPIO = 22
 pauseGPIO = 15
 
+motionGPIO = 12
+
 # LED:
 ledGPIO = 4
 
@@ -58,7 +60,7 @@ statusMovingDown = 2
 class gateServer(Server):
     runStatus = statusIdle
     paused = 0
-    motorRunTimeUp = 27
+    motorRunTimeUp = 18
     motorRunTimeDown = 35
     status = statusIdle
     
@@ -81,8 +83,12 @@ class gateServer(Server):
         # This is for scheduling
         self.scheduler = myTimer()
         # Timer to close the window at 23:00 and at 4am
-        self.scheduler.addEvent(4,0,self.onUp,[],'Open window')
-        self.scheduler.addEvent(5,0,self.onDown,[],'Close window')
+        self.scheduler.addEvent(3,0,self.onUp,[],'Open window')
+        self.scheduler.addEvent(3,30,self.onDown,[],'Close window')
+        self.scheduler.addEvent(4,45,self.onUp,[],'Open window')
+        self.scheduler.addEvent(5,15,self.onDown,[],'Close window')
+        self.scheduler.addEvent(6,0,self.onUp,[],'Open window')
+        self.scheduler.addEvent(6,30,self.onDown,[],'Close window')
         self.scheduler.start()
         
         # This stops the motor after a few seconds
@@ -98,24 +104,38 @@ class gateServer(Server):
                 # time.sleep(0.010)
             if gpio == upButton: self.onUp()
             if gpio == downButton: self.onDown()
-            if gpio == bottomGPIO and self.status == statusMovingDown: self.stop()
-            if gpio == topGPIO and self.status == statusMovingUp: self.stop()
+            if gpio == bottomGPIO and self.status == statusMovingDown: 
+                logging.info("Fully closed")
+                self.stop()
+            if gpio == topGPIO and self.status == statusMovingUp: 
+                logging.info("Fully open")
+                self.stop()
+            if gpio == motionGPIO:
+                if not self.pi.read(bottomGPIO): logging.info("Motion detected: level %d",level)
+                #self.pi.write(ledGPIO,level)
             # Only pausing if closing the window.
-            if gpio == pauseGPIO and self.status == statusMovingDown: self.pause()
+            if gpio == pauseGPIO:
+                if self.status == statusMovingDown: self.pause()
+                logging.info("Pause triggered")
         
-        def setup(but):
+        def setup(but,either=0):
             self.pi.set_mode(but, pigpio.INPUT)
             self.pi.set_pull_up_down(but, pigpio.PUD_DOWN)
             self.pi.set_glitch_filter(but, 10000)
-            self.pi.callback(but, pigpio.RISING_EDGE, cbf)
+            if not either:
+                self.pi.callback(but, pigpio.RISING_EDGE, cbf)
+            else:
+                self.pi.callback(but, pigpio.EITHER_EDGE, cbf)
         # setup all the buttons.
         setup(upButton)
         setup(downButton)
         setup(topGPIO)
         setup(bottomGPIO)
         setup(pauseGPIO)
+        setup(motionGPIO,either=1)
         self.pi.set_mode(motorPosGPIO, pigpio.OUTPUT)
         self.pi.set_mode(motorNegGPIO, pigpio.OUTPUT)
+        #self.pi.set_mode(ledGPIO, pigpio.OUTPUT)
         self.stop()
         self.blinker.blinkStat = utils.fastBlink
         time.sleep(1)
@@ -185,7 +205,7 @@ class gateServer(Server):
         if self.pi.read(topGPIO): stat = 'Fully opened'
         if self.pi.read(bottomGPIO): stat = 'Fully closed'
         if self.paused: stat += ' (paused)'
-        statusStr = "{} Top switch: {} Bot switch: {} Pause switch: {}".format(stat,self.pi.read(topGPIO),self.pi.read(bottomGPIO),self.pi.read(pauseGPIO))
+        statusStr = "{} Top switch: {} Bot switch: {} Pause switch: {} Motion: {}".format(stat,self.pi.read(topGPIO),self.pi.read(bottomGPIO),self.pi.read(pauseGPIO),self.pi.read(motionGPIO))
         return jsonify(uptime=uptime,status=self.status,top=self.pi.read(topGPIO),bottom=self.pi.read(bottomGPIO),pause=
             self.pi.read(pauseGPIO),statusStr=statusStr)
             

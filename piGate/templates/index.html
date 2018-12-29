@@ -19,7 +19,7 @@ span {font-weight: bold;}
 	
 	// Javascript function for up button
 	function onUp() {
-		$.getJSON('/move/1', function(data)
+		$.getJSON('/Gate/move/1', function(data)
 		{
 			refresh();
 		});
@@ -27,13 +27,13 @@ span {font-weight: bold;}
 	
 	// Javascript function for down button
 	function onDown() {
-		$.getJSON('/move/0', function(data)
+		$.getJSON('/Gate/move/0', function(data)
 		{
 			refresh();
 		});
 	}
 	function onLog() {
-		$.getJSON('/getLog', function(data)
+		$.getJSON('/Gate/getLog', function(data)
 		{
 			$("#Log").text(data.log);
 		});
@@ -47,7 +47,7 @@ span {font-weight: bold;}
 	// This is called at regular intervals when the page is loaded.
 	function refresh() 
 	{
-		$.getJSON('/getData', function(data)
+		$.getJSON('/Gate/getData', function(data)
 			{
 				// The text() is a method of the selector to set the text of the selected elements.
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
