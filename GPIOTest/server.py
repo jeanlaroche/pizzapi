@@ -129,11 +129,14 @@ def GetUptime():
     
 def showHeartBeat():
     if rt.fakeIt: return
-    # Don't read the temperature if the tub is in the process of adjusting it.
-    if not rt.isAdjustingTemp:  rt.readTemperature(updateTempVal=1)
-    sc.logHeaterUse()
-    os.system('touch ' + rt.logFile)
-    #rt.mprint("HeartBeat")
+    try:
+        # Don't read the temperature if the tub is in the process of adjusting it.
+        if not rt.isAdjustingTemp:  rt.readTemperature(updateTempVal=1)
+        sc.logHeaterUse()
+        os.system('touch ' + rt.logFile)
+        #rt.mprint("HeartBeat")
+    except:
+        pass
     tim = threading.Timer(4, showHeartBeat)
     tim.start()
     
