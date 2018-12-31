@@ -29,6 +29,11 @@ def setLogger(fileName,mode='a',level=logging.INFO,format=defaultFormat,dateForm
     ch2.setFormatter(formatter2)
     logger.addHandler(ch2)
 
+def setLoggingLevel(level):
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    for h in logger.handlers:
+        h.setLevel(level)
     
 class myStream(object):
     def __init__(self):
