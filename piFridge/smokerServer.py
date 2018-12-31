@@ -12,16 +12,26 @@ from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
 logging.basicConfig(level=logging.INFO)
-from lumaDisplay import Luma
+#from lumaDisplay import Luma
+#from readBM280 import readData
+
+class Luma(object):
+    lock = None
+    def __init__(self):
+        self.lock = threading.Lock()
+        pass
+    def printText(self,text):
+        #logging.info(text)
+        pass
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
-tempGPIO = 4
-buttonGPIO1 = 15
-buttonGPIO2 = 18
-buttonGPIO3 = 17
-buttonGPIO4 = 14
+tempGPIO = 26
+buttonGPIO1 = 15    # Top left
+buttonGPIO2 = 18    # Top right
+buttonGPIO3 = 17    # Bot right
+buttonGPIO4 = 14    # Bot left
 
 errorReturn = -100  # Value returned upon error
 
@@ -52,11 +62,19 @@ class SmokerControl(Server):
     def setButCallback(self):
         def cbf(gpio, level, tick):
             longPress = 0
+            logging.debug('cfb0 %d %d %d %d',gpio, level, tick, self.runStatus)
             while self.pi.read(gpio) == 1 and longPress == 0:
                 longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
                 time.sleep(0.010)
+            logging.debug('cfb1')
+            if gpio == buttonGPIO4 and longPress:
+                # Cancel everything
+                self.stopProgram()
+                self.displayStuff()
+                return
             if self.runStatus in [0,1]:
                 # This is the regular button handling
+                logging.debug('cfb2 %d',longPress)
                 if longPress:
                     if gpio == buttonGPIO1:
                         self.runStatus = 2
@@ -121,7 +139,9 @@ class SmokerControl(Server):
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
-        self.hdc_handle = self.pi.i2c_open(1, 0x40)
+        #self.hdc_handle = self.pi.i2c_open(1, 0x40)
+        self.am_handle = self.pi.i2c_open(1, 0x5C)
+
         self.stopNow = 0
         if os.path.exists(self.jsonFile):
             with open(self.jsonFile) as f:
@@ -222,7 +242,38 @@ class SmokerControl(Server):
         self.targetTemp += inc
         self.dirty = 1
         self.displayStuff()
- 
+
+    def read_AM(self,timeOutS=1):
+        t0=time.time()
+        nn=0
+        while time.time()-t0 < timeOutS:
+            try:
+                self.pi.i2c_write_device(self.am_handle, [0x03, 0x00, 0x04])
+                nn,data = self.pi.i2c_read_device(self.am_handle,8)
+                if nn != 8 or data[1] != 0x04: continue
+                break
+            except:
+                time.sleep(0.001)
+        # print "Elapsed: {:.0f}ms".format(1000*(time.time()-t0))
+        #print nn,data[0],data[1]
+        # I'm not sure why I need to mask the top bit of data[0]... 
+        #if nn != 8 or data[0]&0x7F != 0x03 or data[1] != 0x04:#
+        if nn != 8 or data[1] != 0x04:
+            #logging.warning("Read error in read_AM")
+            #print "Read error"
+            self.readErrorCnt += 1
+            return -100,-100
+        temp = unpack('>h',data[4:6])[0]
+        temp = 32+1.8*temp/10.
+        humi = unpack('>h',data[2:4])[0]
+        humi = humi/10.
+        #print "Temp {} Humi {}".format(temp,humi)
+        return temp,humi
+        
+    def read_BME280(self,timeOutS=1):
+        # return 0,0
+        return readData()
+
     def read_HDC1008(self,timeOutS=1):
         # I write the raw device as that's easier. This is for no clock stretching.
         #pdb.set_trace()
@@ -282,7 +333,8 @@ class SmokerControl(Server):
         
     def regulate(self):
         time.sleep(0.1)
-        temp_SHT,humi_SHT = self.read_HDC1008()
+        temp_SHT,humi_SHT = self.read_AM()
+        # temp_SHT,humi_SHT = self.read_BME280()
         if temp_SHT == errorReturn:
             self.smokerStatus = 0
             self.pi.write(tempGPIO,0)
@@ -382,7 +434,27 @@ def tempDown():
 def start():
     fc.startProgram()
     return jsonify(**fc.getData(-1))
+
+@app.route("/debug")
+def debug():
+    logging.info("Entering debug mode")
+    myLogger.setLoggingLevel(logging.DEBUG)
+    logging.debug("Now in debug mode")
+    return jsonify(**fc.getData(-1))
     
+@app.route("/normal")
+def normal():
+    logging.info("Exiting debug mode")
+    myLogger.setLoggingLevel(logging.INFO)
+    logging.info("Now in normal mode")
+    return jsonify(**fc.getData(-1))
+    
+@app.route("/getLog")
+def getLog():
+    return jsonify(log=fc.getPlotData()[-1])
+    
+
+
 fc = SmokerControl()
 
 if __name__ == "__main__":
