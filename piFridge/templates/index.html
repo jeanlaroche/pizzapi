@@ -20,7 +20,7 @@ span {font-weight: bold;}
 	var targetHumid;
 	// Javascript function for up button
 	function onHumiUp() {
-		$.getJSON('/humiUp', function(data)
+		$.getJSON('/Fridge/humiUp', function(data)
 		{
 			$("#targetHumidity").text(data.targetHumidity);
 		});
@@ -30,7 +30,7 @@ span {font-weight: bold;}
 	function onHumiDown() {
 			targetHumid -= 1;
 			$("#targetHumidity").text(targetHumid);		
-			$.getJSON('/humiDown', function(data)
+			$.getJSON('/Fridge/humiDown', function(data)
 		{
 			
 		});
@@ -38,7 +38,7 @@ span {font-weight: bold;}
 
 	// Javascript function for down button
 	function onTempDown() {
-		$.getJSON('/tempDown', function(data)
+		$.getJSON('/Fridge/tempDown', function(data)
 		{
 			$("#targetTemp").text(data.targetTemp);
 		});
@@ -46,7 +46,7 @@ span {font-weight: bold;}
 	
 	// Javascript function for up button
 	function onTempUp() {
-		$.getJSON('/tempUp', function(data)
+		$.getJSON('/Fridge/tempUp', function(data)
 		{
 			$("#targetTemp").text(data.targetTemp);
 		});
@@ -59,7 +59,7 @@ span {font-weight: bold;}
 	// This is called at regular intervals when the page is loaded.
 	function getHumidity() 
 	{
-		$.getJSON('/getData/1', function(data)
+		$.getJSON('/Fridge/getData/1', function(data)
 			{
 				// The text() is a method of the selector to set the text of the selected elements.
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
@@ -95,7 +95,7 @@ span {font-weight: bold;}
 	
 	function quickUpdate() 
 	{
-		$.getJSON('/getData/0', function(data)
+		$.getJSON('/Fridge/getData/0', function(data)
 			{
 				$("#targetTemp").text(data.targetTemp);
 				$("#curTemp").text(data.curTemp);
@@ -124,7 +124,7 @@ span {font-weight: bold;}
 			// Binds the ajax request pageUnload to onbeforeunload of the window.
 			window.onbeforeunload = function(){
 				// The ajax request must return something, but it's OK to ignore it.
-				$.get('/pageUnload');
+				$.get('/Fridge/pageUnload');
 			};
 			
 			// You can also call a regular javascipt function:
@@ -133,12 +133,12 @@ span {font-weight: bold;}
 			window. addEventListener ( "resize" , function ( event ) {redraw();});
 
 			$('#cool').change(function() {
-				if(this.checked) $.getJSON('/setMode/1')
-				else $.getJSON('/setMode/0')
+				if(this.checked) $.getJSON('/Fridge/setMode/1')
+				else $.getJSON('/Fridge/setMode/0')
 			});
 			$('#heat').change(function() {
-				if(this.checked) $.getJSON('/setMode/0')
-				else $.getJSON('/setMode/1')
+				if(this.checked) $.getJSON('/Fridge/setMode/0')
+				else $.getJSON('/Fridge/setMode/1')
 			});
 	}
 		
@@ -191,7 +191,7 @@ span {font-weight: bold;}
     $(
 		// You can put more code to be executed at page loading in here but it has to be inside a function.
 //		function () {
-//		$.getJSON('/humidityUp');
+//		$.getJSON('/Fridge/humidityUp');
 //		}
 //		function() {
 //			redraw()
