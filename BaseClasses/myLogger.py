@@ -6,17 +6,18 @@ import time
 
 defaultFormat = '%(asctime)s - %(filename)s / %(funcName)s- %(levelname)s - %(message)s'
 defaultFormat = '%(asctime)s: %(message)s'
+defautDateFormat = "%Y-%m-%d %H:%M:%S"
 smallFormat = '%(message)s'
 mstr = None
 lastMessage = ''
 
-def setLogger(fileName,mode='a',level=logging.INFO,format=defaultFormat):
+def setLogger(fileName,mode='a',level=logging.INFO,format=defaultFormat,dateFormat=defautDateFormat):
     global mstr
     logger = logging.getLogger()
     logger.setLevel(level)
     ch = RotatingFileHandler(fileName,mode=mode,maxBytes=1024*1024,backupCount=2)
     ch.setLevel(level)
-    formatter = logging.Formatter(format)
+    formatter = logging.Formatter(format,dateFormat)
     # add formatter to ch
     ch.setFormatter(formatter)
     logger.addHandler(ch)
@@ -28,6 +29,11 @@ def setLogger(fileName,mode='a',level=logging.INFO,format=defaultFormat):
     ch2.setFormatter(formatter2)
     logger.addHandler(ch2)
 
+def setLoggingLevel(level):
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    for h in logger.handlers:
+        h.setLevel(level)
     
 class myStream(object):
     def __init__(self):

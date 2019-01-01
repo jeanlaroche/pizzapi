@@ -1,0 +1,10 @@
+A few things to do:
+sudo apt-get update
+sudo apt-get install git
+sudo apt-get install samba
+sudo apt-get install gunicorn
+alias mnt='sudo mount -t cifs //192.168.1.110/gpiotest /mnt/mainpc/git/gpiotest'
+sudo pip install pigpio
+sudo pip install flask
+cp the dhcpfile to /etc/.
+
