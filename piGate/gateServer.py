@@ -83,8 +83,8 @@ class gateServer(Server):
         # This is for scheduling
         self.scheduler = myTimer()
         # Timer to close the window at 23:00 and at 4am
-        self.scheduler.addEvent(3,0,self.onUp,[],'Open window')
-        self.scheduler.addEvent(3,30,self.onDown,[],'Close window')
+        # self.scheduler.addEvent(3,0,self.onUp,[],'Open window')
+        # self.scheduler.addEvent(3,30,self.onDown,[],'Close window')
         self.scheduler.addEvent(4,45,self.onUp,[],'Open window')
         self.scheduler.addEvent(5,15,self.onDown,[],'Close window')
         self.scheduler.addEvent(6,0,self.onUp,[],'Open window')
