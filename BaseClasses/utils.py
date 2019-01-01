@@ -19,7 +19,7 @@ class myTimer(object):
         # Set an event for getting the sunset time every day.
         def getST(): return self.getSunsetTime()
         self.addEvent(3,0,getST,[],"Update sunset time")
-        self.addEvent(12,22,lambda : logging.info('________________________________________'),[],"Newline!")
+        self.addEvent(0,1,lambda : logging.info('________________________________________'),[],"Newline!")
         
     def addEvent(self,hour,min,func,params,name,days=allDays):
         if type(hour)==int:
