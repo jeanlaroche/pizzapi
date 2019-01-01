@@ -1,6 +1,10 @@
 import logging
 import datetime
 import time, threading
+import pigpio
+
+weekDays = {0:"Mon",1:"Tue",2:"Wed",3:"Thu",4:"Fri",5:"Sat",6:"Sun"}
+allDays = ''.join(weekDays.values())
 
 weekDays = {0:"Mon",1:"Tue",2:"Wed",3:"Thu",4:"Fri",5:"Sat",6:"Sun"}
 allDays = ''.join(weekDays.values())
@@ -106,3 +110,89 @@ def printSeconds(nSecs):
     return str
     
     
+noBlinkOff=0
+slowBlink=1
+fastBlink=2
+noBlinkOn=3
+flashBlink=4
+class blinker(object):
+    blinkStat = noBlinkOff
+    sampT = 0.010
+    flashDurS = 0.050
+    slowFreq = 1
+    fastFreq = 4
+    cycleS = 2
+    exitBlink = 0
+    prevOnOff = 0
+    def  __init__(self,pi,blinkGPIO,checkFunc=None):
+        '''
+        blinkGPIO is the GPIO used for the blinking LED
+        checkFunc is an optional function that's called around each loop and must return one of the available blinkStatus
+        Note that the return does not affect self.blinkStatus. 
+        '''
+        self.blinkGPIO = blinkGPIO
+        self.checkFunc = None
+        self.pi = pi
+        self.pi.set_mode(self.blinkGPIO, pigpio.OUTPUT)
+        self.pi.set_PWM_frequency(self.blinkGPIO,256)
+        self.cycleLen = int(self.cycleS/self.sampT)
+        self.sleepTimeS = self.sampT
+        self.nSlow = int(round(1./self.sampT/self.slowFreq))
+        self.nFast = int(round(1./self.sampT/self.fastFreq))
+        print self.cycleLen
+        print self.nSlow
+        print self.nFast
+        def doBlink():
+            i = 0
+            onSlow = [uu for uu in range(self.cycleLen) if uu%(self.nSlow)<self.nSlow/2]
+            offSlow = [uu for uu in range(self.cycleLen) if uu%(self.nSlow)>=self.nSlow/2]
+            onFast = [uu for uu in range(self.cycleLen) if uu%(self.nFast)<self.nFast/2]
+            offFast = [uu for uu in range(self.cycleLen) if uu%(self.nFast)>=self.nFast/2]
+            iFlash = int(self.flashDurS/self.sampT)
+            while self.exitBlink == 0:
+                if 1:
+                    # Call the check function. 
+                    blinkStat = self.blinkStat
+                    if self.checkFunc: blinkStat = self.checkFunc()                        
+                    i = (i + 1) % self.cycleLen
+                    if blinkStat == slowBlink: on,off = onSlow,offSlow
+                    elif blinkStat == fastBlink: on, off = onFast,offFast
+                    elif blinkStat == noBlinkOn: on,off = range(self.cycleLen),[]
+                    elif blinkStat == noBlinkOff: on,off = [],range(self.cycleLen)
+                    elif blinkStat == flashBlink: on,off = range(0,iFlash),range(iFlash,self.cycleLen)
+                    else: on,off = [],range(self.cycleLen)
+                    # if i in on: self.pi.write(self.blinkGPIO,1)
+                    # if i in off: self.pi.write(self.blinkGPIO,0)
+                    if i in on: self.fade(1)
+                    if i in off: self.fade(0)
+                    time.sleep(self.sleepTimeS)
+                else:
+                    pass
+        self.blinkStat = noBlinkOff
+        t = threading.Thread(target=doBlink)
+        t.start()    
+    
+    def fade(self,onOff):
+        fadeSleepS = self.sleepTimeS/200.
+#        def fadeLoop():
+        if 1:
+            # self.pi.write(self.blinkGPIO,onOff)
+            # self.pi.set_PWM_dutycycle(self.blinkGPIO, onOff*16)
+            # return
+            #
+            if onOff:
+                if self.prevOnOff == 0:
+                    for dutycycle in range(0,32,1):
+                        self.pi.set_PWM_dutycycle(self.blinkGPIO, dutycycle)
+                        time.sleep(fadeSleepS)
+                
+            else:
+                if self.prevOnOff == 1:
+                    for dutycycle in reversed(range(0,32,1)):
+                        self.pi.set_PWM_dutycycle(self.blinkGPIO, dutycycle)
+                        time.sleep(fadeSleepS)
+            self.prevOnOff = onOff
+        # fadeLoop()
+        # t=threading.Thread(target=fadeLoop)
+        # t.daemon = True
+        # t.start()
