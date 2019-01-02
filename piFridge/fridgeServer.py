@@ -343,36 +343,37 @@ class FridgeControl(Server):
         print "DONE elapsed {}".format(time.time()-t1)
         return X,Y,Z,T,H,log
         
+@app.route("/Fridge")
 @app.route("/")
 def Index():
     return fc.Index()
         
-@app.route("/getData/<int:param1>")
+@app.route("/Fridge/getData/<int:param1>")
 def getData(param1):
     return jsonify(**fc.getData(param1))
     
-@app.route("/setMode/<int:mode>")
+@app.route("/Fridge/setMode/<int:mode>")
 def setMode(mode):
     logging.info("COOLING MODE %d",mode)
     fc.coolingMode = mode
     return jsonify(**fc.getData())
     
-@app.route("/tempUp")
+@app.route("/Fridge/tempUp")
 def tempUp():
     fc.incTargetTemp(1)
     return jsonify(**fc.getData(-1))
     
-@app.route("/tempDown")
+@app.route("/Fridge/tempDown")
 def tempDown():
     fc.incTargetTemp(-1)
     return jsonify(**fc.getData(-1))
     
-@app.route("/humiUp")
+@app.route("/Fridge/humiUp")
 def humiUp():
     fc.incTargetHumi(1)
     return jsonify(**fc.getData(-1))
     
-@app.route("/humiDown")
+@app.route("/Fridge/humiDown")
 def humiDown():
     fc.incTargetHumi(-1)
     return jsonify(**fc.getData(-1))
