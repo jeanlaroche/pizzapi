@@ -19,7 +19,7 @@ span {font-weight: bold;}
 	
 	// Javascript function for down button
 	function onTempDown() {
-		$.getJSON('/tempDown', function(data)
+		$.getJSON('/Smoker/tempDown', function(data)
 		{
 			$("#targetTemp").text(data.targetTemp);
 		});
@@ -27,14 +27,14 @@ span {font-weight: bold;}
 	
 	// Javascript function for up button
 	function onTempUp() {
-		$.getJSON('/tempUp', function(data)
+		$.getJSON('/Smoker/tempUp', function(data)
 		{
 			$("#targetTemp").text(data.targetTemp);
 		});
 	}
 	
 	function onStart() {
-		$.getJSON('/start', function(data)
+		$.getJSON('/Smoker/start', function(data)
 		{
 		});
 	}
@@ -45,7 +45,7 @@ span {font-weight: bold;}
 	// This is called at regular intervals when the page is loaded.
 	function getAllData() 
 	{
-		$.getJSON('/getData/1', function(data)
+		$.getJSON('/Smoker/getData/1', function(data)
 			{
 				// The text() is a method of the selector to set the text of the selected elements.
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
@@ -71,7 +71,7 @@ span {font-weight: bold;}
 
 	function quickUpdate() 
 	{
-		$.getJSON('/getData/0', function(data)
+		$.getJSON('/Smoker/getData/0', function(data)
 			{
 				$("#targetTemp").text(data.targetTemp);
 				$("#curTemp").text(data.curTemp);
@@ -90,7 +90,7 @@ span {font-weight: bold;}
 			// Binds the ajax request pageUnload to onbeforeunload of the window.
 			window.onbeforeunload = function(){
 				// The ajax request must return something, but it's OK to ignore it.
-				$.get('/pageUnload');
+				$.get('/Smoker/pageUnload');
 			};
 			
 			// You can also call a regular javascipt function:
@@ -152,7 +152,7 @@ span {font-weight: bold;}
     $(
 		// You can put more code to be executed at page loading in here but it has to be inside a function.
 //		function () {
-//		$.getJSON('/humidityUp');
+//		$.getJSON('/Smoker/humidityUp');
 //		}
 		function() {
 			//redraw()

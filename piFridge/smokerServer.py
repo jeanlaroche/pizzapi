@@ -411,45 +411,46 @@ class SmokerControl(Server):
         return X,Y,T,log
         
 @app.route("/")
+@app.route("/Smoker")
 def Index():
     return fc.Index(pageFile='index_smoker.html')
         
-@app.route("/getData/<int:param1>")
+@app.route("/Smoker/getData/<int:param1>")
 def getData(param1):
     return jsonify(**fc.getData(param1))
         
-@app.route("/tempUp")
+@app.route("/Smoker/tempUp")
 def tempUp():
     fc.incTargetTemp(5)
     print "INC"
     return jsonify(**fc.getData(-1))
     
-@app.route("/tempDown")
+@app.route("/Smoker/tempDown")
 def tempDown():
     fc.incTargetTemp(-5)
     print "DEC"
     return jsonify(**fc.getData(-1))
 
-@app.route("/start")
+@app.route("/Smoker/start")
 def start():
     fc.startProgram()
     return jsonify(**fc.getData(-1))
 
-@app.route("/debug")
+@app.route("/Smoker/debug")
 def debug():
     logging.info("Entering debug mode")
     myLogger.setLoggingLevel(logging.DEBUG)
     logging.debug("Now in debug mode")
     return jsonify(**fc.getData(-1))
     
-@app.route("/normal")
+@app.route("/Smoker/normal")
 def normal():
     logging.info("Exiting debug mode")
     myLogger.setLoggingLevel(logging.INFO)
     logging.info("Now in normal mode")
     return jsonify(**fc.getData(-1))
     
-@app.route("/getLog")
+@app.route("/Smoker/getLog")
 def getLog():
     return jsonify(log=fc.getPlotData()[-1])
     
