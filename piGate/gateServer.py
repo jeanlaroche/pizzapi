@@ -219,29 +219,29 @@ class gateServer(Server):
         
 gs = gateServer()
 
-@app.route('/favicon.ico')
+@app.route('/Gate/favicon.ico')
 def favicon():
     return gs.favicon()
             
-@app.route("/reboot")
+@app.route("/Gate/reboot")
 def reboot():
     gs.reboot()
     return ('', 204)
     
-@app.route('/kg')
+@app.route('/Gate/kg')
 def kg():
     gs.kg()
     return ('', 204)
 
-@app.route('/getData')
+@app.route('/Gate/getData')
 def getData():
     return gs.getData()
 
-@app.route('/getLog')
+@app.route('/Gate/getLog')
 def getLog():
     return gs.getLog()
 
-@app.route('/move/<int:updown>')
+@app.route('/Gate/move/<int:updown>')
 def move(updown):
     logging.info("HTTP request move: %d",updown)
     if updown > 0: gs.onUp()
@@ -249,11 +249,12 @@ def move(updown):
     return ('', 204)
 
 # return index page when IP address of RPi is typed in the browser
+@app.route("/Gate/")
 @app.route("/")
 def Index():
     return gs.Index()
     
-@app.route("/funcName/<int:param1>/<int:param2>")
+@app.route("/Gate/funcName/<int:param1>/<int:param2>")
 def funcName(param1,param2):
     return jsonify(param1=param1,param2=param2)
     
