@@ -38,7 +38,7 @@ errorReturn = -100  # Value returned upon error
 class SmokerControl(Server):
     
     temp = 0
-    targetTemp = 50
+    targetTemp = 30
     tempDelta = 1
     lumaText = ''
     
@@ -207,7 +207,7 @@ class SmokerControl(Server):
         self.timer.removeEvents('Period')
         def incPeriod():
             if self.curPeriod >= len(self.periods) - 1: 
-                self.setTargetTemp(50)
+                self.setTargetTemp(30)
                 self.runStatus = 0
                 self.curPeriod = 0
                 return
@@ -230,7 +230,7 @@ class SmokerControl(Server):
         self.curPeriod = 0
         self.runStatus = 0
         self.timer.removeEvents('Period')
-        self.targetTemp = 50
+        self.targetTemp = 30
         
     def setTargetTemp(self,targetTemp):
         self.targetTemp = targetTemp
