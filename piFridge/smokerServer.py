@@ -129,7 +129,10 @@ class SmokerControl(Server):
             self.pi.callback(but, 0, cbf)
         setup(buttonGPIO1)
         setup(buttonGPIO2)
-        setup(buttonGPIO3)
+        #setup(buttonGPIO3)
+        self.pi.set_mode(buttonGPIO3, pigpio.OUTPUT)
+        self.pi.write(buttonGPIO3,1)
+
         setup(buttonGPIO4)
     
     def __init__(self,startThread=1):
@@ -154,6 +157,9 @@ class SmokerControl(Server):
         
         self.timer = myTimer()
         self.timer.start()
+        # On time and off time array to control how long the heater is on and off when pulsing, depending on how
+        # close we are to the target.
+        self.pulseTimes = [[2,25],[2,20],[3,20],[4,20],[5,15],[7,15],[10,15],[10,15],[0,15]]
         
         # I'm finding that the temp overshoots dramatically if the heater is on for a significant amount of time.
         def pulseHeat():
@@ -168,11 +174,14 @@ class SmokerControl(Server):
                     if self.temp + 35 < self.targetTemp:
                         self.pi.write(tempGPIO,self.smokerStatus)
                     else:
+                        # idx = 1 when we're 5F away from target, 2 when we're 10F away etc.
+                        idx = int((self.targetTemp-self.temp)/5)
+                        onS,offS = self.pulseTimes[idx]
                         on = self.pi.read(tempGPIO)
-                        toggle = 1 - on
-                        sleepS = 15 if on else 5
-                        #print("Toggle {}".format(toggle))
-                        self.pi.write(tempGPIO,toggle)
+                        on = 1 - on
+                        self.pi.write(tempGPIO,on)
+                        sleepS = onS if on else offS
+                        #print("on {}".format(on))
                 time.sleep(sleepS)
         self.pulseThread = threading.Thread(target=pulseHeat)
         self.pulseThread.daemon = True
@@ -336,8 +345,14 @@ class SmokerControl(Server):
         temp_SHT,humi_SHT = self.read_AM()
         # temp_SHT,humi_SHT = self.read_BME280()
         if temp_SHT == errorReturn:
+            # logging.info("Error in read temp, turning off")
             self.smokerStatus = 0
             self.pi.write(tempGPIO,0)
+            # Reboot the temp sensor!
+            logging.info("Error in read temp, Rebooting temp sensor")
+            self.pi.write(buttonGPIO3,0)
+            time.sleep(2)
+            self.pi.write(buttonGPIO3,1)
             return
         self.temp = round(temp_SHT,ndigits=2)
         if self.temp < self.targetTemp - 0.5*self.tempDelta:
@@ -373,8 +388,9 @@ class SmokerControl(Server):
             uptime = self.GetUptime()
         if full==0:
             uptime = self.GetUptime()
+        on = self.pi.read(tempGPIO)
         data = {"curTemp":self.temp,
-            "targetTemp":self.targetTemp,"upTime":uptime,"smokerStatus":self.smokerStatus,
+            "targetTemp":self.targetTemp,"upTime":uptime,"smokerStatus":self.smokerStatus,"onOff":on,
             "X":X,"Y":Y,"TT":TT,"Log":Log,"onTime":onTime,"lumaText":self.lumaText} 
         return data
     
