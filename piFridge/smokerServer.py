@@ -12,6 +12,7 @@ from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
 logging.basicConfig(level=logging.INFO)
+from collections import deque
 #from lumaDisplay import Luma
 #from readBM280 import readData
 
@@ -41,6 +42,7 @@ class SmokerControl(Server):
     targetTemp = 30
     tempDelta = 1
     lumaText = ''
+    regulatePeriodS = 4
     
     dirty = 0           # Flag to indicate json file should be written
     
@@ -129,10 +131,7 @@ class SmokerControl(Server):
             self.pi.callback(but, 0, cbf)
         setup(buttonGPIO1)
         setup(buttonGPIO2)
-        #setup(buttonGPIO3)
-        self.pi.set_mode(buttonGPIO3, pigpio.OUTPUT)
-        self.pi.write(buttonGPIO3,1)
-
+        setup(buttonGPIO3)
         setup(buttonGPIO4)
     
     def __init__(self,startThread=1):
@@ -142,8 +141,10 @@ class SmokerControl(Server):
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
-        #self.hdc_handle = self.pi.i2c_open(1, 0x40)
-        self.am_handle = self.pi.i2c_open(1, 0x5C)
+        self.hdc_handle = self.pi.i2c_open(1, 0x40)
+        #self.am_handle = self.pi.i2c_open(1, 0x5C)
+        # This is a circular buffer where [0] is the oldest, and [-1] the newest value
+        self.tempHist = deque(maxlen=int(120/self.regulatePeriodS))
 
         self.stopNow = 0
         if os.path.exists(self.jsonFile):
@@ -157,9 +158,8 @@ class SmokerControl(Server):
         
         self.timer = myTimer()
         self.timer.start()
-        # On time and off time array to control how long the heater is on and off when pulsing, depending on how
-        # close we are to the target.
-        self.pulseTimes = [[2,25],[2,20],[3,20],[4,20],[5,15],[7,15],[10,15],[10,15],[0,15]]
+        # On time and off time array to control how long the heater is on and off when pulsing, depending on the target.
+        self.pulseTimes = [[4,25],[5,15],[6,15],[7,15],[10,15]]
         
         # I'm finding that the temp overshoots dramatically if the heater is on for a significant amount of time.
         def pulseHeat():
@@ -170,17 +170,26 @@ class SmokerControl(Server):
                     #print "Writing off"
                     self.pi.write(tempGPIO,self.smokerStatus)
                 else:
-                # Pulse the heater if the temp is close enough to the target temp.
-                    if self.temp + 35 < self.targetTemp:
-                        self.pi.write(tempGPIO,self.smokerStatus)
+                    # Pulse the heater if the temp is close enough to the target temp.
+                    if self.temp + 10 < self.targetTemp:
+                        deltaTemp = self.tempHist[-1]-self.tempHist[0]
+                        # If we're less than 2 minutes away from reaching target at the current rate, stop.
+                        if self.targetTemp-self.temp < deltaTemp:
+                            logging.info("Early off: DeltaTemp %.2f -- Temp %.2f",deltaTemp,self.temp)
+                            self.pi.write(tempGPIO,0)
+                        else:
+                            self.pi.write(tempGPIO,self.smokerStatus)
                     else:
                         # idx = 1 when we're 5F away from target, 2 when we're 10F away etc.
-                        idx = int((self.targetTemp-self.temp)/5)
-                        onS,offS = self.pulseTimes[idx]
+                        # idx = max(0,int((self.targetTemp-80)/20))
+                        # idx = min(idx,len(self.pulseTimes)-1)
+                        # onS,offS = self.pulseTimes[idx]
+                        onS,offS = 5,15
                         on = self.pi.read(tempGPIO)
                         on = 1 - on
                         self.pi.write(tempGPIO,on)
                         sleepS = onS if on else offS
+                        #logging.info("On off %d",on)
                         #print("on {}".format(on))
                 time.sleep(sleepS)
         self.pulseThread = threading.Thread(target=pulseHeat)
@@ -194,7 +203,7 @@ class SmokerControl(Server):
                 except Exception as e:
                     logging.error('Error in regulate: %s',e)
                     pass
-                time.sleep(4)
+                time.sleep(self.regulatePeriodS)
             logging.info('Exiting regulate loop')            
         self.timerThread = threading.Thread(target=mainLoop)
         self.timerThread.daemon = True
@@ -342,19 +351,21 @@ class SmokerControl(Server):
         
     def regulate(self):
         time.sleep(0.1)
-        temp_SHT,humi_SHT = self.read_AM()
+        # temp_SHT,humi_SHT = self.read_AM()
+        temp_SHT,humi_SHT = self.read_HDC1008()
         # temp_SHT,humi_SHT = self.read_BME280()
         if temp_SHT == errorReturn:
-            # logging.info("Error in read temp, turning off")
+            logging.info("Error in read temp, turning off")
             self.smokerStatus = 0
             self.pi.write(tempGPIO,0)
             # Reboot the temp sensor!
-            logging.info("Error in read temp, Rebooting temp sensor")
-            self.pi.write(buttonGPIO3,0)
-            time.sleep(2)
-            self.pi.write(buttonGPIO3,1)
+            #logging.info("Error in read temp, Rebooting temp sensor")
+            #self.pi.write(buttonGPIO3,0)
+            #time.sleep(2)
+            #self.pi.write(buttonGPIO3,1)
             return
         self.temp = round(temp_SHT,ndigits=2)
+        self.tempHist.append(self.temp) # self.tempHist[0] is the oldest value
         if self.temp < self.targetTemp - 0.5*self.tempDelta:
             # Turn heat on
             if self.smokerStatus == 0: 
@@ -369,8 +380,9 @@ class SmokerControl(Server):
         tt = time.time()
         self.displayStuff()
         # Only log the temp every self.logDeltaS seconds...
+        deltaTemp = self.tempHist[-1]-self.tempHist[0]
         if tt-self.lastLogTime > self.logDeltaS:
-            logging.info("Time: %.0f T1 %.2f CC %d TT %.2f",tt,temp_SHT,self.smokerStatus,self.targetTemp)
+            logging.info("Time: %.0f T1 %.2f CC %d TT %.2f DT %.2f",tt,temp_SHT,self.smokerStatus,self.targetTemp,deltaTemp)
             self.lastLogTime = tt
         if self.readErrorCnt > 40:
             logging.error("%d read errors detected",self.readErrorCnt)
@@ -438,13 +450,11 @@ def getData(param1):
 @app.route("/Smoker/tempUp")
 def tempUp():
     fc.incTargetTemp(5)
-    print "INC"
     return jsonify(**fc.getData(-1))
     
 @app.route("/Smoker/tempDown")
 def tempDown():
     fc.incTargetTemp(-5)
-    print "DEC"
     return jsonify(**fc.getData(-1))
 
 @app.route("/Smoker/start")

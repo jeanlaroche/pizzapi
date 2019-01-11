@@ -76,6 +76,7 @@ span {font-weight: bold;}
 				$("#targetTemp").text(data.targetTemp);
 				$("#curTemp").text(data.curTemp);
 				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
+				$("#SmokerStatus").text(data.onOff == 0 ? "Heat OFF" : "Heat ON");
 				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
 				$("#upTime").text(data.upTime);
 				setTimeout(function(){quickUpdate();},1000);
