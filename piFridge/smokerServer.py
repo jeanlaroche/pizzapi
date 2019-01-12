@@ -62,6 +62,81 @@ class SmokerControl(Server):
     curPeriod = 0
     runStatus = 0 # 0 is normal, 1 is run program, and 2 is programming
     
+    def __init__(self,startThread=1):
+        myLogger.setLogger(self.logFile,mode='a',level=logging.INFO)
+        logging.info('Setting up display')
+        self.luma = Luma()
+        logging.info('Starting pigpio')
+        self.pi = pigpio.pi() # Connect to local Pi.
+        self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
+        self.hdc_handle = self.pi.i2c_open(1, 0x40)
+        #self.am_handle = self.pi.i2c_open(1, 0x5C)
+        # This is a circular buffer where [0] is the oldest, and [-1] the newest value
+        self.tempHist = deque(maxlen=int(30/self.regulatePeriodS))
+
+        self.stopNow = 0
+        if os.path.exists(self.jsonFile):
+            with open(self.jsonFile) as f:
+                data = json.load(f)
+                #self.targetTemp = data['targetTemp']
+                if 'periods' in data: self.periods = data['periods']
+                else: self.writeJson()
+        self.temp = self.targetTemp
+        self.pi.write(tempGPIO,1-self.smokerStatus)
+        
+        self.timer = myTimer()
+        self.timer.start()
+        
+        # I'm finding that the temp overshoots dramatically if the heater is on for a significant amount of time.
+        def pulseHeat():
+            while self.stopNow==0:
+                #print "status: {}".format(self.smokerStatus)
+                sleepS = 2
+                if self.smokerStatus == 0: 
+                    #print "Writing off"
+                    self.pi.write(tempGPIO,self.smokerStatus)
+                else:
+                    deltaTemp = self.tempHist[-1]-self.tempHist[0]
+                    # If we're less than x minutes away from reaching target at the current rate, stop.
+                    if self.targetTemp-self.temp < 12*deltaTemp:
+                        logging.debug("Adapt off: DeltaTemp %.2f -- Temp %.2f",deltaTemp,self.temp)
+                        self.pi.write(tempGPIO,0)
+                        time.sleep(4)
+                        continue
+                    # If we're far away from the target, go full on.                        
+                    if self.temp + 10 < self.targetTemp:
+                        self.pi.write(tempGPIO,self.smokerStatus)
+                    # Pulse the heater if the temp is close enough to the target temp.
+                    else:
+                        onS,offS = 5,15
+                        # Read the heater status, and toggle on->off or off->on
+                        on = self.pi.read(tempGPIO)
+                        on = 1 - on
+                        self.pi.write(tempGPIO,on)
+                        # Sleep according to whether we're on or off.
+                        sleepS = onS if on else offS
+                        logging.debug("Pulsing now (%d): DeltaTemp %.2f -- Temp %.2f",on, deltaTemp,self.temp)
+                time.sleep(sleepS)
+        self.pulseThread = threading.Thread(target=pulseHeat)
+        self.pulseThread.daemon = True
+        if startThread: self.pulseThread.start()         
+        
+        def mainLoop():
+            while self.stopNow==0:
+                try:
+                    self.regulate()
+                except Exception as e:
+                    logging.error('Error in regulate: %s',e)
+                    pass
+                time.sleep(self.regulatePeriodS)
+            logging.info('Exiting regulate loop')            
+        self.timerThread = threading.Thread(target=mainLoop)
+        self.timerThread.daemon = True
+        if startThread: self.timerThread.start()
+        self.lock = threading.Lock()
+        self.setButCallback()
+        #self.startProgram()
+        
     def setButCallback(self):
         def cbf(gpio, level, tick):
             longPress = 0
@@ -135,85 +210,6 @@ class SmokerControl(Server):
         setup(buttonGPIO3)
         setup(buttonGPIO4)
     
-    def __init__(self,startThread=1):
-        myLogger.setLogger(self.logFile,mode='a',level=logging.DEBUG)
-        logging.info('Setting up display')
-        self.luma = Luma()
-        logging.info('Starting pigpio')
-        self.pi = pigpio.pi() # Connect to local Pi.
-        self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
-        self.hdc_handle = self.pi.i2c_open(1, 0x40)
-        #self.am_handle = self.pi.i2c_open(1, 0x5C)
-        # This is a circular buffer where [0] is the oldest, and [-1] the newest value
-        self.tempHist = deque(maxlen=int(30/self.regulatePeriodS))
-
-        self.stopNow = 0
-        if os.path.exists(self.jsonFile):
-            with open(self.jsonFile) as f:
-                data = json.load(f)
-                #self.targetTemp = data['targetTemp']
-                if 'periods' in data: self.periods = data['periods']
-                else: self.writeJson()
-        self.temp = self.targetTemp
-        self.pi.write(tempGPIO,1-self.smokerStatus)
-        
-        self.timer = myTimer()
-        self.timer.start()
-        # On time and off time array to control how long the heater is on and off when pulsing, depending on the target.
-        self.pulseTimes = [[4,25],[5,15],[6,15],[7,15],[10,15]]
-        
-        # I'm finding that the temp overshoots dramatically if the heater is on for a significant amount of time.
-        def pulseHeat():
-            while self.stopNow==0:
-                #print "status: {}".format(self.smokerStatus)
-                sleepS = 2
-                if self.smokerStatus == 0: 
-                    #print "Writing off"
-                    self.pi.write(tempGPIO,self.smokerStatus)
-                else:
-                    # Pulse the heater if the temp is close enough to the target temp.
-                    deltaTemp = self.tempHist[-1]-self.tempHist[0]
-                    # If we're less than 8 minutes away from reaching target at the current rate, stop.
-                    if self.targetTemp-self.temp < 16*deltaTemp:
-                        logging.debug("Early off: DeltaTemp %.2f -- Temp %.2f",deltaTemp,self.temp)
-                        self.pi.write(tempGPIO,0)
-                        time.sleep(4)
-                        continue
-                    if self.temp + 10 < self.targetTemp:
-                        self.pi.write(tempGPIO,self.smokerStatus)
-                    else:
-                        # idx = 1 when we're 5F away from target, 2 when we're 10F away etc.
-                        # idx = max(0,int((self.targetTemp-80)/20))
-                        # idx = min(idx,len(self.pulseTimes)-1)
-                        # onS,offS = self.pulseTimes[idx]
-                        onS,offS = 5,15
-                        on = self.pi.read(tempGPIO)
-                        on = 1 - on
-                        self.pi.write(tempGPIO,on)
-                        sleepS = onS if on else offS
-                        logging.debug("Pulsing now (%d): DeltaTemp %.2f -- Temp %.2f",on, deltaTemp,self.temp)
-                        #print("on {}".format(on))
-                time.sleep(sleepS)
-        self.pulseThread = threading.Thread(target=pulseHeat)
-        self.pulseThread.daemon = True
-        if startThread: self.pulseThread.start()         
-        
-        def mainLoop():
-            while self.stopNow==0:
-                try:
-                    self.regulate()
-                except Exception as e:
-                    logging.error('Error in regulate: %s',e)
-                    pass
-                time.sleep(self.regulatePeriodS)
-            logging.info('Exiting regulate loop')            
-        self.timerThread = threading.Thread(target=mainLoop)
-        self.timerThread.daemon = True
-        if startThread: self.timerThread.start()
-        self.lock = threading.Lock()
-        self.setButCallback()
-        #self.startProgram()
-        
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
             json.dump({'targetTemp':self.targetTemp, 'periods':self.periods},f,indent=1)
@@ -479,14 +475,14 @@ def debug():
     logging.info("Entering debug mode")
     myLogger.setLoggingLevel(logging.DEBUG)
     logging.debug("Now in debug mode")
-    return jsonify(**fc.getData(-1))
+    return fc.Index(pageFile='index_smoker.html')
     
 @app.route("/Smoker/normal")
 def normal():
     logging.info("Exiting debug mode")
     myLogger.setLoggingLevel(logging.INFO)
     logging.info("Now in normal mode")
-    return jsonify(**fc.getData(-1))
+    return fc.Index(pageFile='index_smoker.html')
     
 @app.route("/Smoker/getLog")
 def getLog():
