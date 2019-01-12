@@ -11,7 +11,7 @@ import logging
 from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 from collections import deque
 #from lumaDisplay import Luma
 #from readBM280 import readData
@@ -43,6 +43,7 @@ class SmokerControl(Server):
     tempDelta = 1
     lumaText = ''
     regulatePeriodS = 4
+    plotHistHour = 4
     
     dirty = 0           # Flag to indicate json file should be written
     
@@ -135,7 +136,7 @@ class SmokerControl(Server):
         setup(buttonGPIO4)
     
     def __init__(self,startThread=1):
-        myLogger.setLogger(self.logFile,mode='a')
+        myLogger.setLogger(self.logFile,mode='a',level=logging.DEBUG)
         logging.info('Setting up display')
         self.luma = Luma()
         logging.info('Starting pigpio')
@@ -144,7 +145,7 @@ class SmokerControl(Server):
         self.hdc_handle = self.pi.i2c_open(1, 0x40)
         #self.am_handle = self.pi.i2c_open(1, 0x5C)
         # This is a circular buffer where [0] is the oldest, and [-1] the newest value
-        self.tempHist = deque(maxlen=int(120/self.regulatePeriodS))
+        self.tempHist = deque(maxlen=int(30/self.regulatePeriodS))
 
         self.stopNow = 0
         if os.path.exists(self.jsonFile):
@@ -171,14 +172,15 @@ class SmokerControl(Server):
                     self.pi.write(tempGPIO,self.smokerStatus)
                 else:
                     # Pulse the heater if the temp is close enough to the target temp.
+                    deltaTemp = self.tempHist[-1]-self.tempHist[0]
+                    # If we're less than 8 minutes away from reaching target at the current rate, stop.
+                    if self.targetTemp-self.temp < 16*deltaTemp:
+                        logging.debug("Early off: DeltaTemp %.2f -- Temp %.2f",deltaTemp,self.temp)
+                        self.pi.write(tempGPIO,0)
+                        time.sleep(4)
+                        continue
                     if self.temp + 10 < self.targetTemp:
-                        deltaTemp = self.tempHist[-1]-self.tempHist[0]
-                        # If we're less than 2 minutes away from reaching target at the current rate, stop.
-                        if self.targetTemp-self.temp < deltaTemp:
-                            logging.info("Early off: DeltaTemp %.2f -- Temp %.2f",deltaTemp,self.temp)
-                            self.pi.write(tempGPIO,0)
-                        else:
-                            self.pi.write(tempGPIO,self.smokerStatus)
+                        self.pi.write(tempGPIO,self.smokerStatus)
                     else:
                         # idx = 1 when we're 5F away from target, 2 when we're 10F away etc.
                         # idx = max(0,int((self.targetTemp-80)/20))
@@ -189,7 +191,7 @@ class SmokerControl(Server):
                         on = 1 - on
                         self.pi.write(tempGPIO,on)
                         sleepS = onS if on else offS
-                        #logging.info("On off %d",on)
+                        logging.debug("Pulsing now (%d): DeltaTemp %.2f -- Temp %.2f",on, deltaTemp,self.temp)
                         #print("on {}".format(on))
                 time.sleep(sleepS)
         self.pulseThread = threading.Thread(target=pulseHeat)
@@ -403,7 +405,7 @@ class SmokerControl(Server):
         on = self.pi.read(tempGPIO)
         data = {"curTemp":self.temp,
             "targetTemp":self.targetTemp,"upTime":uptime,"smokerStatus":self.smokerStatus,"onOff":on,
-            "X":X,"Y":Y,"TT":TT,"Log":Log,"onTime":onTime,"lumaText":self.lumaText} 
+            "X":X,"Y":Y,"TT":TT,"Log":Log,"onTime":onTime,"lumaText":self.lumaText,"deltaT":self.tempHist[-1]-self.tempHist[0]} 
         return data
     
     def getPlotData(self):
@@ -413,7 +415,7 @@ class SmokerControl(Server):
         X,Y,T,log = [],[],[],''
         curTime = time.time()
         curHour = time.localtime().tm_hour+time.localtime().tm_min / 60.
-        minTime = curTime-4*3600
+        minTime = curTime-self.plotHistHour*3600
         prevTI=0
         for line in allLines:
             if "T1" not in line: continue
@@ -456,6 +458,16 @@ def tempUp():
 def tempDown():
     fc.incTargetTemp(-5)
     return jsonify(**fc.getData(-1))
+
+@app.route("/Smoker/setTemp/<int:param1>")
+def setTemp(param1):
+    fc.setTargetTemp(param1)
+    return fc.Index(pageFile='index_smoker.html')
+
+@app.route("/Smoker/setPlot/<float:param1>")
+def setPlot(param1):
+    fc.plotHistHour = param1
+    return fc.Index(pageFile='index_smoker.html')
 
 @app.route("/Smoker/start")
 def start():

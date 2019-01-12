@@ -59,6 +59,7 @@ span {font-weight: bold;}
 				$("#lumaText1").text(foo[1]);
 				$("#lumaText2").text(foo[2]);
 				$("#lumaText3").text(foo[3]);
+				$("#deltaT").text(data.deltaT);
 				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
 				// To set a color, set the style to "color:red"
 				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
@@ -189,6 +190,7 @@ span {font-weight: bold;}
     <div><h4><span id="lumaText1" ></span></h4></div>
     <div><h4><span id="lumaText2" ></span></h4></div>
     <div><h4><span id="lumaText3" ></span></h4></div>
+    <div><h4><span id="deltaT" ></span></h4></div>
     <div ><h2>Temperature:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
