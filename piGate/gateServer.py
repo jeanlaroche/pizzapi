@@ -49,6 +49,7 @@ topGPIO = 22
 pauseGPIO = 15
 
 motionGPIO = 12
+beamGPIO = 7
 
 # LED:
 ledGPIO = 4
@@ -60,7 +61,7 @@ statusMovingDown = 2
 class gateServer(Server):
     runStatus = statusIdle
     paused = 0
-    motorRunTimeUp = 18
+    motorRunTimeUp = 24
     motorRunTimeDown = 35
     status = statusIdle
     
@@ -85,10 +86,10 @@ class gateServer(Server):
         # Timer to close the window at 23:00 and at 4am
         # self.scheduler.addEvent(3,0,self.onUp,[],'Open window')
         # self.scheduler.addEvent(3,30,self.onDown,[],'Close window')
-        self.scheduler.addEvent(4,45,self.onUp,[],'Open window')
-        self.scheduler.addEvent(5,15,self.onDown,[],'Close window')
-        self.scheduler.addEvent(6,0,self.onUp,[],'Open window')
-        self.scheduler.addEvent(6,30,self.onDown,[],'Close window')
+        # self.scheduler.addEvent(4,45,self.onUp,[],'Open window')
+        # self.scheduler.addEvent(5,15,self.onDown,[],'Close window')
+        self.scheduler.addEvent(6,10,self.onUp,[],'Open window')
+        self.scheduler.addEvent(6,25,self.onDown,[],'Close window')
         self.scheduler.start()
         
         # This stops the motor after a few seconds
@@ -110,29 +111,29 @@ class gateServer(Server):
             if gpio == topGPIO and self.status == statusMovingUp: 
                 logging.info("Fully open")
                 self.stop()
-            if gpio == motionGPIO:
-                if not self.pi.read(bottomGPIO): logging.info("Motion detected: level %d",level)
-                #self.pi.write(ledGPIO,level)
+            if gpio == beamGPIO:
+                logging.info("Beam break detected")
+                self.scheduler.removeEvents('Close after')
+                self.moveUp()
+                self.scheduler.addDelayedEvent(3,self.onDown,[],"Close after beam")
+                    
             # Only pausing if closing the window.
             if gpio == pauseGPIO:
                 if self.status == statusMovingDown: self.pause()
                 logging.info("Pause triggered")
         
-        def setup(but,either=0):
+        def setup(but,edge=pigpio.RISING_EDGE):
             self.pi.set_mode(but, pigpio.INPUT)
             self.pi.set_pull_up_down(but, pigpio.PUD_DOWN)
             self.pi.set_glitch_filter(but, 10000)
-            if not either:
-                self.pi.callback(but, pigpio.RISING_EDGE, cbf)
-            else:
-                self.pi.callback(but, pigpio.EITHER_EDGE, cbf)
+            self.pi.callback(but, edge, cbf)
         # setup all the buttons.
         setup(upButton)
         setup(downButton)
         setup(topGPIO)
         setup(bottomGPIO)
         setup(pauseGPIO)
-        setup(motionGPIO,either=1)
+        setup(beamGPIO,edge=pigpio.FALLING_EDGE)
         self.pi.set_mode(motorPosGPIO, pigpio.OUTPUT)
         self.pi.set_mode(motorNegGPIO, pigpio.OUTPUT)
         #self.pi.set_mode(ledGPIO, pigpio.OUTPUT)
@@ -150,7 +151,7 @@ class gateServer(Server):
         self.pi.write(motorNegGPIO,0)
         self.pi.write(motorPosGPIO,1)
         self.blinker.blinkStat = utils.slowBlink
-        logging.info("Move up")
+        logging.debug("Move up")
         self.stopTimer.cancel()
         self.status = statusMovingUp
         self.paused = 0
@@ -180,7 +181,7 @@ class gateServer(Server):
         
     def pause(self):
         self.stopTimer.cancel()
-        logging.info("Pause")
+        logging.debug("Pause")
         self.blinker.blinkStat = utils.fastBlink
         self.pi.write(motorPosGPIO,0)
         self.pi.write(motorNegGPIO,0)
@@ -190,7 +191,7 @@ class gateServer(Server):
         t.start()
         
     def resume(self):
-        logging.info("Resume")
+        logging.debug("Resume")
         if self.pi.read(pauseGPIO) == 1: 
             self.pause()
             return
@@ -243,7 +244,7 @@ def getLog():
 
 @app.route('/Gate/move/<int:updown>')
 def move(updown):
-    logging.info("HTTP request move: %d",updown)
+    logging.debug("HTTP request move: %d",updown)
     if updown > 0: gs.onUp()
     if updown <= 0: gs.onDown()
     return ('', 204)
