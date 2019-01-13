@@ -35,7 +35,7 @@ class myTimer(object):
     def removeEvents(self,pattern):
         for event in self.timedEvents:
             if pattern in event['name']: 
-                logging.info('Removing %s',event['name'])
+                logging.debug('Removing %s',event['name'])
                 self.timedEvents.pop(self.timedEvents.index(event))
 
     def getSunsetTime(self):
@@ -84,7 +84,7 @@ class myTimer(object):
                         event['func'](*event['params'])
                         if event['remove']:
                             idx = self.timedEvents.index(event)
-                            logging.info('Removing event %s',event['name'])
+                            logging.debug('Removing event %s',event['name'])
                             self.timedEvents.pop(idx)
                         
                     time.sleep(1)
