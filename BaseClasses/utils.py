@@ -196,3 +196,35 @@ class blinker(object):
         # t=threading.Thread(target=fadeLoop)
         # t.daemon = True
         # t.start()
+
+        
+        from threading import Timer
+
+# Use this to run a function repeatedly every delayS seconds
+# For example:
+# @repeatFunc(2)
+# def foo(x): print(x)
+# Stop it with foo.stopNow = 1
+def repeatFunc(delayS):
+    def innerDec(some_function):
+        def wrapper(*args):
+            some_function(*args)
+            if wrapper.stopNow == 0:
+                threading.Timer(delayS,wrapper,args).start()
+        wrapper.stopNow = 0
+        return wrapper
+    return innerDec
+    
+# Use this to run a function after a certain delay
+# For example:
+# @delayFunc(2)
+# def foo(x): print(x)
+# foo(33)
+def delayFunc(delayS):
+    def innerDec(some_function):
+        def wrapper(*args):
+            def foo(*args):
+                some_function(*args)
+            threading.Timer(delayS,foo,args).start()
+        return wrapper
+    return innerDec
