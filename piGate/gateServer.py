@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.baseServer import Server
 from BaseClasses.utils import myTimer
 from BaseClasses import myLogger
+#from textSender import textSender
 import pdb
 import pigpio
 import logging
@@ -54,16 +55,17 @@ beamGPIO = 7
 # LED:
 ledGPIO = 4
 
+statusSetup = -1
 statusIdle = 0
 statusMovingUp = 1
 statusMovingDown = 2
 
 class gateServer(Server):
-    runStatus = statusIdle
     paused = 0
     motorRunTimeUp = 24
     motorRunTimeDown = 35
-    status = statusIdle
+    beamOpenTimeM = 2
+    status = statusSetup
     
     def onUp(self):
         logging.debug("On Up")
@@ -76,6 +78,7 @@ class gateServer(Server):
         elif self.status == statusIdle: self.moveDown()
 
     def  __init__(self):
+        self.status = statusSetup
         myLogger.setLogger('gate.log',level=logging.INFO)
         #logging.basicConfig(level=logging.DEBUG)
         self.pi = pigpio.pi()
@@ -98,7 +101,8 @@ class gateServer(Server):
         # Button and GPIO callback function
         def cbf(gpio, level, tick):
             longPress = 0
-            print 'Callback {} {} {} run Stat: {}'.format(gpio, level, tick, self.runStatus)
+            if self.status == statusSetup: return
+            print 'Callback {} {} {} run Stat: {}'.format(gpio, level, tick, self.status)
             #logging.debug('Callback %d %d %d run Stat: %d',gpio, level, tick, self.runStatus)
             # while self.pi.read(gpio) == 1 and longPress == 0:
                 # longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
@@ -112,10 +116,7 @@ class gateServer(Server):
                 logging.info("Fully open")
                 self.stop()
             if gpio == beamGPIO:
-                logging.info("Beam break detected")
-                self.scheduler.removeEvents('Close after')
-                self.moveUp()
-                self.scheduler.addDelayedEvent(3,self.onDown,[],"Close after beam")
+                self.onBeamBreak()
                     
             # Only pausing if closing the window.
             if gpio == pauseGPIO:
@@ -128,6 +129,7 @@ class gateServer(Server):
             self.pi.set_glitch_filter(but, 10000)
             self.pi.callback(but, edge, cbf)
         # setup all the buttons.
+        logging.info('Setup buttons')
         setup(upButton)
         setup(downButton)
         setup(topGPIO)
@@ -136,7 +138,7 @@ class gateServer(Server):
         setup(beamGPIO,edge=pigpio.FALLING_EDGE)
         self.pi.set_mode(motorPosGPIO, pigpio.OUTPUT)
         self.pi.set_mode(motorNegGPIO, pigpio.OUTPUT)
-        #self.pi.set_mode(ledGPIO, pigpio.OUTPUT)
+        logging.info('Setup calling stop')
         self.stop()
         self.blinker.blinkStat = utils.fastBlink
         time.sleep(1)
@@ -145,6 +147,16 @@ class gateServer(Server):
             if self.pi.read(pauseGPIO): return utils.fastBlink
             else: return self.blinker.blinkStat
         self.blinker.checkFunc = checkFunc
+        logging.info("Done with setup, now accepting callbacks")
+        #self.textSender = textSender()
+        self.status = statusIdle
+            
+    def onBeamBreak(self):
+        logging.info("Beam break detected")
+        self.scheduler.removeEvents('Close after')
+        self.moveUp()
+        self.scheduler.addDelayedEvent(3,self.onDown,[],"Close after beam")
+        #self.textSender.sendText('photo',12,120)
             
     def moveUp(self):
         if self.pi.read(topGPIO): return
@@ -163,7 +175,7 @@ class gateServer(Server):
         self.pi.write(motorNegGPIO,1)
         self.pi.write(motorPosGPIO,0)
         self.blinker.blinkStat = utils.slowBlink
-        logging.info("Move down")
+        logging.debug("Move down")
         self.stopTimer.cancel()
         self.status = statusMovingDown
         self.paused = 0
