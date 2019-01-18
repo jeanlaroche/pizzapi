@@ -205,13 +205,15 @@ class blinker(object):
 # @repeatFunc(2)
 # def foo(x): print(x)
 # Stop it with foo.stopNow = 1
-def repeatFunc(delayS):
+def repeatFunc(delayS,nRepeats=-1):
     def innerDec(some_function):
         def wrapper(*args):
             some_function(*args)
-            if wrapper.stopNow == 0:
+            wrapper.n += 1
+            if wrapper.stopNow == 0 and (nRepeats == 0 or wrapper.n < nRepeats):
                 threading.Timer(delayS,wrapper,args).start()
         wrapper.stopNow = 0
+        wrapper.n=0
         return wrapper
     return innerDec
     
