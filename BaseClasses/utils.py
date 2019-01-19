@@ -38,7 +38,7 @@ class myTimer(object):
     def removeEvents(self,pattern):
         for event in self.timedEvents:
             if pattern in event['name']: 
-                logging.info('Removing %s',event['name'])
+                logging.debug('Removing %s',event['name'])
                 self.timedEvents.pop(self.timedEvents.index(event))
 
     def getSunsetTime(self):
@@ -87,7 +87,7 @@ class myTimer(object):
                         event['func'](*event['params'])
                         if event['remove']:
                             idx = self.timedEvents.index(event)
-                            logging.info('Removing event %s',event['name'])
+                            logging.debug('Removing event %s',event['name'])
                             self.timedEvents.pop(idx)
                         
                     time.sleep(1)
@@ -95,7 +95,7 @@ class myTimer(object):
                     logging.error('Exception in timer: %s',e)        
         logging.info('Starting timer thread')
         self.timerThread = threading.Thread(target=timerLoop)
-        self.timerThread.daemon = True
+        self.timerThread.daemon = False
         self.timerThread.start()
     
 def printSeconds(nSecs):
@@ -194,7 +194,7 @@ class blinker(object):
             self.prevOnOff = onOff
         # fadeLoop()
         # t=threading.Thread(target=fadeLoop)
-        # t.daemon = True
+        # t.daemon = False
         # t.start()
 
         
@@ -205,13 +205,15 @@ class blinker(object):
 # @repeatFunc(2)
 # def foo(x): print(x)
 # Stop it with foo.stopNow = 1
-def repeatFunc(delayS):
+def repeatFunc(delayS,nRepeats=-1):
     def innerDec(some_function):
         def wrapper(*args):
             some_function(*args)
-            if wrapper.stopNow == 0:
+            wrapper.n += 1
+            if wrapper.stopNow == 0 and (nRepeats == 0 or wrapper.n < nRepeats):
                 threading.Timer(delayS,wrapper,args).start()
         wrapper.stopNow = 0
+        wrapper.n=0
         return wrapper
     return innerDec
     
