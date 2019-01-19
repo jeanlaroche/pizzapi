@@ -46,7 +46,7 @@ class myStream(object):
 
 def threadFunc(func,args=(),name = ''):
     loopThread = Thread(target=func, args=args, group=None)
-    loopThread.daemon = True
+    loopThread.daemon = False
     if name: logging.info("Starting %s thread",name)
     loopThread.start()
     return loopThread
@@ -57,7 +57,7 @@ def loopFunc(func,sleepS,args=(),name = ''):
             func(*args)
             time.sleep(sleepS)
     loopThread = Thread(target=auxFunc, args=(), group=None)
-    loopThread.daemon = True
+    loopThread.daemon = False
     if name: logging.info("Starting %s thread",name)
     loopThread.start()
     return loopThread

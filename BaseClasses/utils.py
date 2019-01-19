@@ -95,7 +95,7 @@ class myTimer(object):
                     logging.error('Exception in timer: %s',e)        
         logging.info('Starting timer thread')
         self.timerThread = threading.Thread(target=timerLoop)
-        self.timerThread.daemon = True
+        self.timerThread.daemon = False
         self.timerThread.start()
     
 def printSeconds(nSecs):
@@ -194,7 +194,7 @@ class blinker(object):
             self.prevOnOff = onOff
         # fadeLoop()
         # t=threading.Thread(target=fadeLoop)
-        # t.daemon = True
+        # t.daemon = False
         # t.start()
 
         
