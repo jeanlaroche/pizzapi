@@ -230,3 +230,12 @@ def delayFunc(delayS):
             threading.Timer(delayS,foo,args).start()
         return wrapper
     return innerDec
+
+def runDelayed(delayS,function,*args):
+    threading.Timer(delayS,function,*args).start()
+
+def runThreaded(function,*args):
+    t = threading.Thread(target=function,args=args)
+    t.start()
+    return t
+    

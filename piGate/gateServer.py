@@ -157,6 +157,7 @@ class gateServer(Server):
             self.scheduler.removeEvents('Close after')
             self.moveUp()
             self.scheduler.addDelayedEvent(3,self.onDown,[],"Close after beam")
+            #utils.runDelayed(180,self.onDown)
         #self.textSender.sendText('photo',12,120)
             
     def moveUp(self):
