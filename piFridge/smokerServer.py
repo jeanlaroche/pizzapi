@@ -29,6 +29,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
 tempGPIO = 26
+fanGPIO = 19
 buttonGPIO1 = 15    # Top left
 buttonGPIO2 = 18    # Top right
 buttonGPIO3 = 17    # Bot right
@@ -39,11 +40,15 @@ errorReturn = -100  # Value returned upon error
 class SmokerControl(Server):
     
     temp = 0
+    humi = 0
     targetTemp = 30
     tempDelta = 1
     lumaText = ''
     regulatePeriodS = 4
     plotHistHour = 4
+    # FAN STUFF
+    fanOnMin = 1
+    fanOffMin = 3
     
     dirty = 0           # Flag to indicate json file should be written
     
@@ -69,6 +74,7 @@ class SmokerControl(Server):
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
+        self.pi.set_mode(fanGPIO, pigpio.OUTPUT)
         self.hdc_handle = self.pi.i2c_open(1, 0x40)
         #self.am_handle = self.pi.i2c_open(1, 0x5C)
         # This is a circular buffer where [0] is the oldest, and [-1] the newest value
@@ -93,9 +99,9 @@ class SmokerControl(Server):
                 #print "status: {}".format(self.smokerStatus)
                 sleepS = 2
                 if self.smokerStatus == 0: 
-                    #print "Writing off"
                     self.pi.write(tempGPIO,self.smokerStatus)
                 else:
+                    # Adaptive stuff, stop based on the temp slope. 
                     deltaTemp = self.tempHist[-1]-self.tempHist[0]
                     # If we're less than x minutes away from reaching target at the current rate, stop.
                     if self.targetTemp-self.temp < 12*deltaTemp:
@@ -135,6 +141,13 @@ class SmokerControl(Server):
         if startThread: self.timerThread.start()
         self.lock = threading.Lock()
         self.setButCallback()
+        
+        def fanLoop(onOff):
+            logging.debug("Fan: %d",onOff)
+            self.pi.write(fanGPIO,onOff)
+            delay = self.fanOnMin if onOff else self.fanOffMin
+            threading.Timer(delay*60,fanLoop,[1-onOff]).start()
+        fanLoop(1)
         #self.startProgram()
         
     def setButCallback(self):
@@ -363,6 +376,7 @@ class SmokerControl(Server):
             #self.pi.write(buttonGPIO3,1)
             return
         self.temp = round(temp_SHT,ndigits=2)
+        self.humi = round(humi_SHT,ndigits=1)
         self.tempHist.append(self.temp) # self.tempHist[0] is the oldest value
         if self.temp < self.targetTemp - 0.5*self.tempDelta:
             # Turn heat on
@@ -399,9 +413,11 @@ class SmokerControl(Server):
         if full==0:
             uptime = self.GetUptime()
         on = self.pi.read(tempGPIO)
+        deltaT = round(self.tempHist[-1]-self.tempHist[0],ndigits=1)
         data = {"curTemp":self.temp,
             "targetTemp":self.targetTemp,"upTime":uptime,"smokerStatus":self.smokerStatus,"onOff":on,
-            "X":X,"Y":Y,"TT":TT,"Log":Log,"onTime":onTime,"lumaText":self.lumaText,"deltaT":self.tempHist[-1]-self.tempHist[0]} 
+            "X":X,"Y":Y,"TT":TT,"Log":Log,"onTime":onTime,"lumaText":self.lumaText,"deltaT":deltaT,
+            'humi':self.humi} 
         return data
     
     def getPlotData(self):

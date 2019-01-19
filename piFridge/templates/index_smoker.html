@@ -80,6 +80,7 @@ span {font-weight: bold;}
 				$("#SmokerStatus").text(data.onOff == 0 ? "Heat OFF" : "Heat ON");
 				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
 				$("#upTime").text(data.upTime);
+				$("#Humi").text(data.humi);
 				setTimeout(function(){quickUpdate();},1000);
 			});
 	}
@@ -190,7 +191,8 @@ span {font-weight: bold;}
     <div><h4><span id="lumaText1" ></span></h4></div>
     <div><h4><span id="lumaText2" ></span></h4></div>
     <div><h4><span id="lumaText3" ></span></h4></div>
-    <div><h4><span id="deltaT" ></span></h4></div>
+    <div><h4>DeltaT <span id="deltaT" ></span> F</h4></div>
+    <div><h4>Humidity <span id="Humi" ></span> %</h4></div>
     <div ><h2>Temperature:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
