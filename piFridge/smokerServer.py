@@ -13,23 +13,25 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
 logging.basicConfig(level=logging.DEBUG)
 from collections import deque
-#from lumaDisplay import Luma
+from lumaDisplay import Luma
 #from readBM280 import readData
 
-class Luma(object):
-    lock = None
-    def __init__(self):
-        self.lock = threading.Lock()
-        pass
-    def printText(self,text):
-        #logging.info(text)
-        pass
+# Fake luma 
+# class Luma(object):
+    # lock = None
+    # def __init__(self):
+        # self.lock = threading.Lock()
+        # pass
+    # def printText(self,text):
+        # #logging.info(text)
+        # pass
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
-tempGPIO = 26
+heaterGPIO = 26
 fanGPIO = 19
+ledGPIO = 13
 buttonGPIO1 = 15    # Top left
 buttonGPIO2 = 18    # Top right
 buttonGPIO3 = 17    # Bot right
@@ -73,8 +75,12 @@ class SmokerControl(Server):
         self.luma = Luma()
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
-        self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
+        self.pi.set_mode(heaterGPIO, pigpio.OUTPUT)
         self.pi.set_mode(fanGPIO, pigpio.OUTPUT)
+        self.pi.set_mode(ledGPIO, pigpio.OUTPUT)
+        self.pi.set_mode(19, pigpio.OUTPUT)
+        self.pi.write(19,0) # This guy provides a ground!
+
         self.hdc_handle = self.pi.i2c_open(1, 0x40)
         #self.am_handle = self.pi.i2c_open(1, 0x5C)
         # This is a circular buffer where [0] is the oldest, and [-1] the newest value
@@ -88,7 +94,8 @@ class SmokerControl(Server):
                 if 'periods' in data: self.periods = data['periods']
                 else: self.writeJson()
         self.temp = self.targetTemp
-        self.pi.write(tempGPIO,1-self.smokerStatus)
+        self.pi.write(heaterGPIO,1-self.smokerStatus)
+        self.pi.write(ledGPIO,1-self.smokerStatus)
         
         self.timer = myTimer()
         self.timer.start()
@@ -99,26 +106,30 @@ class SmokerControl(Server):
                 #print "status: {}".format(self.smokerStatus)
                 sleepS = 2
                 if self.smokerStatus == 0: 
-                    self.pi.write(tempGPIO,self.smokerStatus)
+                    self.pi.write(heaterGPIO,self.smokerStatus)
+                    self.pi.write(ledGPIO,self.smokerStatus)
                 else:
                     # Adaptive stuff, stop based on the temp slope. 
                     deltaTemp = self.tempHist[-1]-self.tempHist[0]
                     # If we're less than x minutes away from reaching target at the current rate, stop.
                     if self.targetTemp-self.temp < 12*deltaTemp:
                         logging.debug("Adapt off: DeltaTemp %.2f -- Temp %.2f",deltaTemp,self.temp)
-                        self.pi.write(tempGPIO,0)
+                        self.pi.write(heaterGPIO,0)
+                        self.pi.write(ledGPIO,0)
                         time.sleep(4)
                         continue
                     # If we're far away from the target, go full on.                        
                     if self.temp + 10 < self.targetTemp:
-                        self.pi.write(tempGPIO,self.smokerStatus)
+                        self.pi.write(heaterGPIO,self.smokerStatus)
+                        self.pi.write(ledGPIO,self.smokerStatus)
                     # Pulse the heater if the temp is close enough to the target temp.
                     else:
                         onS,offS = 5,15
                         # Read the heater status, and toggle on->off or off->on
-                        on = self.pi.read(tempGPIO)
+                        on = self.pi.read(heaterGPIO)
                         on = 1 - on
-                        self.pi.write(tempGPIO,on)
+                        self.pi.write(heaterGPIO,on)
+                        self.pi.write(ledGPIO,on)
                         # Sleep according to whether we're on or off.
                         sleepS = onS if on else offS
                         logging.debug("Pulsing now (%d): DeltaTemp %.2f -- Temp %.2f",on, deltaTemp,self.temp)
@@ -204,7 +215,7 @@ class SmokerControl(Server):
                 if gpio == buttonGPIO1: curPeriod['temp'] += 5
                 if gpio == buttonGPIO4: curPeriod['temp'] -= 5
                 def incMins(oneOrMinusOne):
-                    if curPeriod['durMn'] < 10: curPeriod['durMn'] += oneOrMinusOne
+                    if curPeriod['durMn'] < 20 + (1-oneOrMinusOne): curPeriod['durMn'] += oneOrMinusOne
                     else: curPeriod['durMn'] += oneOrMinusOne*10
                     curPeriod['durMn'] = max(0,curPeriod['durMn'])
                 if gpio == buttonGPIO2: incMins(1)
@@ -368,7 +379,8 @@ class SmokerControl(Server):
         if temp_SHT == errorReturn:
             logging.info("Error in read temp, turning off")
             self.smokerStatus = 0
-            self.pi.write(tempGPIO,0)
+            self.pi.write(heaterGPIO,0)
+            self.pi.write(ledGPIO,0)
             # Reboot the temp sensor!
             #logging.info("Error in read temp, Rebooting temp sensor")
             #self.pi.write(buttonGPIO3,0)
@@ -388,7 +400,9 @@ class SmokerControl(Server):
             # Turn heat off
             if self.smokerStatus == 1: logging.info("Turning heat off %.2fF on for %.1f minutes",self.temp,(time.time()-self.lastTimeOn)/60.)
             self.smokerStatus = 0
-        if not self.smokerStatus: self.pi.write(tempGPIO,self.smokerStatus)
+        if not self.smokerStatus: 
+            self.pi.write(heaterGPIO,self.smokerStatus)
+            self.pi.write(ledGPIO,self.smokerStatus)
         tt = time.time()
         self.displayStuff()
         # Only log the temp every self.logDeltaS seconds...
@@ -412,7 +426,7 @@ class SmokerControl(Server):
             uptime = self.GetUptime()
         if full==0:
             uptime = self.GetUptime()
-        on = self.pi.read(tempGPIO)
+        on = self.pi.read(heaterGPIO)
         deltaT = round(self.tempHist[-1]-self.tempHist[0],ndigits=1)
         data = {"curTemp":self.temp,
             "targetTemp":self.targetTemp,"upTime":uptime,"smokerStatus":self.smokerStatus,"onOff":on,
