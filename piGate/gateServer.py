@@ -153,10 +153,12 @@ class gateServer(Server):
             
     def onBeamBreak(self):
         logging.info("Beam break detected")
-        if self.pi.read(bottomGPIO) or self.status == statusMovingDown:
-            self.scheduler.removeEvents('Close after')
-            self.moveUp()
+        # If we were about to close the window, let's postpone a bit.
+        if self.scheduler.removeEvents('Close after'):
             self.scheduler.addDelayedEvent(3,self.onDown,[],"Close after beam")
+        if self.pi.read(bottomGPIO) or self.status == statusMovingDown:
+            self.moveUp()
+            #utils.runDelayed(180,self.onDown)
         #self.textSender.sendText('photo',12,120)
             
     def moveUp(self):
