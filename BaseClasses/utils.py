@@ -36,7 +36,7 @@ class myTimer(object):
         self.timedEvents.append({'hour':eventTime.hour,'min':eventTime.minute,'func':func,'params':params,'done':0,'name':name,'remove':1,'days':days})
         
     def removeEvents(self,pattern):
-        int found = 0
+        found = 0
         for event in self.timedEvents:
             if pattern in event['name']: 
                 logging.debug('Removing %s',event['name'])
