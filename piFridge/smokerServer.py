@@ -10,27 +10,27 @@ from BaseClasses.baseServer import Server
 import logging
 from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from BaseClasses.utils import myTimer, printSeconds
+from BaseClasses.utils import *
 logging.basicConfig(level=logging.DEBUG)
 from collections import deque
-from lumaDisplay import Luma
+#from lumaDisplay import Luma
 #from readBM280 import readData
 
 # Fake luma 
-# class Luma(object):
-    # lock = None
-    # def __init__(self):
-        # self.lock = threading.Lock()
-        # pass
-    # def printText(self,text):
-        # #logging.info(text)
-        # pass
+class Luma(object):
+    lock = None
+    def __init__(self):
+        self.lock = threading.Lock()
+        pass
+    def printText(self,text):
+        #logging.info(text)
+        pass
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 
 heaterGPIO = 26
-fanGPIO = 19
+fanGPIO = 6
 ledGPIO = 13
 buttonGPIO1 = 15    # Top left
 buttonGPIO2 = 18    # Top right
@@ -51,11 +51,13 @@ class SmokerControl(Server):
     # FAN STUFF
     fanOnMin = 1
     fanOffMin = 3
+    fanThread = None
     
     dirty = 0           # Flag to indicate json file should be written
     
-    smokerStatus = 0
-    lastTimeOn=0
+    smokerStatus = 0    # 1 when heater is on 0 otherwise
+    isPulsing =  0      # 1 if we're pulsing the heater.
+    lastTimeOn = 0
     
     logDeltaS = 30  # Time interval in s between two data logs
     lastLogTime = 0
@@ -77,7 +79,6 @@ class SmokerControl(Server):
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(heaterGPIO, pigpio.OUTPUT)
         self.pi.set_mode(fanGPIO, pigpio.OUTPUT)
-        self.pi.set_mode(ledGPIO, pigpio.OUTPUT)
         self.pi.set_mode(19, pigpio.OUTPUT)
         self.pi.write(19,0) # This guy provides a ground!
 
@@ -95,7 +96,6 @@ class SmokerControl(Server):
                 else: self.writeJson()
         self.temp = self.targetTemp
         self.pi.write(heaterGPIO,1-self.smokerStatus)
-        self.pi.write(ledGPIO,1-self.smokerStatus)
         
         self.timer = myTimer()
         self.timer.start()
@@ -107,7 +107,7 @@ class SmokerControl(Server):
                 sleepS = 2
                 if self.smokerStatus == 0: 
                     self.pi.write(heaterGPIO,self.smokerStatus)
-                    self.pi.write(ledGPIO,self.smokerStatus)
+                    self.isPulsing = 0
                 else:
                     # Adaptive stuff, stop based on the temp slope. 
                     deltaTemp = self.tempHist[-1]-self.tempHist[0]
@@ -115,27 +115,27 @@ class SmokerControl(Server):
                     if self.targetTemp-self.temp < 12*deltaTemp:
                         logging.debug("Adapt off: DeltaTemp %.2f -- Temp %.2f",deltaTemp,self.temp)
                         self.pi.write(heaterGPIO,0)
-                        self.pi.write(ledGPIO,0)
+                        self.isPulsing = 1
                         time.sleep(4)
                         continue
                     # If we're far away from the target, go full on.                        
                     if self.temp + 10 < self.targetTemp:
                         self.pi.write(heaterGPIO,self.smokerStatus)
-                        self.pi.write(ledGPIO,self.smokerStatus)
+                        self.isPulsing = 0
                     # Pulse the heater if the temp is close enough to the target temp.
                     else:
+                        self.isPulsing = 1
                         onS,offS = 5,15
                         # Read the heater status, and toggle on->off or off->on
                         on = self.pi.read(heaterGPIO)
                         on = 1 - on
                         self.pi.write(heaterGPIO,on)
-                        self.pi.write(ledGPIO,on)
                         # Sleep according to whether we're on or off.
                         sleepS = onS if on else offS
                         logging.debug("Pulsing now (%d): DeltaTemp %.2f -- Temp %.2f",on, deltaTemp,self.temp)
                 time.sleep(sleepS)
         self.pulseThread = threading.Thread(target=pulseHeat)
-        self.pulseThread.daemon = True
+        self.pulseThread.daemon = False
         if startThread: self.pulseThread.start()         
         
         def mainLoop():
@@ -148,16 +148,19 @@ class SmokerControl(Server):
                 time.sleep(self.regulatePeriodS)
             logging.info('Exiting regulate loop')            
         self.timerThread = threading.Thread(target=mainLoop)
-        self.timerThread.daemon = True
+        self.timerThread.daemon = False
         if startThread: self.timerThread.start()
         self.lock = threading.Lock()
         self.setButCallback()
+        self.blinker = blinker(self.pi,ledGPIO,self.blinkFunc)
         
         def fanLoop(onOff):
+            if self.stopNow: return
             logging.debug("Fan: %d",onOff)
             self.pi.write(fanGPIO,onOff)
             delay = self.fanOnMin if onOff else self.fanOffMin
-            threading.Timer(delay*60,fanLoop,[1-onOff]).start()
+            self.fanThread = threading.Timer(delay*60,fanLoop,[1-onOff])
+            self.fanThread.start()
         fanLoop(1)
         #self.startProgram()
         
@@ -234,14 +237,26 @@ class SmokerControl(Server):
         setup(buttonGPIO3)
         setup(buttonGPIO4)
     
+    def blinkFunc(self):
+        # if we'not pulsing and the heater is off:
+        heaterOn = self.pi.read(heaterGPIO)
+        #logging.info("BlinkFunc")
+        if self.isPulsing == 0 and heaterOn == 0: return flashBlink
+        if self.isPulsing == 0 and heaterOn == 1: return noBlinkOn
+        if self.isPulsing == 1 and heaterOn == 0: return slowBlink
+        if self.isPulsing == 1 and heaterOn == 1: return noBlinkOn
+    
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
             json.dump({'targetTemp':self.targetTemp, 'periods':self.periods},f,indent=1)
     
     def stop(self):
         self.stopNow=1
+        self.timer.stop()
         logging.info("Disconnecting from pigpio")
         self.pi.stop()
+        if self.fanThread: self.fanThread.cancel()
+        logging.info("Exiting stop()")
         
     def startProgram(self,fromScratch=1):
         self.timer.removeEvents('Period')
@@ -380,7 +395,6 @@ class SmokerControl(Server):
             logging.info("Error in read temp, turning off")
             self.smokerStatus = 0
             self.pi.write(heaterGPIO,0)
-            self.pi.write(ledGPIO,0)
             # Reboot the temp sensor!
             #logging.info("Error in read temp, Rebooting temp sensor")
             #self.pi.write(buttonGPIO3,0)
@@ -402,7 +416,6 @@ class SmokerControl(Server):
             self.smokerStatus = 0
         if not self.smokerStatus: 
             self.pi.write(heaterGPIO,self.smokerStatus)
-            self.pi.write(ledGPIO,self.smokerStatus)
         tt = time.time()
         self.displayStuff()
         # Only log the temp every self.logDeltaS seconds...

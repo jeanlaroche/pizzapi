@@ -134,7 +134,7 @@ class blinker(object):
         Note that the return does not affect self.blinkStatus. 
         '''
         self.blinkGPIO = blinkGPIO
-        self.checkFunc = None
+        self.checkFunc = checkFunc
         self.pi = pi
         self.pi.set_mode(self.blinkGPIO, pigpio.OUTPUT)
         self.pi.set_PWM_frequency(self.blinkGPIO,256)
