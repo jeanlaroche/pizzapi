@@ -13,18 +13,18 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import *
 logging.basicConfig(level=logging.DEBUG)
 from collections import deque
-#from lumaDisplay import Luma
+from lumaDisplay import Luma
 #from readBM280 import readData
 
 # Fake luma 
-class Luma(object):
-    lock = None
-    def __init__(self):
-        self.lock = threading.Lock()
-        pass
-    def printText(self,text):
-        #logging.info(text)
-        pass
+# class Luma(object):
+    # lock = None
+    # def __init__(self):
+        # self.lock = threading.Lock()
+        # pass
+    # def printText(self,text):
+        # #logging.info(text)
+        # pass
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -66,6 +66,7 @@ class SmokerControl(Server):
     jsonFile = '.params.json'
     logFile = 'smoker.log'
     readErrorCnt = 0
+    readError = 0
     
     periods = [{},{'temp':120,'durMn':10,'startT':0},{'temp':150,'durMn':5,'startT':0},{'temp':175,'durMn':2,'startT':0}]
     curPeriod = 0
@@ -241,6 +242,7 @@ class SmokerControl(Server):
         # if we'not pulsing and the heater is off:
         heaterOn = self.pi.read(heaterGPIO)
         #logging.info("BlinkFunc")
+        if self.readError: return fastBlink
         if self.isPulsing == 0 and heaterOn == 0: return flashBlink
         if self.isPulsing == 0 and heaterOn == 1: return noBlinkOn
         if self.isPulsing == 1 and heaterOn == 0: return slowBlink
@@ -394,6 +396,7 @@ class SmokerControl(Server):
         if temp_SHT == errorReturn:
             logging.info("Error in read temp, turning off")
             self.smokerStatus = 0
+            self.readError = 1
             self.pi.write(heaterGPIO,0)
             # Reboot the temp sensor!
             #logging.info("Error in read temp, Rebooting temp sensor")
@@ -401,6 +404,7 @@ class SmokerControl(Server):
             #time.sleep(2)
             #self.pi.write(buttonGPIO3,1)
             return
+        self.readError = 0
         self.temp = round(temp_SHT,ndigits=2)
         self.humi = round(humi_SHT,ndigits=1)
         self.tempHist.append(self.temp) # self.tempHist[0] is the oldest value
