@@ -36,10 +36,13 @@ class myTimer(object):
         self.timedEvents.append({'hour':eventTime.hour,'min':eventTime.minute,'func':func,'params':params,'done':0,'name':name,'remove':1,'days':days})
         
     def removeEvents(self,pattern):
+        found = 0
         for event in self.timedEvents:
             if pattern in event['name']: 
-                logging.info('Removing %s',event['name'])
+                logging.debug('Removing %s',event['name'])
                 self.timedEvents.pop(self.timedEvents.index(event))
+                found = 1
+        return found
 
     def getSunsetTime(self):
         import ephem  
@@ -87,7 +90,7 @@ class myTimer(object):
                         event['func'](*event['params'])
                         if event['remove']:
                             idx = self.timedEvents.index(event)
-                            logging.info('Removing event %s',event['name'])
+                            logging.debug('Removing event %s',event['name'])
                             self.timedEvents.pop(idx)
                         
                     time.sleep(1)
@@ -95,7 +98,7 @@ class myTimer(object):
                     logging.error('Exception in timer: %s',e)        
         logging.info('Starting timer thread')
         self.timerThread = threading.Thread(target=timerLoop)
-        self.timerThread.daemon = True
+        self.timerThread.daemon = False
         self.timerThread.start()
     
 def printSeconds(nSecs):
@@ -131,7 +134,7 @@ class blinker(object):
         Note that the return does not affect self.blinkStatus. 
         '''
         self.blinkGPIO = blinkGPIO
-        self.checkFunc = None
+        self.checkFunc = checkFunc
         self.pi = pi
         self.pi.set_mode(self.blinkGPIO, pigpio.OUTPUT)
         self.pi.set_PWM_frequency(self.blinkGPIO,256)
@@ -194,5 +197,48 @@ class blinker(object):
             self.prevOnOff = onOff
         # fadeLoop()
         # t=threading.Thread(target=fadeLoop)
-        # t.daemon = True
+        # t.daemon = False
         # t.start()
+
+        
+        from threading import Timer
+
+# Use this to run a function repeatedly every delayS seconds
+# For example:
+# @repeatFunc(2)
+# def foo(x): print(x)
+# Stop it with foo.stopNow = 1
+def repeatFunc(delayS,nRepeats=-1):
+    def innerDec(some_function):
+        def wrapper(*args):
+            some_function(*args)
+            wrapper.n += 1
+            if wrapper.stopNow == 0 and (nRepeats == 0 or wrapper.n < nRepeats):
+                threading.Timer(delayS,wrapper,args).start()
+        wrapper.stopNow = 0
+        wrapper.n=0
+        return wrapper
+    return innerDec
+    
+# Use this to run a function after a certain delay
+# For example:
+# @delayFunc(2)
+# def foo(x): print(x)
+# foo(33)
+def delayFunc(delayS):
+    def innerDec(some_function):
+        def wrapper(*args):
+            def foo(*args):
+                some_function(*args)
+            threading.Timer(delayS,foo,args).start()
+        return wrapper
+    return innerDec
+
+def runDelayed(delayS,function,*args):
+    threading.Timer(delayS,function,*args).start()
+
+def runThreaded(function,*args):
+    t = threading.Thread(target=function,args=args)
+    t.start()
+    return t
+    

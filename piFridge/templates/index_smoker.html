@@ -19,7 +19,7 @@ span {font-weight: bold;}
 	
 	// Javascript function for down button
 	function onTempDown() {
-		$.getJSON('/tempDown', function(data)
+		$.getJSON('/Smoker/tempDown', function(data)
 		{
 			$("#targetTemp").text(data.targetTemp);
 		});
@@ -27,14 +27,14 @@ span {font-weight: bold;}
 	
 	// Javascript function for up button
 	function onTempUp() {
-		$.getJSON('/tempUp', function(data)
+		$.getJSON('/Smoker/tempUp', function(data)
 		{
 			$("#targetTemp").text(data.targetTemp);
 		});
 	}
 	
 	function onStart() {
-		$.getJSON('/start', function(data)
+		$.getJSON('/Smoker/start', function(data)
 		{
 		});
 	}
@@ -45,7 +45,7 @@ span {font-weight: bold;}
 	// This is called at regular intervals when the page is loaded.
 	function getAllData() 
 	{
-		$.getJSON('/getData/1', function(data)
+		$.getJSON('/Smoker/getData/1', function(data)
 			{
 				// The text() is a method of the selector to set the text of the selected elements.
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
@@ -59,6 +59,7 @@ span {font-weight: bold;}
 				$("#lumaText1").text(foo[1]);
 				$("#lumaText2").text(foo[2]);
 				$("#lumaText3").text(foo[3]);
+				$("#deltaT").text(data.deltaT);
 				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
 				// To set a color, set the style to "color:red"
 				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
@@ -71,13 +72,15 @@ span {font-weight: bold;}
 
 	function quickUpdate() 
 	{
-		$.getJSON('/getData/0', function(data)
+		$.getJSON('/Smoker/getData/0', function(data)
 			{
 				$("#targetTemp").text(data.targetTemp);
 				$("#curTemp").text(data.curTemp);
 				$("#SmokerStatus").text(data.smokerStatus == 0 ? "Heat OFF" : "Heat ON");
+				$("#SmokerStatus").text(data.onOff == 0 ? "Heat OFF" : "Heat ON");
 				$("#SmokerStatus").attr('style',data.smokerStatus == 0 ? 'color:white' : 'color:red');
 				$("#upTime").text(data.upTime);
+				$("#Humi").text(data.humi);
 				setTimeout(function(){quickUpdate();},1000);
 			});
 	}
@@ -90,7 +93,7 @@ span {font-weight: bold;}
 			// Binds the ajax request pageUnload to onbeforeunload of the window.
 			window.onbeforeunload = function(){
 				// The ajax request must return something, but it's OK to ignore it.
-				$.get('/pageUnload');
+				$.get('/Smoker/pageUnload');
 			};
 			
 			// You can also call a regular javascipt function:
@@ -152,7 +155,7 @@ span {font-weight: bold;}
     $(
 		// You can put more code to be executed at page loading in here but it has to be inside a function.
 //		function () {
-//		$.getJSON('/humidityUp');
+//		$.getJSON('/Smoker/humidityUp');
 //		}
 		function() {
 			//redraw()
@@ -163,6 +166,7 @@ span {font-weight: bold;}
 <!-- Simple JQuery Mobile page that display the getHumidity state on the breadoard -->
 <!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
 
+<a href="http://heaterjl.mooo.com">Thermostat</a>
 
 <div data-role="page" data-theme="b">
 	<div data-role="header">
@@ -188,6 +192,8 @@ span {font-weight: bold;}
     <div><h4><span id="lumaText1" ></span></h4></div>
     <div><h4><span id="lumaText2" ></span></h4></div>
     <div><h4><span id="lumaText3" ></span></h4></div>
+    <div><h4>DeltaT <span id="deltaT" ></span> F</h4></div>
+    <div><h4>Humidity <span id="Humi" ></span> %</h4></div>
     <div ><h2>Temperature:</h2></div>
     <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
