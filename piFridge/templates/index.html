@@ -17,7 +17,6 @@ span {font-weight: bold;}
 
 <script type=text/javascript>
 	
-	var targetHumid;
 	// Javascript function for up button
 	function onHumiUp() {
 		$.getJSON('/Fridge/humiUp', function(data)
@@ -28,11 +27,9 @@ span {font-weight: bold;}
 	
 	// Javascript function for down button
 	function onHumiDown() {
-			targetHumid -= 1;
-			$("#targetHumidity").text(targetHumid);		
-			$.getJSON('/Fridge/humiDown', function(data)
+		$.getJSON('/Fridge/humiDown', function(data)
 		{
-			
+			$("#targetHumidity").text(data.targetHumidity);
 		});
 	}
 
@@ -67,7 +64,6 @@ span {font-weight: bold;}
 				$("#targetTemp").text(data.targetTemp);
 				$("#curTemp").text(data.curTemp);
 				$("#targetHumidity").text(data.targetHumidity);
-				targetHumid = data.targetHumidity;
 				$("#curHumidity").text(data.curHumidity);
 				//$("#temp").text(data.temp);
 				//$("#fridgeOnPeriodMin").text(data.fridgeOnPeriodMin);				
@@ -100,7 +96,6 @@ span {font-weight: bold;}
 				$("#targetTemp").text(data.targetTemp);
 				$("#curTemp").text(data.curTemp);
 				$("#targetHumidity").text(data.targetHumidity);
-				targetHumid = data.targetHumidity;
 				$("#curHumidity").text(data.curHumidity);
 				$("#upTime").text(data.upTime);
 				if(data.coolingMode)
@@ -205,8 +200,9 @@ span {font-weight: bold;}
 
 <div data-role="page" data-theme="b">
 	<div data-role="header">
-    <div><h2><center>FRIDGE CONTROL</center></h2></div>
+   <div><h2><center>FRIDGE CONTROL</center></h2></div>
     </div>
+<a href="http://heaterjl.mooo.com">Thermostat</a>
 	<form>
 	  <div>
 		<input type="radio" id="cool" name="ctrl" value="cool" >
