@@ -44,6 +44,7 @@ class FridgeControl(Server):
     fridgePowerW = 85
     
     jsonFile = 'fridge.json'
+    doWriteJson = 0
     logFile = 'fridge.log'
     readErrorCnt = 0
     
@@ -98,6 +99,7 @@ class FridgeControl(Server):
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
             json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode, 'totalOnTimeS':self.totalOnTimeS,'lastTotalOnTimeS':self.lastTotalOnTimeS},f)
+        self.doWriteJson = 0
     
     def stop(self):
         self.stopNow=1
@@ -106,23 +108,23 @@ class FridgeControl(Server):
         
     def setTargetTemp(self,targetTemp):
         self.targetTemp = targetTemp
-        self.writeJson()
+        self.doWriteJson = 1
         
     def incTargetTemp(self,inc):
         #logging.info("Inc temp %.0f",self.targetTemp)
         self.targetTemp += inc
-        self.writeJson()
+        self.doWriteJson = 1
         return self.targetTemp
 
     def incTargetHumi(self,inc):
         #logging.info("Inc humi %.0f",self.targetHumi)
         self.targetHumi += inc
-        self.writeJson()
+        self.doWriteJson = 1
         return self.targetHumi
 
     def setTargetHumi(self,targetHumi):
         self.targetHumi = targetHumi
-        self.writeJson()
+        self.doWriteJson = 1
         
     def read_SHT(self,timeOutS=1):
         # I write the raw device as that's easier. This is for no clock stretching.
@@ -248,7 +250,7 @@ class FridgeControl(Server):
                 if self.fridgeStatus:
                     self.totalOnTimeS += (time.time()-self.lastTimeOn)
                     logging.info("Turning cooling off %.2fF on for %.1f minutes. Tot time: %.1f mins",self.temp,(time.time()-self.lastTimeOn)/60.,self.totalOnTimeS/60.)
-                    self.writeJson()
+                    self.doWriteJson = 1
                 self.fridgeStatus = 0
             if self.temp > self.targetTemp + .5*self.tempDelta:
                 # Turn fridge on
@@ -290,6 +292,8 @@ class FridgeControl(Server):
             logging.error("%d read errors detected",self.readErrorCnt)
             self.readErrorCnt = 0
         self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
+        if self.doWriteJson : self.writeJson()
+
 
     def warnOnTooLong(self,onTime):
         logging.error("Fridge on for too long! {}",printSeconds(onTime))
@@ -370,12 +374,12 @@ def tempDown():
     
 @app.route("/Fridge/humiUp")
 def humiUp():
-    fc.incTargetHumi(1)
+    fc.incTargetHumi(5)
     return jsonify(**fc.getData(-1))
     
 @app.route("/Fridge/humiDown")
 def humiDown():
-    fc.incTargetHumi(-1)
+    fc.incTargetHumi(-5)
     return jsonify(**fc.getData(-1))
     
 fc = FridgeControl()
