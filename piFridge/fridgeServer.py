@@ -38,8 +38,10 @@ class FridgeControl(Server):
     logDeltaS = 120  # Time interval in s between two data logs
     lastLogTime = 0
     t1,t2,h1,h2=0,0,0,0
-    totalOnTimeS = 0
-    lastTotalOnTimeS = 0
+    totOnTimeFridgeS = 0
+    totOnTimeHumiS = 0
+    lastTotalOnTimeFridgeS = 0
+    lastTotalOnTimeHumiS = 0
     warnOnTimeS = 20*60 # Warn if fridge is on for more than this time.
     fridgePowerW = 85
     
@@ -63,11 +65,14 @@ class FridgeControl(Server):
         if os.path.exists(self.jsonFile):
             with open(self.jsonFile) as f:
                 data = json.load(f)
-                self.targetTemp = data['targetTemp']
-                self.targetHumi = data['targetHumi']
-                self.coolingMode = data['coolingMode']
-                self.totalOnTimeS = data['totalOnTimeS']
-                self.lastTotalOnTimeS = data['lastTotalOnTimeS']
+                for key in data.keys():
+                    setattr(self,key,data[key])
+                # self.targetTemp = data['targetTemp']
+                # self.targetHumi = data['targetHumi']
+                # self.coolingMode = data['coolingMode']
+                # self.totOnTimeFridgeS = data['totOnTimeFridgeS']
+                # self.totOnTimeHumiS = data['totOnTimeHumiS']
+                # self.lastTotalOnTimeFridgeS = data['lastTotalOnTimeFridgeS']
         self.temp = self.targetTemp
         self.humi = self.targetHumi
         self.pi.write(tempGPIO,1-self.fridgeStatus)
@@ -77,9 +82,11 @@ class FridgeControl(Server):
         self.timer = myTimer()
         # Timer to reset the total on time, and memorize the previous one.
         def foo():
-            logging.info("Total on-time: %.0fm",self.totalOnTimeS/60.)
-            self.lastTotalOnTimeS = self.totalOnTimeS
-            self.totalOnTimeS=0
+            logging.info("Total on-time: %.0fm",self.totOnTimeFridgeS/60.)
+            self.lastTotalOnTimeFridgeS = self.totOnTimeFridgeS
+            self.lastTotalOnTimeHumiS = self.totOnTimeHumiS
+            self.totOnTimeFridgeS=0
+            self.totOnTimeHumiS=0
         self.timer.addEvent(0,10,foo,name='reset total time',params=[])
         self.timer.start()
         
@@ -98,7 +105,8 @@ class FridgeControl(Server):
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode, 'totalOnTimeS':self.totalOnTimeS,'lastTotalOnTimeS':self.lastTotalOnTimeS},f)
+            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode, 'totOnTimeFridgeS':self.totOnTimeFridgeS,'totOnTimeHumiS':self.totOnTimeHumiS,'lastTotalOnTimeFridgeS':self.lastTotalOnTimeFridgeS,
+            'lastTotalOnTimeHumiS':self.lastTotalOnTimeHumiS},f)
         self.doWriteJson = 0
     
     def stop(self):
@@ -248,8 +256,8 @@ class FridgeControl(Server):
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
                 # Turn fridge off
                 if self.fridgeStatus:
-                    self.totalOnTimeS += (time.time()-self.lastTimeOn)
-                    logging.info("Turning cooling off %.2fF on for %.1f minutes. Tot time: %.1f mins",self.temp,(time.time()-self.lastTimeOn)/60.,self.totalOnTimeS/60.)
+                    self.totOnTimeFridgeS += (time.time()-self.lastTimeOn)
+                    logging.info("Turning cooling off %.2fF on for %.1f minutes. Tot time: %.1f mins",self.temp,(time.time()-self.lastTimeOn)/60.,self.totOnTimeFridgeS/60.)
                     self.doWriteJson = 1
                 self.fridgeStatus = 0
             if self.temp > self.targetTemp + .5*self.tempDelta:
@@ -306,7 +314,7 @@ class FridgeControl(Server):
         if full:
             X,Y,Z,TT,TH,Log = self.getPlotData()
             uptime = self.GetUptime()+" {:.1f}F {:.1f}%".format(self.t1,self.h1)
-            onTime = "On time today {} -- yesterday {}".format(printSeconds(self.totalOnTimeS),printSeconds(self.lastTotalOnTimeS))
+            onTime = "On time today {} -- yesterday {}".format(printSeconds(self.totOnTimeFridgeS),printSeconds(self.lastTotalOnTimeFridgeS))
         else:
             X,Y,Z,TT,TH,Log = [],[],[],[],[],''
             uptime,onTime = '',''
