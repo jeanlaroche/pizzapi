@@ -144,7 +144,8 @@ class SmokerControl(Server):
                 try:
                     self.regulate()
                 except Exception as e:
-                    logging.error('Error in regulate: %s',e)
+                    import traceback
+                    logging.error('Error in regulate: %s\n%s',e,traceback.format_exc())
                     pass
                 time.sleep(self.regulatePeriodS)
             logging.info('Exiting regulate loop')            
