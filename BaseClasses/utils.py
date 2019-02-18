@@ -242,3 +242,11 @@ def runThreaded(function,*args):
     t.start()
     return t
     
+def flashLED(pi,gpio,dur=0.100):
+    # Use this to flash a LED but return immediately
+    pi.write(gpio,1)
+    def turnOff():
+        pi.write(gpio,0)
+    runDelayed(dur,turnOff)
+    
+    
