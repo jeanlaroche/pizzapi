@@ -146,6 +146,8 @@ class SmokerControl(Server):
                 except Exception as e:
                     import traceback
                     logging.error('Error in regulate: %s\n%s',e,traceback.format_exc())
+                    # You don't want to leave the heater on in this case!
+                    self.pi.write(heaterGPIO,0)
                     pass
                 time.sleep(self.regulatePeriodS)
             logging.info('Exiting regulate loop')            
