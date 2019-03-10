@@ -380,16 +380,20 @@ class SmokerControl(Server):
         onOffStr = "{}Heat on".format(prog) if self.smokerStatus else "{}Heat off".format(prog)
         self.lumaText = 'Temp:   {:.1f}F\nTarget: {:.0f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr)
         self.lock.acquire()
-        self.luma.printText(self.lumaText)
-        self.lock.release()
+        try:
+            self.luma.printText(self.lumaText)
+        finally:
+            self.lock.release()
 
     def displayProgram(self,):
         prog = "P{} ".format(self.curPeriod)
         curPer = self.periods[self.curPeriod]
         self.lumaText = '{}\nTemp {}F\nTime {}mn'.format(prog,curPer['temp'],curPer['durMn'])
         self.lock.acquire()
-        self.luma.printText(self.lumaText)
-        self.lock.release()
+        try:
+            self.luma.printText(self.lumaText)
+        finally:
+            self.lock.release()
         
     def regulate(self):
         time.sleep(0.1)
