@@ -10,6 +10,8 @@ import time
 from threading import Timer
 import threading
 import BaseClasses.utils as utils
+import glob
+import re
 #https://picamera.readthedocs.io/en/release-1.13/
 # Insert an image using javascript:
 # https://www.quora.com/How-do-you-insert-an-image-in-Javascript
@@ -22,7 +24,12 @@ class cameraServer(Server):
     def  __init__(self):
         myLogger.setLogger('camera.log',level=logging.INFO)
         self.camera = PiCamera()
-        self.camera.start_preview()        
+        self.camera.start_preview()
+        allImages = glob.glob('image*.jpg')
+        allNums = re.findall('image_(\d\d\d)',' '.join(allImages))
+        allNums = [int(item) for item in allNums]
+        self.fileNumber = max(allNums)+1 if len(allNums) else 0
+        logging.info("Starting camera server, next file num: %d",self.fileNumber)
     
     def __del__(self):
         self.camera.stop_preview()
