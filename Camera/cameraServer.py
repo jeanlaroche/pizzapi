@@ -25,7 +25,7 @@ class cameraServer(Server):
         myLogger.setLogger('camera.log',level=logging.INFO)
         self.camera = PiCamera()
         self.camera.start_preview()
-        allImages = glob.glob('image*.jpg')
+        allImages = glob.glob('static/image*.jpg')
         allNums = re.findall('image_(\d\d\d)',' '.join(allImages))
         allNums = [int(item) for item in allNums]
         self.fileNumber = max(allNums)+1 if len(allNums) else 0
@@ -36,7 +36,7 @@ class cameraServer(Server):
         
     def snap(self):
         thisTime = time.strftime("%a_%d_%m_%Hh%Mm%S",time.localtime())
-        outFile = "image_{:03d}_{}.jpg".format(self.fileNumber,thisTime)
+        outFile = "static/image_{:03d}_{}.jpg".format(self.fileNumber,thisTime)
         logging.info("Taking snapshot: %s",outFile)
         self.camera.capture(outFile)
         self.fileNumber += 1
