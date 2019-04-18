@@ -1,7 +1,7 @@
 from picamera import PiCamera
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.baseServer import Server
-from BaseClasses.utils import myTimer
+from BaseClasses.utils import *
 from BaseClasses import myLogger
 import pdb
 import pigpio
@@ -12,6 +12,7 @@ import threading
 import BaseClasses.utils as utils
 import glob
 import re
+import os
 #https://picamera.readthedocs.io/en/release-1.13/
 # Insert an image using javascript:
 # https://www.quora.com/How-do-you-insert-an-image-in-Javascript
@@ -50,7 +51,10 @@ class cameraServer(Server):
             
     def getData(self):
         uptime = self.GetUptime()
-        return jsonify(data = 'Nothing to report', uptime=uptime)
+        allImages = sorted(glob.glob('static/image*.jpg'))
+        image = "http://192.168.1.127/static/{}".format(os.path.basename(allImages[-1]))
+        return jsonify(data = 'Nothing to report', uptime=uptime,image=image)
+    
         
 cs = cameraServer()
 

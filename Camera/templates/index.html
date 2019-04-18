@@ -45,12 +45,29 @@ span {font-weight: bold;}
 				// The text() is a method of the selector to set the text of the selected elements.
 				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
 				// Since many elements might match.
-				$("#uptime").text(data.uptime);
+				$("#uptime").text(data.uptime);	
 				onLog();
 			});
 		setTimeout(refresh,4000);
 	}
 	
+	function showImages() 
+	{
+		$.getJSON('/Camera/getData', function(data)
+			{
+				var img = document.createElement("img");
+				//img.src = "{{ url_for('static',filename="image_002_Wed_17_04_23h50m07.jpg")}}";
+				
+				let foo = data.image
+				//img.src = "{{ url_for('static',filename=" + data.image +")}}";
+				img.src = data.image
+				console.log(img.src);
+				console.log(data.image);
+				var src = document.getElementById("x"); 
+				src.appendChild(img);
+			});
+	}
+
 
 	// This is a JQuery shorthand to define a function that's called when the page is loaded.
     $(
@@ -61,14 +78,9 @@ span {font-weight: bold;}
 				// The ajax request must return something, but it's OK to ignore it.
 				$.get('/_pageUnload');
 			};
-			var img = document.createElement("img");
-			img.src = "{{ url_for('static',filename="image_002_Wed_17_04_23h50m07.jpg")}}";
-			var src = document.getElementById("x"); 
-			src.appendChild(img);
-	
 			refresh();
 			onLog();
-
+			showImages();
 			// This does an Ajax request for /_getFullData.
 			//$.getJSON('/_getData');
 		}
