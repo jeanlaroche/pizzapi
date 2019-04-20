@@ -1,5 +1,6 @@
 from picamera import PiCamera
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
+import flask
 from BaseClasses.baseServer import Server
 from BaseClasses.utils import *
 from BaseClasses import myLogger
@@ -52,9 +53,10 @@ class cameraServer(Server):
     def getData(self):
         uptime = self.GetUptime()
         allImages = sorted(glob.glob('static/image*.jpg'),reverse=1)
-        allImages = [ "http://192.168.1.127/static/{}".format(os.path.basename(item)) for item in allImages]
-        #image = "http://192.168.1.127/static/{}".format(os.path.basename(allImages[-1]))
-        return jsonify(data = 'Nothing to report', uptime=uptime,image=allImages)
+        host=flask.request.host_url
+        # allImages = [ os.path.join(host,'static',os.path.basename(item)) for item in allImages]
+        allImages = [os.path.basename(item) for item in allImages]
+        return jsonify(data = 'Nothing to report', uptime=uptime,image=allImages,host=host+'/static/')
     
     
 cs = cameraServer()
