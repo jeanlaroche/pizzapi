@@ -22,19 +22,23 @@ app = Flask(__name__)
 
 class cameraServer(Server):
     fileNumber = 0
+    allImages = []
     
     def  __init__(self):
         myLogger.setLogger('camera.log',level=logging.INFO)
         self.camera = PiCamera()
         self.camera.start_preview()
-        self.allImages = glob.glob('static/image*.jpg')
-        allNums = re.findall('image_(\d\d\d)',' '.join(self.allImages))
-        allNums = [int(item) for item in allNums]
-        self.fileNumber = max(allNums)+1 if len(allNums) else 0
+        self.getNextFileNumber()
         logging.info("Starting camera server, next file num: %d",self.fileNumber)
     
     def __del__(self):
         self.camera.stop_preview()
+        
+    def getNextFileNumber(self):
+        self.allImages = glob.glob('static/image*.jpg')
+        allNums = re.findall('image_(\d\d\d)',' '.join(self.allImages))
+        allNums = [int(item) for item in allNums]
+        self.fileNumber = max(allNums)+1 if len(allNums) else 0    
         
     def snap(self):
         thisTime = time.strftime("%a_%d_%m_%Hh%Mm%S",time.localtime())
@@ -54,6 +58,7 @@ class cameraServer(Server):
         imageName = os.path.join('static',name)
         logging.info("Remove %s",imageName)
         os.remove(imageName)
+        self.getNextFileNumber()
             
     def getData(self):
         uptime = self.GetUptime()
