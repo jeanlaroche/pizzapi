@@ -68,6 +68,8 @@ span {font-weight: bold;}
 					//console.log(data.image[i]);
 					img = document.createElement("img");
 					img.src = data.host+data.image[i];
+					//img.width = (.5*img.naturalWitdh);
+					//img.height = (.5*img.naturalHeight);
 					src.appendChild(img);
 					var txt = document.createElement("P"); 
 					txt.innerText = data.image[i]+" ^^"; 
