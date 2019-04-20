@@ -55,16 +55,17 @@ span {font-weight: bold;}
 	{
 		$.getJSON('/Camera/getData', function(data)
 			{
-				var img = document.createElement("img");
-				//img.src = "{{ url_for('static',filename="image_002_Wed_17_04_23h50m07.jpg")}}";
-				
-				let foo = data.image
-				//img.src = "{{ url_for('static',filename=" + data.image +")}}";
-				img.src = data.image
-				console.log(img.src);
-				console.log(data.image);
 				var src = document.getElementById("x"); 
-				src.appendChild(img);
+				var arrayLength = data.image.length;
+				for (var i = 0; i < arrayLength; i++) {
+					console.log(data.image[i]);
+					img = document.createElement("img");
+					img.src = data.image[i]
+					src.appendChild(img);
+					var txt = document.createElement("P"); 
+					txt.innerText = data.image[i]; 
+					src.appendChild(txt);
+				}
 			});
 	}
 

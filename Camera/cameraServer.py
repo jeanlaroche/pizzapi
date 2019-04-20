@@ -26,8 +26,8 @@ class cameraServer(Server):
         myLogger.setLogger('camera.log',level=logging.INFO)
         self.camera = PiCamera()
         self.camera.start_preview()
-        allImages = glob.glob('static/image*.jpg')
-        allNums = re.findall('image_(\d\d\d)',' '.join(allImages))
+        self.allImages = glob.glob('static/image*.jpg')
+        allNums = re.findall('image_(\d\d\d)',' '.join(self.allImages))
         allNums = [int(item) for item in allNums]
         self.fileNumber = max(allNums)+1 if len(allNums) else 0
         logging.info("Starting camera server, next file num: %d",self.fileNumber)
@@ -51,11 +51,12 @@ class cameraServer(Server):
             
     def getData(self):
         uptime = self.GetUptime()
-        allImages = sorted(glob.glob('static/image*.jpg'))
-        image = "http://192.168.1.127/static/{}".format(os.path.basename(allImages[-1]))
-        return jsonify(data = 'Nothing to report', uptime=uptime,image=image)
+        allImages = sorted(glob.glob('static/image*.jpg'),reverse=1)
+        allImages = [ "http://192.168.1.127/static/{}".format(os.path.basename(item)) for item in allImages]
+        #image = "http://192.168.1.127/static/{}".format(os.path.basename(allImages[-1]))
+        return jsonify(data = 'Nothing to report', uptime=uptime,image=allImages)
     
-        
+    
 cs = cameraServer()
 
 @app.route('/Camera/favicon.ico')
