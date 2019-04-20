@@ -60,12 +60,13 @@ span {font-weight: bold;}
 				for (var i = 0; i < arrayLength; i++) {
 					console.log(data.image[i]);
 					img = document.createElement("img");
-					img.src = data.host+data.image[i]
+					img.src = data.host+data.image[i];
 					src.appendChild(img);
 					var txt = document.createElement("P"); 
-					txt.innerText = data.image[i]; 
+					txt.innerText = data.image[i]+" ^^"; 
 					src.appendChild(txt);
-				}
+					var hr = document.createElement('hr');
+					src.appendChild(hr);				}
 			});
 	}
 
