@@ -49,6 +49,11 @@ class cameraServer(Server):
             allLines = f.readlines()
             allLines = list(reversed(allLines))
             return jsonify(log = ''.join(allLines[0:100]))
+    
+    def deleteImage(self,name):
+        imageName = os.path.join('static',name)
+        logging.info("Remove %s",imageName)
+        os.remove(imageName)
             
     def getData(self):
         uptime = self.GetUptime()
@@ -68,6 +73,11 @@ def favicon():
 @app.route('/Camera/snap')
 def snap():
     return cs.snap()
+    
+@app.route('/Camera/delete/<name>')
+def deleteImage(name):
+    cs.deleteImage(name)
+    return ('', 204)
     
 @app.route('/Camera/getData')
 def getData():

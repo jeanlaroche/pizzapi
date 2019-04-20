@@ -37,6 +37,11 @@ span {font-weight: bold;}
 		$.getJSON('/getData');
 	}
 	
+	function deleteImage(image) {
+		$.getJSON('/Camera/delete/'+image);
+		showImages();
+	}
+	
 	// This is called at regular intervals when the page is loaded.
 	function refresh() 
 	{
@@ -55,18 +60,30 @@ span {font-weight: bold;}
 	{
 		$.getJSON('/Camera/getData', function(data)
 			{
-				var src = document.getElementById("x"); 
+				var src = document.getElementById("x");
+				while (src.hasChildNodes()) {
+					src.removeChild(src.lastChild);}
 				var arrayLength = data.image.length;
 				for (var i = 0; i < arrayLength; i++) {
-					console.log(data.image[i]);
+					//console.log(data.image[i]);
 					img = document.createElement("img");
 					img.src = data.host+data.image[i];
 					src.appendChild(img);
 					var txt = document.createElement("P"); 
 					txt.innerText = data.image[i]+" ^^"; 
 					src.appendChild(txt);
+					var button = document.createElement("button");
+					button.innerHTML = "Delete ";
+					button.image=data.image[i];
+					button.addEventListener ("click", function(event) {
+						//console.log(this.image);
+						deleteImage(this.image);
+						});
+					src.appendChild(button);
+
 					var hr = document.createElement('hr');
-					src.appendChild(hr);				}
+					src.appendChild(hr);				
+				}
 			});
 	}
 
