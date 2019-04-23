@@ -63,38 +63,44 @@ class cameraServer(Server):
     def getData(self):
         uptime = self.GetUptime()
         allImages = sorted(glob.glob('static/image*.jpg'),reverse=1)
-        host=flask.request.host_url
+        host=flask.request.host_url+'/Camera/'
         # allImages = [ os.path.join(host,'static',os.path.basename(item)) for item in allImages]
         allImages = [os.path.basename(item) for item in allImages]
+        #logging.info("URL %s", flask.url_for('static',filename = allImages[0]))
         return jsonify(data = 'Nothing to report', uptime=uptime,image=allImages,host=host+'/static/')
     
     
 cs = cameraServer()
 
+@app.route('/favicon.ico')
 @app.route('/Camera/favicon.ico')
 def favicon():
     return cs.favicon()
 
+@app.route('/snap')
 @app.route('/Camera/snap')
 def snap():
     return cs.snap()
     
+@app.route('/delete/<name>')
 @app.route('/Camera/delete/<name>')
 def deleteImage(name):
     cs.deleteImage(name)
     return ('', 204)
     
+@app.route('/getData')
 @app.route('/Camera/getData')
 def getData():
     return cs.getData()
 
+@app.route('/getLog')
 @app.route('/Camera/getLog')
 def getLog():
     return cs.getLog()
 
 
 # return index page when IP address of RPi is typed in the browser
-@app.route("/Camera/")
+#@app.route("/Camera/")
 @app.route("/")
 def Index():
     return cs.Index()
