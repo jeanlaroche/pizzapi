@@ -71,8 +71,10 @@ span {font-weight: bold;}
 					//img.width = (.5*img.naturalWitdh);
 					//img.height = (.5*img.naturalHeight);
 					src.appendChild(img);
-					var txt = document.createElement("P"); 
-					txt.innerText = data.image[i]+" ^^"; 
+					var txt = document.createElement("P");
+					// image_037_Tue_23_04_20h47m51.jpg
+					var pieces = data.image[i].split(/_|\./)
+					txt.innerText = pieces[2]+" "+pieces[5]
 					src.appendChild(txt);
 					var button = document.createElement("button");
 					button.innerHTML = "Delete ";
