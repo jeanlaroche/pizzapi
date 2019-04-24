@@ -11,6 +11,9 @@ result = confirm("You Sure?");
 // Print to log:
 console.log(result);
 
+// Split a string: (you can use a regexp)
+var pieces = data.image[i].split(/_|\./)
+
 Loop around array:
 var arrayLength = data.image.length;
 for (var i = 0; i < arrayLength; i++) {
