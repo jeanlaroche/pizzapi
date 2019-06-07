@@ -20,15 +20,22 @@
   // Function called when the page is loaded.
   $( function() {
 	$.getJSON('/_init', function(data)
-			{
-				$("#sliderGain" ).slider('value',data.gain*25)
-			})
+	{
+		$("#sliderGain" ).slider('value',data.gain*25)
+		$("#status")[0].style.fontSize = "xx-large";
+		$("#lastTripped")[0].style.fontSize = "xx-large";
+		$("#curV")[0].style.fontSize = "xx-large";
+		$("#calibV")[0].style.fontSize = "xx-large";
+	})
   } );
 
 $(document).ready(function(){
     var socket = io.connect('http://' + document.domain + ':' + location.port);
     socket.on('currentValues', function(msg) {
-        $('#log2').text(msg.data);
+        $('#status').text(msg.status);
+		$('#status')[0].style.fontSize = "xx-large";
+		$('#status')[0].style.color = msg.status.includes('tripped') ? "red" : "black";
+        $('#lastTripped').text(msg.lastTripped);
         $('#curV').text("Cur   V " + msg.curV.toFixed(2) + " V");
         $('#calibV').text("Calib V " + msg.calibV.toFixed(2) + " V");
     });
@@ -57,9 +64,9 @@ $(document).ready(function(){
 //		if(confirm("Are you sure?")==true)
 			socket.emit('Calib', {data: ""});
       });
-    $( "#reset" ).button({});
-	$( "#reset" ).click(function() {
-		socket.emit('TurnOnOff', {data: -1});
+    $( "#ReArm" ).button({});
+	$( "#ReArm" ).click(function() {
+		socket.emit('reArm');
       });
 
 
@@ -113,13 +120,24 @@ span {font-weight: bold;}
 </tr>
 </tbody>
 </table> -->
-<div style="width: 175px;" id="curV" ></div>
-<div style="width: 175px;" id="calibV" ></div>
+<div style="width: 400px;" id="curV" ></div>
+<div style="width: 400px;" id="calibV" ></div>
+<div style="width: 400px;" id="status" ></div>
+<div style="width: 400px;" id="lastTripped" ></div>
 
 <br />
 <br />
 <br />
 <div style="width: 155px;" id="Calib">Calibrate</div>
+<p />
+<p />
+<div style="width: 155px;" id="ReArm">Re-Arm</div>
+<p />
+<p />
+<div style="width: 155px;" id="OnButton">On</div>
+<p />
+<p />
+<div style="width: 155px;" id="OffButton">Off</div>
 <br />
 <p />
 <p />
