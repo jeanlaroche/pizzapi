@@ -29,6 +29,8 @@ class Zapper(Server):
         self.gain = 2
         self.Vots = [6.144,4.096,2.048,1.024,0.512,0.256]
         self.scale = np.power(2.,-11)
+        self.calibV = 0
+        self.curV = 0
         
         YL_40=0x48
         self.handle = self.pi.i2c_open(1, YL_40, 0)
@@ -83,13 +85,13 @@ class Zapper(Server):
                 meanVal = 1.*np.mean(values)*self.scale*self.Vots[self.gain]
                 print "val {}".format(meanVal)
                 str = 'Nothing'
-                VOut = meanVal
+                self.curV = meanVal
                 AOut = 0
                 VMax = 0
                 AMax = 0
                 control = 0
                 try:
-                    socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'VMax':VMax,'AMax':AMax,'Control':control})
+                    socketio.emit('currentValues', {'data': str,'curV':self.curV,'calibV':self.calibV,'VMax':VMax,'AMax':AMax,'Control':control})
                 except:
                     pass
                 time.sleep(.3)
@@ -97,16 +99,18 @@ class Zapper(Server):
         t.daemon = True
         t.start()
         
-    def calibrate(self,AorV):
-        logging.info("Calibrating %s",AorV)
+    def calibrate(self):
+        logging.info("Calibrating")
+        self.calibV = self.curV
         
     def saveParams(self):
         with open(self.paramFile,'w') as f:
-            json.dump({'nothing':'nothing'},f)
+            json.dump({'calibV':self.calibV},f)
     def loadParams(self):
         try:
             with open(self.paramFile) as f:
                 D = json.load(f)
+                self.calibV = D['calibV']
         except:
             pass
         
@@ -150,7 +154,7 @@ def funcName(param1,param2):
 @socketio.on('setGain')
 def setGain(arg1):
     zapper.gain = int(arg1['data']/25)
-    print "SET GAIN {}".format(zapper.gain)
+    #print "SET GAIN {}".format(zapper.gain)
     zapper.saveParams()
 
 @socketio.on('setTargetA')
@@ -168,7 +172,7 @@ def turnOnOff(arg1):
 @socketio.on('Calib')
 def Calib(arg1):
     print "CALIBRATE {}".format(arg1['data'])
-    #zapper.calibrate(arg1['data'])
+    zapper.calibrate()
 
     
 zapper = Zapper()

@@ -29,10 +29,8 @@ $(document).ready(function(){
     var socket = io.connect('http://' + document.domain + ':' + location.port);
     socket.on('currentValues', function(msg) {
         $('#log2').text(msg.data);
-        $('#AOut').text("Actual " + msg.AOut.toFixed(2)+ " A");
-        $('#VOut').text("Actual " + msg.VOut.toFixed(2) + " V");
-        $('#AMax').text("Max A " +msg.AMax.toFixed(2) + " A");
-        $('#VMax').text("Max V " +msg.VMax.toFixed(2) + " V");
+        $('#curV').text("Cur   V " + msg.curV.toFixed(2) + " V");
+        $('#calibV').text("Calib V " + msg.calibV.toFixed(2) + " V");
     });
      $( "#sliderA" ).slider({
       slide: function( event, ui ) {
@@ -56,7 +54,7 @@ $(document).ready(function(){
       });
     $( "#Calib" ).button({});
 	$( "#Calib" ).click(function() {
-		if(confirm("Are you sure?")==true)
+//		if(confirm("Are you sure?")==true)
 			socket.emit('Calib', {data: ""});
       });
     $( "#reset" ).button({});
@@ -115,15 +113,16 @@ span {font-weight: bold;}
 </tr>
 </tbody>
 </table> -->
-<div style="width: 175px;" id="VOut" ></div>
+<div style="width: 175px;" id="curV" ></div>
+<div style="width: 175px;" id="calibV" ></div>
 
 <br />
 <br />
 <br />
 <div style="width: 155px;" id="Calib">Calibrate</div>
 <br />
-<div />
-<div />
+<p />
+<p />
 <div id="sliderGain"></div></td>
 
 </body>
