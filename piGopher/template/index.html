@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jQuery UI Slider - Default functionality</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+<script type="text/javascript" charset="utf-8">
+//    var socket = io.connect('http://' + document.domain + ':' + location.port);
+//    socket.on('connect', function() {
+//        socket.emit('my event', {data: 'I\'m connected!'});
+//        socket.emit('my event', {data: 'Yepee'});
+//    });
+</script>
+  <script>
+  // Function called when the page is loaded.
+  $( function() {
+	$.getJSON('/_init', function(data)
+			{
+				$("#sliderV" ).slider('value',data.VOut)
+				$("#sliderA" ).slider('value',data.AOut)
+			})
+  } );
+
+$(document).ready(function(){
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    socket.on('currentValues', function(msg) {
+        $('#log2').text(msg.data);
+        $('#AOut').text("Actual " + msg.AOut.toFixed(2)+ " A");
+        $('#VOut').text("Actual " + msg.VOut.toFixed(2) + " V");
+        $('#AMax').text("Max A " +msg.AMax.toFixed(2) + " A");
+        $('#VMax').text("Max V " +msg.VMax.toFixed(2) + " V");
+		$('#OnOff').text((msg.PowerOn?"ON":"OFF")+" Power: "+msg.Power.toFixed(2) + " W -- mWHour " + msg.mWHour.toFixed(2))
+		$("#OnOff").attr('style',msg.PowerOn? 'color:red' : 'color:black');
+		if(msg.PowerOn) $('#OnButton').css("background","red");
+		else $('#OnButton').css("background","white");
+		$("#VMax").attr('style',(msg.Control=="V" && msg.PowerOn) ? 'color:red' : 'color:black');
+		$("#AMax").attr('style',(msg.Control=="A"&& msg.PowerOn) ? 'color:red' : 'color:black');
+    });
+     $( "#sliderA" ).slider({
+      slide: function( event, ui ) {
+		socket.emit('setTargetA', {data: ui.value});
+      },
+    });
+    $( "#sliderV" ).slider({
+      slide: function( event, ui ) {
+		socket.emit('setTargetV', {data: ui.value});
+      },
+    });
+    $( "#OnButton" ).button({width: 155
+    });
+    $( "#OffButton" ).button({width: 155
+    });
+	$( "#OnButton" ).click(function() {
+		socket.emit('TurnOnOff', {data: 1});
+      });
+	$( "#OffButton" ).click(function() {
+		socket.emit('TurnOnOff', {data: 0});
+      });
+    $( "#CalibV" ).button({});
+	$( "#CalibV" ).click(function() {
+		if(confirm("Are you sure?")==true)
+			socket.emit('Calib', {data: "V"});
+      });
+    $( "#CalibA" ).button({});
+	$( "#CalibA" ).click(function() {
+		if(confirm("Are you sure?")==true)
+			socket.emit('Calib', {data: "A"});
+      });
+    $( "#reset" ).button({});
+	$( "#reset" ).click(function() {
+		socket.emit('TurnOnOff', {data: -1});
+      });
+
+
+});
+  </script>
+<style>
+h3 {text-align: center;}
+h4 {text-align: left; color: green}
+span {font-weight: bold;}
+</style>
+
+  </head>
+<body>
+ 
+<div ><p><h2>VOLTAGE CONTROLER</h2></p></div>
+
+ <div ><p><h2 id="OnOff"> ONOFF </h2></p></div>
+ 
+ <table style="height: 172px; width: 350px; border:2px solid black; padding:35px, " border=1 >
+<tbody>
+<tr>
+<td style="width: 350px;" colspan="2">VOLTS</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2"><div id="sliderV"></div></td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2">AMPS</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2"><div id="sliderA"></div></td>
+</tr>
+<tr>
+<td style="width: 350px; height: 10px" colspan="2"> </td>
+</tr>
+<tr>
+<td style="width: 175px;" id="VMax"> VMAX </td>
+<td style="width: 175px;"id="AMax" > AMAX </td>
+</tr>
+<tr>
+<td style="width: 350px; height: 10px" colspan="2">  </td>
+</tr>
+<tr>
+<td style="width: 175px;" id="VOut" ></td>
+<td style="width: 175px;" id="AOut" ></td>
+</tr>
+<tr>
+<td style="width: 155px;" id="OnButton">ON</td>
+<td style="width: 155px;" id="OffButton">OFF</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2" id="log2">status</td>
+</tr>
+</tbody>
+</table>
+<br />
+<div style="width: 155px;" id="reset">Reset mwHour</div>
+<br />
+<br />
+<div style="width: 155px;" id="CalibV">Calibrate 6V</div>
+<br />
+<div style="width: 155px;" id="CalibA">Calibrate 1A</div>
+</body>
+</html>
