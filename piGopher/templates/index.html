@@ -21,8 +21,7 @@
   $( function() {
 	$.getJSON('/_init', function(data)
 			{
-				$("#sliderV" ).slider('value',data.VOut)
-				$("#sliderA" ).slider('value',data.AOut)
+				$("#sliderGain" ).slider('value',data.gain*25)
 			})
   } );
 
@@ -34,21 +33,15 @@ $(document).ready(function(){
         $('#VOut').text("Actual " + msg.VOut.toFixed(2) + " V");
         $('#AMax').text("Max A " +msg.AMax.toFixed(2) + " A");
         $('#VMax').text("Max V " +msg.VMax.toFixed(2) + " V");
-		$('#OnOff').text((msg.PowerOn?"ON":"OFF")+" Power: "+msg.Power.toFixed(2) + " W -- mWHour " + msg.mWHour.toFixed(2))
-		$("#OnOff").attr('style',msg.PowerOn? 'color:red' : 'color:black');
-		if(msg.PowerOn) $('#OnButton').css("background","red");
-		else $('#OnButton').css("background","white");
-		$("#VMax").attr('style',(msg.Control=="V" && msg.PowerOn) ? 'color:red' : 'color:black');
-		$("#AMax").attr('style',(msg.Control=="A"&& msg.PowerOn) ? 'color:red' : 'color:black');
     });
      $( "#sliderA" ).slider({
       slide: function( event, ui ) {
 		socket.emit('setTargetA', {data: ui.value});
       },
     });
-    $( "#sliderV" ).slider({
+    $( "#sliderGain" ).slider({
       slide: function( event, ui ) {
-		socket.emit('setTargetV', {data: ui.value});
+		socket.emit('setGain', {data: ui.value});
       },
     });
     $( "#OnButton" ).button({width: 155
@@ -61,15 +54,10 @@ $(document).ready(function(){
 	$( "#OffButton" ).click(function() {
 		socket.emit('TurnOnOff', {data: 0});
       });
-    $( "#CalibV" ).button({});
-	$( "#CalibV" ).click(function() {
+    $( "#Calib" ).button({});
+	$( "#Calib" ).click(function() {
 		if(confirm("Are you sure?")==true)
-			socket.emit('Calib', {data: "V"});
-      });
-    $( "#CalibA" ).button({});
-	$( "#CalibA" ).click(function() {
-		if(confirm("Are you sure?")==true)
-			socket.emit('Calib', {data: "A"});
+			socket.emit('Calib', {data: ""});
       });
     $( "#reset" ).button({});
 	$( "#reset" ).click(function() {
@@ -88,11 +76,9 @@ span {font-weight: bold;}
   </head>
 <body>
  
-<div ><p><h2>VOLTAGE CONTROLER</h2></p></div>
+<div ><p><h2>ZAP THE FUCKERS</h2></p></div>
 
- <div ><p><h2 id="OnOff"> ONOFF </h2></p></div>
- 
- <table style="height: 172px; width: 350px; border:2px solid black; padding:35px, " border=1 >
+<!--  <table style="height: 172px; width: 350px; border:2px solid black; padding:35px, " border=1 >
 <tbody>
 <tr>
 <td style="width: 350px;" colspan="2">VOLTS</td>
@@ -128,13 +114,17 @@ span {font-weight: bold;}
 <td style="width: 350px;" colspan="2" id="log2">status</td>
 </tr>
 </tbody>
-</table>
+</table> -->
+<div style="width: 175px;" id="VOut" ></div>
+
 <br />
-<div style="width: 155px;" id="reset">Reset mwHour</div>
 <br />
 <br />
-<div style="width: 155px;" id="CalibV">Calibrate 6V</div>
+<div style="width: 155px;" id="Calib">Calibrate</div>
 <br />
-<div style="width: 155px;" id="CalibA">Calibrate 1A</div>
+<div />
+<div />
+<div id="sliderGain"></div></td>
+
 </body>
 </html>

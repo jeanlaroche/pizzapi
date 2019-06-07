@@ -25,33 +25,35 @@ class Zapper(Server):
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(outGPIO, pigpio.OUTPUT)
-        logging.info("PWM Frequency %d",self.pi.get_PWM_frequency(outGPIO))
-
         self.counter = 0
+        self.gain = 2
+        self.Vots = [6.144,4.096,2.048,1.024,0.512,0.256]
+        self.scale = np.power(2.,-11)
         
         YL_40=0x48
         self.handle = self.pi.i2c_open(1, YL_40, 0)
         self.loadParams()
-        self.loop()
+        #self.testLoop()
+        self.watchForGopher()
         
     def __delete__(self):
         print "DELETE"
         self.pi.stop()
 
-    def readADInputs(self):
-        self.counter = (self.counter + 1) % 10
-        # Somehow input 1 does not seem to work any longer?
-        inputs=[0,2]
-        for a in range(0,2):
-            # Massaging: get the mean of 512 values, then use the 1024 last one for the feedback and many more for the display
-            values = readValues(chan=a,gain=self.gains[a],numVals=100,verbose=0)[0]
-            meanVal = 1.*np.mean(values)/self.factors[self.gains[a]]
-            self.outputVHist[a] = np.roll(self.outputVHist[a],1)
-            self.outputVHist[a][0]= meanVal
-            self.outputV[a]=np.mean(self.outputVHist[a][0:self.nMean])
-            self.outputVSmooth[a] = np.mean(self.outputVHist[a])
+    # def readADInputs(self):
+        # self.counter = (self.counter + 1) % 10
+        # # Somehow input 1 does not seem to work any longer?
+        # inputs=[0,2]
+        # for a in range(0,2):
+            # # Massaging: get the mean of 512 values, then use the 1024 last one for the feedback and many more for the display
+            # values = readValues(chan=a,gain=self.gain,numVals=100,verbose=0)[0]
+            # meanVal = 1.*np.mean(values)*self.Vots[self.gain]
+            # self.outputVHist[a] = np.roll(self.outputVHist[a],1)
+            # self.outputVHist[a][0]= meanVal
+            # self.outputV[a]=np.mean(self.outputVHist[a][0:self.nMean])
+            # self.outputVSmooth[a] = np.mean(self.outputVHist[a])
     
-    def loop(self):
+    def testLoop(self):
         def doLoop():
             cnt = 0
             cntOn = 0
@@ -71,20 +73,27 @@ class Zapper(Server):
         t.start()
         
         
-    def regulateForTargetV(self):
+    def watchForGopher(self):
         fullRange = 2048.
         
-        def regLoop():
-            ratio,ratioV,ratioA = 0,0,0
-            control = 'V'
+        def doLoop():
             while 1:
-                self.readADInputs()
+                #self.readADInputs()
+                values = readValues(chan=0,gain=self.gain,numVals=10,verbose=0)[0]
+                meanVal = 1.*np.mean(values)*self.scale*self.Vots[self.gain]
+                print "val {}".format(meanVal)
+                str = 'Nothing'
+                VOut = meanVal
+                AOut = 0
+                VMax = 0
+                AMax = 0
+                control = 0
                 try:
-                    socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'VMax':VMax,'AMax':AMax,'Control':control,
-                        'PowerOn':self.PowerOn,'Power':Power,'mWHour':self.mWHour})
+                    socketio.emit('currentValues', {'data': str,'VOut':VOut,'AOut':AOut,'VMax':VMax,'AMax':AMax,'Control':control})
                 except:
                     pass
-        t = threading.Thread(target=regLoop)
+                time.sleep(.3)
+        t = threading.Thread(target=doLoop)
         t.daemon = True
         t.start()
         
@@ -93,17 +102,11 @@ class Zapper(Server):
         
     def saveParams(self):
         with open(self.paramFile,'w') as f:
-            json.dump({'targetA':self.targetOutA,'targetV':self.targetOutV,'dacToVolt':self.dacToVolt,'dacToAmp':self.dacToAmp,
-            'mWHour':self.mWHour},f)
+            json.dump({'nothing':'nothing'},f)
     def loadParams(self):
         try:
             with open(self.paramFile) as f:
                 D = json.load(f)
-                self.targetOutA = D['targetA']
-                self.targetOutV = D['targetV']
-                self.dacToVolt = D['dacToVolt']
-                self.dacToAmp = D['dacToAmp']
-                self.mWHour = D['mWHour']
         except:
             pass
         
@@ -111,7 +114,8 @@ class Zapper(Server):
 
 @app.route('/favicon.ico')
 def favicon():
-    return zapper.favicon()
+    print "FAV ICON"
+    return ('', 204)
             
 @app.route("/reboot")
 def reboot():
@@ -125,7 +129,8 @@ def kg():
 
 @app.route('/_init')
 def init():
-    return(jsonify(VOut=zapper.targetOutV/zapper.posToAdcV,AOut=zapper.targetOutA/zapper.posToAdcA))
+    print "INIT"
+    return(jsonify(gain=zapper.gain))
 
 @app.route('/setRatio_<int:param1>')
 def setRatio(param1):
@@ -135,33 +140,35 @@ def setRatio(param1):
     # return index page when IP address of RPi is typed in the browser
 @app.route("/")
 def Index():
+    print "/"
     return zapper.Index()
     
 @app.route("/funcName/<int:param1>/<int:param2>")
 def funcName(param1,param2):
     return jsonify(param1=param1,param2=param2)
 
-@socketio.on('setTargetV')
-def setTargetV(arg1):
-    zapper.targetOutV = int(arg1['data']*zapper.posToAdcV)
+@socketio.on('setGain')
+def setGain(arg1):
+    zapper.gain = int(arg1['data']/25)
+    print "SET GAIN {}".format(zapper.gain)
     zapper.saveParams()
 
 @socketio.on('setTargetA')
 def setTargetA(arg1):
-    zapper.targetOutA = int(arg1['data']*zapper.posToAdcA)
+    #zapper.targetOutA = int(arg1['data']*zapper.posToAdcA)
     zapper.saveParams()
 
 @socketio.on('TurnOnOff')
 def turnOnOff(arg1):
     print "TURNING ON?OFF {}".format(arg1['data'])
     val = int(arg1['data'])
-    if val in [0,1]: zapper.turnOn(val)
-    else: zapper.resetMwHour()
+    #if val in [0,1]: zapper.turnOn(val)
+    #else: zapper.resetMwHour()
 
 @socketio.on('Calib')
 def Calib(arg1):
     print "CALIBRATE {}".format(arg1['data'])
-    zapper.calibrate(arg1['data'])
+    #zapper.calibrate(arg1['data'])
 
     
 zapper = Zapper()
@@ -172,7 +179,7 @@ if __name__ == "__main__":
     #zapper.glow()
     # try:
     socketio.run(app,host='0.0.0.0',port=8080)
-        # app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+    #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
     # except:
         # print "STOP"
         # zapper.pi.stop()
