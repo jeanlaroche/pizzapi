@@ -36,6 +36,7 @@ $(document).ready(function(){
 		$('#status')[0].style.fontSize = "xx-large";
 		$('#status')[0].style.color = msg.status.includes('tripped') ? "red" : "black";
         $('#lastTripped').text(msg.lastTripped);
+        $('#time').text(msg.time);
         $('#curV').text("Cur   V " + msg.curV.toFixed(2) + " V");
         $('#calibV').text("Calib V " + msg.calibV.toFixed(2) + " V");
     });
@@ -124,6 +125,7 @@ span {font-weight: bold;}
 <div style="width: 400px;" id="calibV" ></div>
 <div style="width: 400px;" id="status" ></div>
 <div style="width: 400px;" id="lastTripped" ></div>
+<div style="width: 400px;" id="time" ></div>
 
 <br />
 <br />

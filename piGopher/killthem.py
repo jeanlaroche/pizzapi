@@ -96,7 +96,8 @@ class Zapper(Server):
         
         def sendData(str):
             try:
-                socketio.emit('currentValues', {'status': str,'curV':self.curV,'calibV':self.calibV,'lastTripped':self.lastTripTime})
+                socketio.emit('currentValues', {'status': str,'curV':self.curV,'calibV':self.calibV,'lastTripped':self.lastTripTime,
+                'time':'Current time: ' + time.ctime(time.time())})
             except:
                 pass
         
@@ -113,7 +114,7 @@ class Zapper(Server):
                 sendData(str)
                 if self.curV < self.calibV * self.threshFactor and self.status == status_waiting:
                     # Turn the relay on
-                    logging.warning('Triggering relay. V = %.2f Threshold = %.2f',self.curV,self.calibV * self.threshFactor)
+                    logging.warning('ZAP! Triggering relay. V = %.2f Threshold = %.2f',self.curV,self.calibV * self.threshFactor)
                     self.status = status_tripped
                     self.pi.write(relayGPIO,1)
                     sendData('Triggering relay')
