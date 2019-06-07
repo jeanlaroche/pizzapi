@@ -45,7 +45,7 @@ class Zapper(Server):
         # The relay is on for this amount of time.
         self.relayOnTimeS = 4
         # Status. 
-        self.status = status_waiting
+        self.status = status_off
         # Last time tripped
         self.lastTripTime = ''
         
