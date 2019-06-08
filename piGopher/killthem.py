@@ -25,6 +25,7 @@ class Zapper(Server):
     
     def __init__(self):
         myLogger.setLogger('zapper.log',mode='a',dateFormat="%H:%M:%S",level=logging.WARNING)
+        self.logFileName = 'zapper.log'
         logging.warning('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(relayGPIO, pigpio.OUTPUT)
@@ -97,14 +98,14 @@ class Zapper(Server):
         def sendData(str):
             try:
                 socketio.emit('currentValues', {'status': str,'curV':self.curV,'calibV':self.calibV,'lastTripped':self.lastTripTime,
-                'time':'Current time: ' + time.ctime(time.time())})
+                'time':'Current time: ' + time.ctime(time.time()),'threshV':self.threshFactor*self.calibV})
             except:
                 pass
         
         def doLoop():
             while 1:
                 #self.readADInputs()
-                values = readValues(chan=0,gain=self.gain,numVals=1000,verbose=0)[0]
+                values = readValues(chan=0,gain=self.gain,numVals=100,verbose=0)[0]
                 meanVal = 1.*np.mean(values)*self.scale*self.maxVolts[self.gain]
                 #print "val {}".format(meanVal)
                 if self.status == status_waiting: str = 'Status: waiting... '
@@ -118,7 +119,7 @@ class Zapper(Server):
                     self.status = status_tripped
                     self.pi.write(relayGPIO,1)
                     sendData('Triggering relay')
-                    self.lastTripTime = 'last tripped: {}'.format(time.asctime(time.localtime()))
+                    self.lastTripTime = 'Last zapped: {}'.format(time.asctime(time.localtime()))
                     # Since we're on only for a little while, we can just sleep here, then reset the relay
                     time.sleep(self.relayOnTimeS)
                     self.pi.write(relayGPIO,0)
@@ -131,6 +132,7 @@ class Zapper(Server):
     def calibrate(self):
         logging.warning("Calibrating")
         self.calibV = self.curV
+        self.saveParams()
     
     def reArm(self):
         logging.warning("Resetting, re-arming, curV %.2f calibV %.2f",self.curV,self.calibV)
@@ -145,13 +147,14 @@ class Zapper(Server):
         
     def saveParams(self):
         with open(self.paramFile,'w') as f:
-            json.dump({'calibV':self.calibV, 'gain':self.gain},f)
+            json.dump({'calibV':self.calibV, 'gain':self.gain, 'threshFactor':self.threshFactor},f)
     def loadParams(self):
         try:
             with open(self.paramFile) as f:
                 D = json.load(f)
                 self.calibV = D['calibV']
                 self.gain = D['gain']
+                self.threshFactor = D['threshFactor']
         except:
             pass
         
@@ -175,7 +178,7 @@ def kg():
 @app.route('/_init')
 def init():
     print "INIT"
-    return(jsonify(gain=zapper.gain))
+    return(jsonify(threshFactor=zapper.threshFactor))
 
 @app.route('/setRatio_<int:param1>')
 def setRatio(param1):
@@ -192,9 +195,9 @@ def Index():
 def funcName(param1,param2):
     return jsonify(param1=param1,param2=param2)
 
-@socketio.on('setGain')
-def setGain(arg1):
-    zapper.gain = int(arg1['data']/25)
+@socketio.on('setOffset')
+def setOffset(arg1):
+    zapper.threshFactor = float(arg1['data'])/100
     #print "SET GAIN {}".format(zapper.gain)
     zapper.saveParams()
 
@@ -212,6 +215,11 @@ def turnOnOff(arg1):
 def Calib(arg1):
     print "CALIBRATE {}".format(arg1['data'])
     zapper.calibrate()
+
+@app.route('/log')
+def log():
+    print "LOG"
+    return jsonify(log=zapper.getLog())
 
     
 zapper = Zapper()

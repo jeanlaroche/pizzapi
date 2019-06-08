@@ -21,7 +21,7 @@
   $( function() {
 	$.getJSON('/_init', function(data)
 	{
-		$("#sliderGain" ).slider('value',data.gain*25)
+		$("#sliderOffset" ).slider('value',data.threshFactor*100)
 		$("#status")[0].style.fontSize = "xx-large";
 		$("#lastTripped")[0].style.fontSize = "xx-large";
 		$("#curV")[0].style.fontSize = "xx-large";
@@ -34,20 +34,21 @@ $(document).ready(function(){
     socket.on('currentValues', function(msg) {
         $('#status').text(msg.status);
 		$('#status')[0].style.fontSize = "xx-large";
-		$('#status')[0].style.color = msg.status.includes('tripped') ? "red" : "black";
+		$('#status')[0].style.color = msg.status.includes('tripped') || msg.status.includes('riggering') ? "red" : "black";
         $('#lastTripped').text(msg.lastTripped);
         $('#time').text(msg.time);
-        $('#curV').text("Cur   V " + msg.curV.toFixed(2) + " V");
-        $('#calibV').text("Calib V " + msg.calibV.toFixed(2) + " V");
+        $('#curV').text  ("Cur   " + msg.curV.toFixed(2) + " V");
+        $('#calibV').text("Calib " + msg.calibV.toFixed(2) + " V");
+        $('#threshV').text("Thresh: " + msg.threshV.toFixed(2) + " V");
     });
      $( "#sliderA" ).slider({
       slide: function( event, ui ) {
 		socket.emit('setTargetA', {data: ui.value});
       },
     });
-    $( "#sliderGain" ).slider({
+    $( "#sliderOffset" ).slider({
       slide: function( event, ui ) {
-		socket.emit('setGain', {data: ui.value});
+		socket.emit('setOffset', {data: ui.value});
       },
     });
     $( "#OnButton" ).button({width: 155
@@ -130,20 +131,21 @@ span {font-weight: bold;}
 <br />
 <br />
 <br />
-<div style="width: 155px;" id="Calib">Calibrate</div>
+<div style="width: 130px;" id="Calib">Calibrate</div>
 <p />
 <p />
-<div style="width: 155px;" id="ReArm">Re-Arm</div>
+<div style="width: 130px;" id="ReArm">Re-Arm</div>
 <p />
 <p />
-<div style="width: 155px;" id="OnButton">On</div>
+<div style="width: 130px;" id="OnButton">On</div>
 <p />
 <p />
-<div style="width: 155px;" id="OffButton">Off</div>
+<div style="width: 130px;" id="OffButton">Off</div>
 <br />
 <p />
 <p />
-<div id="sliderGain"></div></td>
+<div style="width: 200px;" id="sliderOffset"></div></td>
+<div style="width: 800px;" id="threshV" ></div>
 
 </body>
 </html>
