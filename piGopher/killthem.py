@@ -179,7 +179,7 @@ def kg():
 @app.route('/_init')
 def init():
     print "INIT"
-    return(jsonify(threshFactor=zapper.threshFactor,zapTimeS=zapper.zapTimeS))
+    return(jsonify(threshFactor=zapper.threshFactor,zapTimeS=zapper.zapTimeS, log=zapper.getLog(400)))
 
 @app.route('/setRatio_<int:param1>')
 def setRatio(param1):

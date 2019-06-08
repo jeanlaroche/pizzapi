@@ -27,6 +27,7 @@
 		$("#lastTripped")[0].style.fontSize = "xx-large";
 		$("#curV")[0].style.fontSize = "xx-large";
 		$("#calibV")[0].style.fontSize = "xx-large";
+		$("#Log").text(data.log);
 	})
   } );
 
@@ -150,6 +151,11 @@ span {font-weight: bold;}
 <div style="width: 800px;" id="threshV" ></div>
 <div style="width: 200px;" id="sliderZapTimeS"></div></td>
 <div style="width: 800px;" id="zapTimeS" ></div>
+
+<div ><h2>Log:</h2></div>
+ <div>
+ <pre id="Log"></pre>
+ </div>
 
 </body>
 </html>

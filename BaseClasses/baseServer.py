@@ -37,7 +37,7 @@ class Server(object):
     def getLog(self,numLines=0):
         with open(self.logFileName) as f:
             allLines = f.readlines()
-            allLines = allLines.reverse()
+            allLines.reverse()
             if numLines: allLines = allLines[0:numLines]
         return ''.join(allLines)
             
