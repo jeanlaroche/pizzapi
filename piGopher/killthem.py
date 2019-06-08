@@ -44,7 +44,7 @@ class Zapper(Server):
         # self.threshFactor * self.calibV is the threshold below which we trigger the relay
         self.threshFactor = .9 
         # The relay is on for this amount of time.
-        self.relayOnTimeS = 4
+        self.zapTimeS = 4
         # Status. 
         self.status = status_off
         # Last time tripped
@@ -98,7 +98,7 @@ class Zapper(Server):
         def sendData(str):
             try:
                 socketio.emit('currentValues', {'status': str,'curV':self.curV,'calibV':self.calibV,'lastTripped':self.lastTripTime,
-                'time':'Current time: ' + time.ctime(time.time()),'threshV':self.threshFactor*self.calibV})
+                'time':'Current time: ' + time.ctime(time.time()),'threshV':self.threshFactor*self.calibV,'zapTimeS':self.zapTimeS})
             except:
                 pass
         
@@ -121,7 +121,7 @@ class Zapper(Server):
                     sendData('Triggering relay')
                     self.lastTripTime = 'Last zapped: {}'.format(time.asctime(time.localtime()))
                     # Since we're on only for a little while, we can just sleep here, then reset the relay
-                    time.sleep(self.relayOnTimeS)
+                    time.sleep(self.zapTimeS)
                     self.pi.write(relayGPIO,0)
                     
                 time.sleep(.1)
@@ -147,7 +147,7 @@ class Zapper(Server):
         
     def saveParams(self):
         with open(self.paramFile,'w') as f:
-            json.dump({'calibV':self.calibV, 'gain':self.gain, 'threshFactor':self.threshFactor},f)
+            json.dump({'calibV':self.calibV, 'gain':self.gain, 'threshFactor':self.threshFactor,'zapTimeS':self.zapTimeS},f)
     def loadParams(self):
         try:
             with open(self.paramFile) as f:
@@ -155,6 +155,7 @@ class Zapper(Server):
                 self.calibV = D['calibV']
                 self.gain = D['gain']
                 self.threshFactor = D['threshFactor']
+                self.zapTimeS = D['zapTimeS']
         except:
             pass
         
@@ -178,7 +179,7 @@ def kg():
 @app.route('/_init')
 def init():
     print "INIT"
-    return(jsonify(threshFactor=zapper.threshFactor))
+    return(jsonify(threshFactor=zapper.threshFactor,zapTimeS=zapper.zapTimeS))
 
 @app.route('/setRatio_<int:param1>')
 def setRatio(param1):
@@ -198,7 +199,11 @@ def funcName(param1,param2):
 @socketio.on('setOffset')
 def setOffset(arg1):
     zapper.threshFactor = float(arg1['data'])/100
-    #print "SET GAIN {}".format(zapper.gain)
+    zapper.saveParams()
+
+@socketio.on('setZapTimeS')
+def setZapTimeS(arg1):
+    zapper.zapTimeS = float(arg1['data'])/10
     zapper.saveParams()
 
 @socketio.on('reArm')

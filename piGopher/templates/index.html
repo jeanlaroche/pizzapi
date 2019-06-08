@@ -22,6 +22,7 @@
 	$.getJSON('/_init', function(data)
 	{
 		$("#sliderOffset" ).slider('value',data.threshFactor*100)
+		$("#sliderZapTimeS" ).slider('value',data.zapTimeS*10)
 		$("#status")[0].style.fontSize = "xx-large";
 		$("#lastTripped")[0].style.fontSize = "xx-large";
 		$("#curV")[0].style.fontSize = "xx-large";
@@ -40,10 +41,11 @@ $(document).ready(function(){
         $('#curV').text  ("Cur   " + msg.curV.toFixed(2) + " V");
         $('#calibV').text("Calib " + msg.calibV.toFixed(2) + " V");
         $('#threshV').text("Thresh: " + msg.threshV.toFixed(2) + " V");
+        $('#zapTimeS').text("ZapTime: " + msg.zapTimeS.toFixed(2) + " s");
     });
-     $( "#sliderA" ).slider({
+     $( "#sliderZapTimeS" ).slider({
       slide: function( event, ui ) {
-		socket.emit('setTargetA', {data: ui.value});
+		socket.emit('setZapTimeS', {data: ui.value});
       },
     });
     $( "#sliderOffset" ).slider({
@@ -146,6 +148,8 @@ span {font-weight: bold;}
 <p />
 <div style="width: 200px;" id="sliderOffset"></div></td>
 <div style="width: 800px;" id="threshV" ></div>
+<div style="width: 200px;" id="sliderZapTimeS"></div></td>
+<div style="width: 800px;" id="zapTimeS" ></div>
 
 </body>
 </html>
