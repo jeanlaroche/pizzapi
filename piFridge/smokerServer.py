@@ -74,6 +74,7 @@ class SmokerControl(Server):
     runStatus = 0 # 0 is normal, 1 is run program, and 2 is programming
     doubleClick=0
     changeWhat = 0 # 0: temp, 1: duration
+    curDurMin = 0
     
     def __init__(self,startThread=1):
         myLogger.setLogger(self.logFile,mode='a',level=logging.DEBUG)
@@ -183,7 +184,7 @@ class SmokerControl(Server):
                 self.longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
                 time.sleep(0.010)
             if not self.longPress and gpio == pushGPIO:
-                while self.pi.read(gpio) == 1 and (self.pi.get_current_tick() - tick)/1.e6 < .2:
+                while self.pi.read(gpio) == 1 and (self.pi.get_current_tick() - tick)/1.e6 < .4:
                     time.sleep(0.010)
             if self.pi.read(gpio) == 0 and not self.longPress and gpio == pushGPIO: self.doubleClick=1
             logging.debug('cfb1 %d %d status %d changeWhat %d',self.longPress,self.doubleClick,self.runStatus,self.changeWhat)
@@ -216,9 +217,12 @@ class SmokerControl(Server):
                     return
                 if gpio == decoderA_GPIO: 
                     if self.changeWhat == 0: self.incTargetTemp(level,0)
-                    self.displayStuff()
                     # Not sure that this is easy to implement yet
-                    #if self.changeWhat == 1: self.incPeriod(level,0)
+                    if self.changeWhat == 1:
+                        self.timer.incEventTime('Period',min=level)
+                        # I need to do that otherwise the remaining time isn't shown correctly
+                        self.curDurMin += level
+                    self.displayStuff()
                     return
             elif self.runStatus == 2:
                 # This is the programming handling.
@@ -230,10 +234,13 @@ class SmokerControl(Server):
                 if self.doubleClick: 
                     # While programming, double-click goes to the next period
                     self.curPeriod = self.curPeriod + 1
+                    self.changeWhat = 0
                     if self.curPeriod > 3:
                         self.stopProgram()
                         self.displayStuff()
                         return
+                    self.displayProgram()
+                    return
                 if gpio == pushGPIO:
                     # A single push toggles between temp etc.
                     self.changeWhat = 1-self.changeWhat
@@ -260,6 +267,7 @@ class SmokerControl(Server):
         setup(decoderA_GPIO)
         setup(decoderB_GPIO)
         setup(pushGPIO)
+        self.pi.set_glitch_filter(pushGPIO, 10000)
         # EITHER_EDGE, RISING_EDGE (default), or FALLING_EDGE
         self.pi.callback(pushGPIO, pigpio.FALLING_EDGE, self.cbf)
         self.decoder = rotary.decoder(self.pi, decoderA_GPIO, decoderB_GPIO, self.rotaryCallback)
@@ -304,6 +312,7 @@ class SmokerControl(Server):
             self.periods[self.curPeriod]['startT'] = time.time()
             delayMn = self.periods[self.curPeriod]['durMn']
             self.timer.addDelayedEvent(delayMn,incPeriod,[],'Period {}'.format(self.curPeriod+1))
+            self.curDurMin = delayMn
         if fromScratch: 
             self.curPeriod = 0
             self.runStatus = 1
@@ -402,7 +411,7 @@ class SmokerControl(Server):
         if not self.runStatus:
             timeStr = time.strftime("%H:%M:%S",time.localtime())
         elif self.runStatus == 1:
-            remainingS = self.periods[self.curPeriod]['durMn']*60 - (time.time() - self.periods[self.curPeriod]['startT'])
+            remainingS = self.curDurMin*60 - (time.time() - self.periods[self.curPeriod]['startT'])
             timeStr = "Rem: {}".format(printSeconds(remainingS))
         prog = "P{} ".format(self.curPeriod) if self.runStatus else ""
         onOffStr = "{}Heat on".format(prog) if self.smokerStatus else "{}Heat off".format(prog)
