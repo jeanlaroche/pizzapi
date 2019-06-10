@@ -17,32 +17,19 @@ class rotDecoder:
       counterclockwise.
 
       EXAMPLE
-
       import time
       import pigpio
-
       import rotary_encoder
-
       pos = 0
-
       def callback(way):
-
          global pos
-
          pos += way
-
          print("pos={}".format(pos))
-
       pi = pigpio.pi()
-
       rotDecoder = rotary_encoder.rotDecoder(pi, 7, 8, callback)
-
       time.sleep(300)
-
       rotDecoder.cancel()
-
       pi.stop()
-
       """
 
       self.pi = pi

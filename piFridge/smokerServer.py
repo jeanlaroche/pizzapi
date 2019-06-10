@@ -14,6 +14,7 @@ from BaseClasses.utils import *
 logging.basicConfig(level=logging.DEBUG)
 from collections import deque
 from lumaDisplay import Luma
+import rotary
 #from readBM280 import readData
 
 # Fake luma 
@@ -32,10 +33,10 @@ app.config['SECRET_KEY'] = 'secret!'
 heaterGPIO = 26
 fanGPIO = 6
 ledGPIO = 13
-buttonGPIO1 = 15    # Top left
-buttonGPIO2 = 18    # Top right
-buttonGPIO3 = 17    # Bot right
-buttonGPIO4 = 14    # Bot left
+groundGPIO = 18    # I'm using this as ground
+decoderA_GPIO = 27    # Decoder
+decoderB_GPIO = 17    # Decoder
+pushGPIO = 22    # Push button
 
 errorReturn = -100  # Value returned upon error
 
@@ -71,9 +72,11 @@ class SmokerControl(Server):
     periods = [{},{'temp':120,'durMn':10,'startT':0},{'temp':150,'durMn':5,'startT':0},{'temp':175,'durMn':2,'startT':0}]
     curPeriod = 0
     runStatus = 0 # 0 is normal, 1 is run program, and 2 is programming
+    doubleClick=0
+    changeWhat = 0 # 0: temp, 1: duration
     
     def __init__(self,startThread=1):
-        myLogger.setLogger(self.logFile,mode='a',level=logging.INFO)
+        myLogger.setLogger(self.logFile,mode='a',level=logging.DEBUG)
         logging.info('Setting up display')
         self.luma = Luma()
         logging.info('Starting pigpio')
@@ -168,79 +171,104 @@ class SmokerControl(Server):
         fanLoop(1)
         #self.startProgram()
         
-    def setButCallback(self):
-        def cbf(gpio, level, tick):
-            longPress = 0
-            logging.debug('cfb0 %d %d %d %d',gpio, level, tick, self.runStatus)
-            while self.pi.read(gpio) == 1 and longPress == 0:
-                longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
-                time.sleep(0.010)
-            logging.debug('cfb1')
-            if gpio == buttonGPIO4 and longPress:
-                # Cancel everything
-                self.stopProgram()
-                self.displayStuff()
+    def cbf(self,gpio, level, tick):
+            # When you double click, you'll get a second callback which you should ignore.
+            if gpio != pushGPIO: self.doubleClick = 0
+            if self.doubleClick and gpio == pushGPIO:
+                self.doubleClick = 0
                 return
-            if self.runStatus in [0,1]:
-                # This is the regular button handling
-                logging.debug('cfb2 %d',longPress)
-                if longPress:
-                    if gpio == buttonGPIO1:
-                        self.runStatus = 2
-                        self.curPeriod = 1
-                        self.displayProgram()
-                        return
-                    if gpio == buttonGPIO2:
-                        if self.runStatus==0:
-                            self.startProgram()
-                        else:
-                            self.stopProgram()
-                        self.displayStuff()
-                        return
-                        
-                if gpio == buttonGPIO1: self.incTargetTemp(5)
-                if gpio == buttonGPIO4: self.incTargetTemp(-5)
-                # if self.runStatus == 1:
-                    # curPeriod = self.periods[self.curPeriod]
-                    # if gpio == buttonGPIO2: curPeriod['durMn'] += 10
-                    # if gpio == buttonGPIO3: curPeriod['durMn'] -= 10
-                    # if curPeriod['durMn'] <= 0:
-                        # self.curPeriod += 1
-                        # if self.curPeriod > 3:      
-                            # self.stopProgram()
-                        # else: self.startProgram(0)
-                        # self.displayStuff()
+            self.longPress = 0
+            logging.debug('cfb0 %d %d %d %d',gpio, level, tick, self.runStatus)
+            while self.pi.read(gpio) == 0 and self.longPress == 0 and gpio == pushGPIO:
+                self.longPress = (self.pi.get_current_tick() - tick)/1.e6 > 1.
+                time.sleep(0.010)
+            if not self.longPress and gpio == pushGPIO:
+                while self.pi.read(gpio) == 1 and (self.pi.get_current_tick() - tick)/1.e6 < .2:
+                    time.sleep(0.010)
+            if self.pi.read(gpio) == 0 and not self.longPress and gpio == pushGPIO: self.doubleClick=1
+            logging.debug('cfb1 %d %d status %d changeWhat %d',self.longPress,self.doubleClick,self.runStatus,self.changeWhat)
+            
+            if self.runStatus in [0]:
+                if self.longPress:
+                    # Long press -> program.
+                    self.runStatus = 2
+                    self.curPeriod = 1
+                    self.changeWhat = 0
+                    self.displayProgram()
+                    return
+                if self.doubleClick:
+                    # Double click -> start program
+                    self.startProgram()
+                    return
+                if gpio == decoderA_GPIO: self.incTargetTemp(level,0)
+                print("target temp {}".format(self.targetTemp))
+                return
+
+            if self.runStatus in [1]:
+                if self.longPress:
+                    # While running the program, a long press cancels.
+                    self.stopProgram()
+                    self.displayStuff()
+                    return
+                if gpio == pushGPIO:
+                    # While running the program, a click switches to changing the duration and vice-versa.
+                    self.changeWhat = 1-self.changeWhat
+                    return
+                if gpio == decoderA_GPIO: 
+                    if self.changeWhat == 0: self.incTargetTemp(level,0)
+                    self.displayStuff()
+                    # Not sure that this is easy to implement yet
+                    #if self.changeWhat == 1: self.incPeriod(level,0)
+                    return
             elif self.runStatus == 2:
                 # This is the programming handling.
-                if longPress: 
+                if self.longPress:
+                    # During programming, long press exits programming.
+                    self.runStatus = 0
+                    self.displayStuff()
+                    return
+                if self.doubleClick: 
+                    # While programming, double-click goes to the next period
                     self.curPeriod = self.curPeriod + 1
                     if self.curPeriod > 3:
                         self.stopProgram()
                         self.displayStuff()
                         return
+                if gpio == pushGPIO:
+                    # A single push toggles between temp etc.
+                    self.changeWhat = 1-self.changeWhat
+                    self.displayProgram()
+                    return
+                
                 curPeriod = self.periods[self.curPeriod]
-                if gpio == buttonGPIO1: curPeriod['temp'] += 5
-                if gpio == buttonGPIO4: curPeriod['temp'] -= 5
-                def incMins(oneOrMinusOne):
-                    if curPeriod['durMn'] < 20 + (1-oneOrMinusOne): curPeriod['durMn'] += oneOrMinusOne
-                    else: curPeriod['durMn'] += oneOrMinusOne*10
-                    curPeriod['durMn'] = max(0,curPeriod['durMn'])
-                if gpio == buttonGPIO2: incMins(1)
-                if gpio == buttonGPIO3: incMins(-1)
+                if gpio == decoderA_GPIO: 
+                    if self.changeWhat == 0: curPeriod['temp'] += level
+                    # Not sure that this is easy to implement yet
+                    if self.changeWhat == 1: curPeriod['durMn'] += level
                 self.writeJson()
                 self.displayProgram()
                 
 
+    def setButCallback(self):
         def setup(but):
             self.pi.set_mode(but, pigpio.INPUT)
-            self.pi.set_pull_up_down(but, pigpio.PUD_DOWN)
-            self.pi.set_glitch_filter(but, 10000)
-            self.pi.callback(but, 0, cbf)
-        setup(buttonGPIO1)
-        setup(buttonGPIO2)
-        setup(buttonGPIO3)
-        setup(buttonGPIO4)
-    
+            self.pi.set_pull_up_down(but, pigpio.PUD_UP)
+            # self.pi.set_glitch_filter(but, 10000)
+            #self.pi.callback(but, 0, cbf)
+        self.pi.set_mode(groundGPIO, pigpio.OUTPUT)
+        self.pi.write(groundGPIO,0)
+        setup(decoderA_GPIO)
+        setup(decoderB_GPIO)
+        setup(pushGPIO)
+        # EITHER_EDGE, RISING_EDGE (default), or FALLING_EDGE
+        self.pi.callback(pushGPIO, pigpio.FALLING_EDGE, self.cbf)
+        self.decoder = rotary.decoder(self.pi, decoderA_GPIO, decoderB_GPIO, self.rotaryCallback)
+
+    def rotaryCallback(self,val):
+        #print("val {}".format(val))
+        self.cbf(decoderA_GPIO,val,0)
+
+        
     def blinkFunc(self):
         # if we'not pulsing and the heater is off:
         heaterOn = self.pi.read(heaterGPIO)
@@ -297,11 +325,11 @@ class SmokerControl(Server):
         self.dirty = 1
         self.displayStuff()
         
-    def incTargetTemp(self,inc):
+    def incTargetTemp(self,inc,doDisplay=1):
         #logging.info("Inc temp %.0f",self.targetTemp)
         self.targetTemp += inc
         self.dirty = 1
-        self.displayStuff()
+        if doDisplay: self.displayStuff()
 
     def read_AM(self,timeOutS=1):
         t0=time.time()
@@ -379,6 +407,7 @@ class SmokerControl(Server):
         prog = "P{} ".format(self.curPeriod) if self.runStatus else ""
         onOffStr = "{}Heat on".format(prog) if self.smokerStatus else "{}Heat off".format(prog)
         self.lumaText = 'Temp:   {:.1f}F\nTarget: {:.0f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr)
+        #self.lumaText = 'Target: {:.0f}F'.format(self.targetTemp)
         self.lock.acquire()
         try:
             self.luma.printText(self.lumaText)
@@ -387,8 +416,12 @@ class SmokerControl(Server):
 
     def displayProgram(self,):
         prog = "P{} ".format(self.curPeriod)
+        if self.curPeriod == 0: return
         curPer = self.periods[self.curPeriod]
-        self.lumaText = '{}\nTemp {}F\nTime {}mn'.format(prog,curPer['temp'],curPer['durMn'])
+        if self.changeWhat == 0:
+            self.lumaText = '{}\nTemp {}*F\nTime {}mn'.format(prog,curPer['temp'],curPer['durMn'])
+        else:
+            self.lumaText = '{}\nTemp {}F\nTime {}*mn'.format(prog,curPer['temp'],curPer['durMn'])
         self.lock.acquire()
         try:
             self.luma.printText(self.lumaText)
@@ -407,9 +440,9 @@ class SmokerControl(Server):
             self.pi.write(heaterGPIO,0)
             # Reboot the temp sensor!
             #logging.info("Error in read temp, Rebooting temp sensor")
-            #self.pi.write(buttonGPIO3,0)
+            #self.pi.write(decoderB_GPIO,0)
             #time.sleep(2)
-            #self.pi.write(buttonGPIO3,1)
+            #self.pi.write(decoderB_GPIO,1)
             return
         self.readError = 0
         self.temp = round(temp_SHT,ndigits=2)
