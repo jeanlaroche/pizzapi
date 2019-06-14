@@ -14,6 +14,7 @@ from BaseClasses.utils import *
 logging.basicConfig(level=logging.DEBUG)
 from collections import deque
 from lumaDisplay import Luma
+from BaseClasses import rotary
 import rotary
 #from readBM280 import readData
 
@@ -79,6 +80,7 @@ class SmokerControl(Server):
     def __init__(self,startThread=1):
         myLogger.setLogger(self.logFile,mode='a',level=logging.DEBUG)
         logging.info('Setting up display')
+        self.t = runThreaded(lambda : 0)
         self.luma = Luma()
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
@@ -201,8 +203,10 @@ class SmokerControl(Server):
                     # Double click -> start program
                     self.startProgram()
                     return
-                if gpio == decoderA_GPIO: self.incTargetTemp(level,0)
-                print("target temp {}".format(self.targetTemp))
+                if gpio == decoderA_GPIO: 
+                    self.incTargetTemp(level,0)
+                    print("target temp {}".format(self.targetTemp))
+                    self.displayStuff()
                 return
 
             if self.runStatus in [1]:
@@ -214,6 +218,7 @@ class SmokerControl(Server):
                 if gpio == pushGPIO:
                     # While running the program, a click switches to changing the duration and vice-versa.
                     self.changeWhat = 1-self.changeWhat
+                    self.displayStuff()
                     return
                 if gpio == decoderA_GPIO: 
                     if self.changeWhat == 0: self.incTargetTemp(level,0)
@@ -230,6 +235,7 @@ class SmokerControl(Server):
                     # During programming, long press exits programming.
                     self.runStatus = 0
                     self.displayStuff()
+                    self.writeJson()
                     return
                 if self.doubleClick: 
                     # While programming, double-click goes to the next period
@@ -238,6 +244,7 @@ class SmokerControl(Server):
                     if self.curPeriod > 3:
                         self.stopProgram()
                         self.displayStuff()
+                        self.writeJson()
                         return
                     self.displayProgram()
                     return
@@ -252,8 +259,7 @@ class SmokerControl(Server):
                     if self.changeWhat == 0: curPeriod['temp'] += level
                     # Not sure that this is easy to implement yet
                     if self.changeWhat == 1: curPeriod['durMn'] += level
-                self.writeJson()
-                self.displayProgram()
+                    self.displayProgram()
                 
 
     def setButCallback(self):
@@ -403,7 +409,7 @@ class SmokerControl(Server):
         humi = 100.*humi/65536.
         return temp,humi
         
-    def displayStuff(self,):
+    def doDisplayStuff(self,):
         if self.runStatus == 2: 
             self.displayProgram()
             return
@@ -412,18 +418,28 @@ class SmokerControl(Server):
             timeStr = time.strftime("%H:%M:%S",time.localtime())
         elif self.runStatus == 1:
             remainingS = self.curDurMin*60 - (time.time() - self.periods[self.curPeriod]['startT'])
-            timeStr = "Rem: {}".format(printSeconds(remainingS))
+            if self.changeWhat==0:
+                timeStr = "Rem: {}".format(printSeconds(remainingS))
+            else:
+                timeStr = "Rem: *{}".format(printSeconds(remainingS))
         prog = "P{} ".format(self.curPeriod) if self.runStatus else ""
         onOffStr = "{}Heat on".format(prog) if self.smokerStatus else "{}Heat off".format(prog)
-        self.lumaText = 'Temp:   {:.1f}F\nTarget: {:.0f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr)
+        if self.changeWhat==0:
+            self.lumaText = 'Temp:   {:.1f}F\nTarget: *{:.0f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr)
+        else:
+            self.lumaText = 'Temp:   {:.1f}F\nTarget: {:.0f}F\n{}\n{}'.format(self.temp,self.targetTemp,onOffStr,timeStr)
         #self.lumaText = 'Target: {:.0f}F'.format(self.targetTemp)
         self.lock.acquire()
         try:
             self.luma.printText(self.lumaText)
         finally:
             self.lock.release()
+            
+    def displayStuff(self):
+        if self.t.is_alive(): return
+        self.t=runThreaded(self.doDisplayStuff)
 
-    def displayProgram(self,):
+    def doDisplayProgram(self,):
         prog = "P{} ".format(self.curPeriod)
         if self.curPeriod == 0: return
         curPer = self.periods[self.curPeriod]
@@ -436,7 +452,11 @@ class SmokerControl(Server):
             self.luma.printText(self.lumaText)
         finally:
             self.lock.release()
-        
+
+    def displayProgram(self):
+        if self.t.is_alive(): return
+        self.t=runThreaded(self.doDisplayProgram)
+            
     def regulate(self):
         time.sleep(0.1)
         # temp_SHT,humi_SHT = self.read_AM()
