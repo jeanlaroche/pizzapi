@@ -98,10 +98,13 @@ class decoder:
         if gpio != self.lastGpio: # debounce
             #print("{} {}".format(self.levA,self.levB))
             self.lastGpio = gpio
-            if gpio == self.gpioA and level == 1:
-                if self.levB==1: self.callback(1)
-            elif gpio == self.gpioB and level == 1:
-                if self.levA == 1: self.callback(-1)
+            try:
+                if gpio == self.gpioA and level == 1:
+                    if self.levB==1: self.callback(1)
+                elif gpio == self.gpioB and level == 1:
+                    if self.levA == 1: self.callback(-1)
+            except Exception as e:
+                pass
 
                
     def cancel(self):

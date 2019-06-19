@@ -412,6 +412,9 @@ class SmokerControl(Server):
     def doDisplayStuff(self,):
         if self.runStatus == 2: 
             self.displayProgram()
+            if self.redo:
+                self.redo=0
+                self.doDisplayStuff()
             return
         tt = time.time()
         if not self.runStatus:
@@ -434,9 +437,15 @@ class SmokerControl(Server):
             self.luma.printText(self.lumaText)
         finally:
             self.lock.release()
+        if self.redo:
+            self.redo=0
+            self.doDisplayStuff()
             
     def displayStuff(self):
-        if self.t.is_alive(): return
+        self.redo=0
+        if self.t.is_alive(): 
+            self.redo=1
+            return
         self.t=runThreaded(self.doDisplayStuff)
 
     def doDisplayProgram(self,):
