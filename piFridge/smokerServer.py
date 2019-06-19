@@ -35,8 +35,8 @@ heaterGPIO = 26
 fanGPIO = 6
 ledGPIO = 13
 groundGPIO = 18    # I'm using this as ground
-decoderA_GPIO = 27    # Decoder
-decoderB_GPIO = 17    # Decoder
+decoderA_GPIO = 17    # Decoder
+decoderB_GPIO = 27    # Decoder
 pushGPIO = 22    # Push button
 
 errorReturn = -100  # Value returned upon error
@@ -78,7 +78,7 @@ class SmokerControl(Server):
     curDurMin = 0
     
     def __init__(self,startThread=1):
-        myLogger.setLogger(self.logFile,mode='a',level=logging.DEBUG)
+        myLogger.setLogger(self.logFile,mode='a',level=logging.INFO)
         logging.info('Setting up display')
         self.t = runThreaded(lambda : 0)
         self.luma = Luma()
@@ -266,7 +266,7 @@ class SmokerControl(Server):
         def setup(but):
             self.pi.set_mode(but, pigpio.INPUT)
             self.pi.set_pull_up_down(but, pigpio.PUD_UP)
-            # self.pi.set_glitch_filter(but, 10000)
+            self.pi.set_glitch_filter(but, 1000)
             #self.pi.callback(but, 0, cbf)
         self.pi.set_mode(groundGPIO, pigpio.OUTPUT)
         self.pi.write(groundGPIO,0)
