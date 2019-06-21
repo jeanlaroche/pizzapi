@@ -1,6 +1,7 @@
 [alias]
 	s = status --untracked-files=no
 	l = log --oneline
+	df = diff --oneline --name-only
 [user]
 	name = jean
 	email = you@example.com

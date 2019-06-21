@@ -1,0 +1,112 @@
+<!doctype html>
+<head>
+<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+
+<style>
+h3 {text-align: center;}
+h4 {text-align: left; color: green}
+span {font-weight: bold;}
+</style>
+
+<script type=text/javascript>
+	
+	// Javascript function for up button
+	function onUp() {
+		$.getJSON('/Gate/move/1', function(data)
+		{
+			refresh();
+		});
+	}
+	
+	// Javascript function for down button
+	function onDown() {
+		$.getJSON('/Gate/move/0', function(data)
+		{
+			refresh();
+		});
+	}
+	function onLog() {
+		$.getJSON('/Gate/getLog', function(data)
+		{
+			$("#Log").text(data.log);
+		});
+	}
+	
+	// Read all temps, when the page is reloaded.
+	function getFullData() {
+		$.getJSON('/getData');
+	}
+	
+	// This is called at regular intervals when the page is loaded.
+	function refresh() 
+	{
+		$.getJSON('/Gate/getData', function(data)
+			{
+				// The text() is a method of the selector to set the text of the selected elements.
+				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
+				// Since many elements might match.
+				$("#uptime").text(data.uptime);
+				$("#status").text(data.statusStr);
+			});
+		setTimeout(refresh,4000);
+	}
+	
+
+	// This is a JQuery shorthand to define a function that's called when the page is loaded.
+    $(
+		function() 
+		{
+			// Binds the ajax request _pageUnload to onbeforeunload of the window.
+			window.onbeforeunload = function(){
+				// The ajax request must return something, but it's OK to ignore it.
+				$.get('/_pageUnload');
+			};
+			refresh();
+			onLog();
+
+			// This does an Ajax request for /_getFullData.
+			//$.getJSON('/_getData');
+		}
+    );
+	
+	
+	
+	
+</script>
+<!-- Simple JQuery Mobile page that display the getHumidity state on the breadoard -->
+<!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
+
+<div data-role="page" data-theme="b">
+  <div data-role="header">
+    <div><h2><center>WINDOW CONTROL</center></h2></div>
+  </div>
+  
+  <div data-role="content">
+
+	<div data-role="fieldcontain">
+		<fieldset class="ui-grid-a">
+			<div class="ui-block-a"><button name="Up" id="Up" onclick="onUp()" data-theme="d">Open</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onDown()" data-theme="d">Close</button></div>
+			<div class="ui-block-b"><button name="Down" id="Down" onclick="onLog()" data-theme="d">Log</button></div>
+	    </fieldset>
+	</div>
+  </div>
+ <div data-role="footer">
+    <div><h4><span id="uptime" ></span></h4></div>
+    <div>Status: <h4><span id="status" ></span></h4></div>  
+  </div>
+
+<div ><h2>Log:</h2></div>
+ <div>
+ <pre id="Log"></pre>
+ </div>
+
+ </div>
+ </div>
