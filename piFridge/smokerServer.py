@@ -15,7 +15,6 @@ logging.basicConfig(level=logging.DEBUG)
 from collections import deque
 from lumaDisplay import Luma
 from BaseClasses import rotary
-import rotary
 #from readBM280 import readData
 
 # Fake luma 
