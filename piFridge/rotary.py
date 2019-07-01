@@ -7,7 +7,7 @@ class decoder:
 
     """Class to decode mechanical rotary encoder pulses."""
 
-    def __init__(self, pi, gpioA, gpioB, callback):
+    def __init__(self, pi, gpioA, gpioB, callback, UAStyle=0):
 
         """
         Instantiate the class with the pi and gpios connected to
@@ -65,8 +65,8 @@ class decoder:
         self.pi.set_glitch_filter(gpioA, 1000)
         self.pi.set_glitch_filter(gpioA, 1000)
         # RISING_EDGE (default), or FALLING_EDGE, EITHER_EDGE
-        self.cbA = self.pi.callback(gpioA, pigpio.EITHER_EDGE, self._pulse)
-        self.cbB = self.pi.callback(gpioB, pigpio.EITHER_EDGE, self._pulse)
+        self.cbA = self.pi.callback(gpioA, pigpio.EITHER_EDGE, self._pulseUA if UAStyle else self._pulse)
+        self.cbB = self.pi.callback(gpioB, pigpio.EITHER_EDGE, self._pulseUA if UAStyle else self._pulse)
         self.pos = 0
 
     def _pulse(self, gpio, level, tick):
@@ -106,7 +106,24 @@ class decoder:
             except Exception as e:
                 pass
 
-               
+    def _pulseUA(self, gpio, level, tick):
+        # Decoding specific for the UA encoders.
+        if gpio == self.gpioA:
+            self.levA = level
+        else:
+            self.levB = level
+        
+        if gpio != self.lastGpio:
+            #print("{} {}".format(self.levA,self.levB))
+            self.lastGpio = gpio
+            try:
+                if gpio == self.gpioA and level != self.levB:
+                    self.callback(1)
+                elif gpio == self.gpioB and level != self.levA:
+                    self.callback(-1)
+            except Exception as e:
+                pass
+                
     def cancel(self):
 
         """
@@ -132,22 +149,24 @@ if __name__ == "__main__":
 
     pi = pigpio.pi()
     if 0:
-        pi.set_mode(18, pigpio.OUTPUT)
+        #pi.set_mode(18, pigpio.OUTPUT)
         pi.set_mode(17, pigpio.INPUT)
         pi.set_mode(27, pigpio.INPUT)
-        pi.write(18,0)
-        pi.set_pull_up_down(17, pigpio.PUD_UP)
-        pi.set_pull_up_down(27, pigpio.PUD_UP)
+        #pi.write(18,0)
+        pi.set_pull_up_down(20, pigpio.PUD_UP)
+        pi.set_pull_up_down(21, pigpio.PUD_UP)
         cnt = -1
-        while 0:
-            a = pi.read(17)
-            b = pi.read(27)
+        t1 = time.time()
+        while time.time()-t1 < 10:
+            a = pi.read(20)
+            b = pi.read(21)
             print "{} {}".format(a,b)
+        exit()
         while 1:
             cnt = -1
             while 1:
-                a = pi.read(17)
-                b = pi.read(27)
+                a = pi.read(20)
+                b = pi.read(21)
                 if a==0 or b==0 or cnt > 0:
                      print "{} {} {}".format(a,b,cnt)
                 if a==0 or b==0:
@@ -156,7 +175,7 @@ if __name__ == "__main__":
                 if cnt == 0: break
         exit()
 
-    decoder = rotary.decoder(pi, 27, 17, callback)
+    decoder = rotary.decoder(pi, 20, 21, callback,UAStyle=1)
     while 0:
         print("pos={}".format(decoder.pos))
         time.sleep(0.1)
