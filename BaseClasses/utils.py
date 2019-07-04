@@ -261,6 +261,24 @@ def runThreaded(function,*args):
     t.start()
     return t
     
+def runThreadedSingle(caller,function,*args):
+    # This is to call a function in threaded mode, but in a way that does not allow multiple
+    # threads to be created if this is called over and over. This is good for displaying values
+    # if the display function is slow, but the values can change rapidly. The redo mechanism ensures
+    # that the last value is always displayed
+    caller.redo = 0
+    def helper():
+        function(*args)
+        if caller.redo:
+            caller.redo = 0
+            function(*args)
+    if not hasattr(caller,'single_thread') or not caller.single_thread.is_alive():
+        caller.single_thread = runThreaded(helper)
+    else:
+        # The thread is alive, don't start on, but ask it to re-run when done.
+        caller.redo=1
+    
+    
 def flashLED(pi,gpio,dur=0.100):
     # Use this to flash a LED but return immediately
     pi.write(gpio,1)
