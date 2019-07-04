@@ -7,7 +7,7 @@ class decoder:
 
     """Class to decode mechanical rotary encoder pulses."""
 
-    def __init__(self, pi, gpioA, gpioB, callback, UAStyle=0):
+    def __init__(self, pi, gpioA, gpioB, callback, UAStyle=0,gpioPush=None):
 
         """
         Instantiate the class with the pi and gpios connected to
@@ -58,6 +58,13 @@ class decoder:
 
         self.pi.set_mode(gpioA, pigpio.INPUT)
         self.pi.set_mode(gpioB, pigpio.INPUT)
+        if gpioPush is not None:
+            def pushCB(gpio,level,tick):
+                callback(0,push=1)
+            self.pi.set_mode(gpioPush, pigpio.INPUT)
+            self.pi.set_pull_up_down(gpioPush, pigpio.PUD_UP)
+            self.pi.set_glitch_filter(gpioPush, 100)
+            self.pi.callback(gpioPush, pigpio.FALLING_EDGE, pushCB)
 
         self.pi.set_pull_up_down(gpioA, pigpio.PUD_UP)
         self.pi.set_pull_up_down(gpioB, pigpio.PUD_UP)

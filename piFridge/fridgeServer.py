@@ -11,6 +11,8 @@ import logging
 from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from BaseClasses.utils import myTimer, printSeconds
+from BaseClasses.segments import *
+from BaseClasses.rotary import *
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
@@ -19,6 +21,11 @@ app.config['SECRET_KEY'] = 'secret!'
 tempGPIO = 4
 humiGPIO = 17
 fanGPIO = 18
+ledClkGPIO=19
+ledDatGPIO=13
+pushGPIO =23
+rotAGPIO = 22
+rotBGPIO = 6
 
 class FridgeControl(Server):
     
@@ -54,6 +61,19 @@ class FridgeControl(Server):
         myLogger.setLogger(self.logFile,mode='a')
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
+        self.ledDisp = TM1637(clk=ledClkGPIO, dio=ledDatGPIO)
+        self.ledDisp.show("INIT")
+        
+        # Rotary decoder and push button.
+        self.decoder = decoder(self.pi, rotAGPIO, rotBGPIO, self.rotCallback,UAStyle=1,gpioPush=pushGPIO)
+        # self.pi.set_mode(pushGPIO, pigpio.INPUT)
+        # self.pi.set_pull_up_down(pushGPIO, pigpio.PUD_UP)
+        # self.pi.callback(pushGPIO, pigpio.FALLING_EDGE, self.pushCallback)
+        # self.pi.set_glitch_filter(pushGPIO, 100)
+
+        self.pi.set_mode(rotAGPIO, pigpio.INPUT)
+        self.pi.set_mode(rotBGPIO, pigpio.INPUT)
+        
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
         self.pi.set_mode(humiGPIO, pigpio.OUTPUT)
         self.pi.set_mode(fanGPIO, pigpio.OUTPUT)
@@ -96,12 +116,14 @@ class FridgeControl(Server):
                     self.regulate()
                 except Exception as e:
                     logging.error('Error in regulate: %s',e)
+                    self.ledDisp.show("Erro")
                     pass
                 time.sleep(4)
             logging.info('Exiting regulate loop')            
         self.timerThread = threading.Thread(target=mainLoop)
         self.timerThread.daemon = True
         if startThread: self.timerThread.start()
+        self.ledDisp.show("DONE")
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
@@ -242,6 +264,16 @@ class FridgeControl(Server):
         humi = 100.*humi/65536.
         return temp,humi
         
+    def rotCallback(self,pos,push=0):
+        if push:
+            print("PUSH")
+            return
+        self.targetTemp += pos
+        self.doWriteJson = 1
+        self.ledDisp.number(self.targetTemp)
+        print(self.targetTemp)
+        
+        
     def regulate(self):
         #temp_AM,humi_AM = self.read_AM()
         time.sleep(0.1)
@@ -301,6 +333,7 @@ class FridgeControl(Server):
             self.readErrorCnt = 0
         self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
         if self.doWriteJson : self.writeJson()
+        self.ledDisp.show("{:.0f}".format(self.temp) if not self.fridgeStatus else "*{:.0f}".format(self.temp))
 
 
     def warnOnTooLong(self,onTime):
