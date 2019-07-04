@@ -24,11 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import subprocess
-from time import time, sleep, localtime
-from wiringpi import wiringPiSetupGpio, pinMode, digitalRead, digitalWrite, GPIO
-
-wiringPiSetupGpio()
+from time import sleep
+import pigpio as pi
 
 TM1637_CMD1 = 0x40 # 0x40 data command
 TM1637_CMD2 = 0xc0 # 0xC0 address command
@@ -45,15 +42,18 @@ class TM1637(object):
     def __init__(self, clk, dio, brightness=7):
         self.clk = clk
         self.dio = dio
+        self.pi = pi.pi()
 
         if not 0 <= brightness <= 7:
             raise ValueError("Brightness out of range")
         self._brightness = brightness
 
-        pinMode(self.clk, GPIO.INPUT)
-        pinMode(self.dio, GPIO.INPUT)
-        digitalWrite(self.clk, 0)
-        digitalWrite(self.dio, 0)
+        self.pi.set_mode(self.clk,pi.INPUT)
+        self.pi.set_mode(self.dio,pi.INPUT)
+        self.pi.write(self.clk,0)
+        self.pi.write(self.clk,0)
+        # digitalWrite(self.dio, 0)
+        # digitalWrite(self.dio, 0)
         
         sleep(TM1637_DELAY)
 
@@ -61,17 +61,17 @@ class TM1637(object):
         self._write_dsp_ctrl()
 
     def _start(self):
-        pinMode(self.dio, GPIO.OUTPUT)
+        self.pi.set_mode(self.dio, pi.OUTPUT)
         sleep(TM1637_DELAY)
-        pinMode(self.clk, GPIO.OUTPUT)
+        self.pi.set_mode(self.clk, pi.OUTPUT)
         sleep(TM1637_DELAY)
 
     def _stop(self):
-        pinMode(self.dio, GPIO.OUTPUT)
+        self.pi.set_mode(self.dio, pi.OUTPUT)
         sleep(TM1637_DELAY)
-        pinMode(self.clk, GPIO.INPUT)
+        self.pi.set_mode(self.clk, pi.INPUT)
         sleep(TM1637_DELAY)
-        pinMode(self.dio, GPIO.INPUT)
+        self.pi.set_mode(self.dio, pi.INPUT)
         sleep(TM1637_DELAY)
 
     def _write_data_cmd(self):
@@ -88,18 +88,18 @@ class TM1637(object):
 
     def _write_byte(self, b):
         for i in range(8):
-            pinMode(self.clk, GPIO.OUTPUT)
+            self.pi.set_mode(self.clk, pi.OUTPUT)
             sleep(TM1637_DELAY)
-            pinMode(self.dio, GPIO.INPUT if b & 1 else GPIO.OUTPUT)
+            self.pi.set_mode(self.dio, pi.INPUT if b & 1 else pi.OUTPUT)
             sleep(TM1637_DELAY)
-            pinMode(self.clk, GPIO.INPUT)
+            self.pi.set_mode(self.clk, pi.INPUT)
             sleep(TM1637_DELAY)
             b >>= 1
-        pinMode(self.clk, GPIO.OUTPUT)
+        self.pi.set_mode(self.clk, pi.OUTPUT)
         sleep(TM1637_DELAY)
-        pinMode(self.clk, GPIO.INPUT)
+        self.pi.set_mode(self.clk, pi.INPUT)
         sleep(TM1637_DELAY)
-        pinMode(self.clk, GPIO.OUTPUT)
+        self.pi.set_mode(self.clk, pi.OUTPUT)
         sleep(TM1637_DELAY)
 
     def brightness(self, val=None):
@@ -233,6 +233,9 @@ class TM1637Decimal(TM1637):
 
 if __name__ == "__main__":
     tm = TM1637(clk=3, dio=2)
+    
+    tm.show("70F")
+    raw_input()
 
     # all LEDS on "88:88"
     tm.write([127, 255, 127, 127])
@@ -270,3 +273,5 @@ if __name__ == "__main__":
     # show temperature '24*C'
     tm.temperature(24)
     raw_input()
+    
+    tm.scroll("LIFE IS BEAUTIFUL")
