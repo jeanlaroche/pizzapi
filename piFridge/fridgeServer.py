@@ -10,7 +10,7 @@ from BaseClasses.baseServer import Server
 import logging
 from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from BaseClasses.utils import myTimer, printSeconds
+from BaseClasses.utils import myTimer, printSeconds, runThreaded
 from BaseClasses.segments import *
 from BaseClasses.rotary import *
 logging.basicConfig(level=logging.INFO)
@@ -56,6 +56,8 @@ class FridgeControl(Server):
     doWriteJson = 0
     logFile = 'fridge.log'
     readErrorCnt = 0
+    
+    dispThread = None
     
     def __init__(self,startThread=1):
         myLogger.setLogger(self.logFile,mode='a')
@@ -269,8 +271,18 @@ class FridgeControl(Server):
             print("PUSH")
             return
         self.targetTemp += pos
+        print(self.targetTemp)
         self.doWriteJson = 1
-        self.ledDisp.number(self.targetTemp)
+        self.redo = 0
+        def disp():
+            self.ledDisp.number(self.targetTemp)
+            if self.redo:
+                self.redo = 0
+                disp()
+        if self.dispThread is None or not self.dispThread.is_alive(): 
+            self.dispThread = runThreaded(disp)
+        else:
+            self.redo = 1
         print(self.targetTemp)
         
         
