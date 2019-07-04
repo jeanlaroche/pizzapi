@@ -14,9 +14,11 @@ app = Flask(__name__)
 class Server(object):
     allowControl = 0  # Allow or disallow control of temp
     alwaysAllow = 0  # Ignore flag above.
+    logFileName = ''
 
     def  __init__(self,logFileName='logFile.log'):
         # This is so self.offTimer exists!
+        self.logFileName = logFileName
         myLogger.setLogger(logFileName)
     
     def favicon(self):
@@ -31,6 +33,14 @@ class Server(object):
 
     def kg(self):
         os.system('sudo killall -SIGHUP gunicorn')
+        
+    def getLog(self,numLines=0):
+        with open(self.logFileName) as f:
+            allLines = f.readlines()
+            allLines.reverse()
+            if numLines: allLines = allLines[0:numLines]
+        return ''.join(allLines)
+            
         
     def GetUptime(self):
         # get uptime from the linux terminal command

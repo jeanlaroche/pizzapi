@@ -28,6 +28,25 @@ class myTimer(object):
             logging.info('Adding event %s at %s:%d days %s',name,hour,min,days)
         self.timedEvents.append({'hour':hour,'min':min,'func':func,'params':params,'done':0,'name':name,'remove':0,'days':days})
         
+    def incEventTime(self,pattern,hour=0,min=0):
+        found = 0
+        for event in self.timedEvents:
+            if pattern in event['name']: 
+                event['hour']+=hour
+                event['min']+=min
+                while event['min']<0: 
+                    event['hour'] -= 1
+                    event['min'] += 60
+                while event['min']>=60: 
+                    event['hour'] += 1
+                    event['min'] -= 60
+                event['hour'] = (event['hour']+24)%24
+                    
+                logging.debug('Updating %s new hour %d new min %d',event['name'],event['hour'],event['min'])
+                found = 1
+        return found
+        
+        
     def addDelayedEvent(self,delayM,func,params,name,days=allDays):
         logging.info('Adding delayed event %s, delay %.0f',name,delayM)
         import pdb
@@ -241,4 +260,12 @@ def runThreaded(function,*args):
     t = threading.Thread(target=function,args=args)
     t.start()
     return t
+    
+def flashLED(pi,gpio,dur=0.100):
+    # Use this to flash a LED but return immediately
+    pi.write(gpio,1)
+    def turnOff():
+        pi.write(gpio,0)
+    runDelayed(dur,turnOff)
+    
     
