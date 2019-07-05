@@ -256,6 +256,15 @@ def delayFunc(delayS):
 def runDelayed(delayS,function,*args):
     threading.Timer(delayS,function,*args).start()
 
+def runDelayedSingle(caller,delayS,function,*args):
+    # This cancels the timer if it's still active before setting a new timer, so it can be
+    # called repeatedly and the function will only be called at the very end.
+    if hasattr(caller,'delay_thread'):
+        caller.delay_thread.cancel()
+    caller.delay_thread = threading.Timer(delayS,function,*args)
+    caller.delay_thread.start()
+        
+
 def runThreaded(function,*args):
     t = threading.Thread(target=function,args=args)
     t.start()

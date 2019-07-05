@@ -10,7 +10,7 @@ from BaseClasses.baseServer import Server
 import logging
 from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from BaseClasses.utils import myTimer, printSeconds, runThreaded,runThreadedSingle
+from BaseClasses.utils import myTimer, printSeconds, runThreaded,runThreadedSingle,runDelayed,runDelayedSingle
 from BaseClasses.segments import *
 from BaseClasses.rotary import *
 logging.basicConfig(level=logging.INFO)
@@ -56,6 +56,7 @@ class FridgeControl(Server):
     doWriteJson = 0
     logFile = 'fridge.log'
     readErrorCnt = 0
+    settingTarget = 0
         
     def __init__(self,startThread=1):
         myLogger.setLogger(self.logFile,mode='a')
@@ -265,13 +266,20 @@ class FridgeControl(Server):
         return temp,humi
         
     def rotCallback(self,pos,push=0):
+        def reset(): 
+            self.settingTarget = 0
+            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "-{:.0f}F".format(self.temp))
         if push:
-            print("PUSH")
+            self.settingTarget = 1-self.settingTarget
+            
+        if self.settingTarget==0:
+            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "-{:.0f}F".format(self.temp))
             return
+        runDelayedSingle(self,4,reset)
         self.targetTemp += pos
         print(self.targetTemp)
         self.doWriteJson = 1
-        runThreadedSingle(self,lambda : self.ledDisp.number(self.targetTemp))
+        runThreadedSingle(self,lambda : self.ledDisp.show("T{:.0f}F".format(self.targetTemp)))
        
         
     def regulate(self):
@@ -333,7 +341,7 @@ class FridgeControl(Server):
             self.readErrorCnt = 0
         self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
         if self.doWriteJson : self.writeJson()
-        self.ledDisp.show("{:.0f}".format(self.temp) if not self.fridgeStatus else "*{:.0f}".format(self.temp))
+        if not self.settingTarget: self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "-{:.0f}F".format(self.temp))
 
 
     def warnOnTooLong(self,onTime):
