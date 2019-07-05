@@ -35,7 +35,7 @@ TM1637_DELAY = 0.00000001 # 10us delay between clk/dio pulses
 TM1637_MSB = 0x80  # msb is the decimal point or the colon depending on your display
 
 # 0-9, a-z, blank, dash, star
-_SEGMENTS = bytearray(b'\x3F\x06\x5B\x4F\x66\x6D\x7D\x07\x7F\x6F\x77\x7C\x39\x5E\x79\x71\x3D\x76\x06\x1E\x76\x38\x55\x54\x3F\x73\x67\x50\x6D\x78\x3E\x1C\x2A\x76\x6E\x5B\x00\x40\x63')
+_SEGMENTS = bytearray(b'\x3F\x06\x5B\x4F\x66\x6D\x7D\x07\x7F\x6F\x77\x7C\x39\x5E\x79\x71\x3D\x76\x06\x1E\x76\x38\x55\x54\x3F\x73\x67\x50\x6D\x78\x3E\x1C\x2A\x76\x6E\x5B\x00\x40\x63\x08')
 
 class TM1637(object):
     """Library for quad 7-segment LED modules based on the TM1637 LED driver."""
@@ -152,6 +152,8 @@ class TM1637(object):
             return _SEGMENTS[38] # star/degrees
         if o == 45:
             return _SEGMENTS[37] # dash
+        if o == 95:
+            return _SEGMENTS[39] # _
         if o >= 65 and o <= 90:
             return _SEGMENTS[o-55] # uppercase A-Z
         if o >= 97 and o <= 122:
@@ -232,9 +234,9 @@ class TM1637Decimal(TM1637):
 
 
 if __name__ == "__main__":
-    tm = TM1637(clk=3, dio=2)
+    tm = TM1637(clk=19, dio=13)
     
-    tm.show("70F")
+    tm.show("   _")
     raw_input()
 
     # all LEDS on "88:88"

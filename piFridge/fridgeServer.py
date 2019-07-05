@@ -268,12 +268,12 @@ class FridgeControl(Server):
     def rotCallback(self,pos,push=0):
         def reset(): 
             self.settingTarget = 0
-            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "-{:.0f}F".format(self.temp))
+            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
         if push:
             self.settingTarget = 1-self.settingTarget
             
         if self.settingTarget==0:
-            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "-{:.0f}F".format(self.temp))
+            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
             return
         runDelayedSingle(self,4,reset)
         self.targetTemp += pos
@@ -341,7 +341,7 @@ class FridgeControl(Server):
             self.readErrorCnt = 0
         self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
         if self.doWriteJson : self.writeJson()
-        if not self.settingTarget: self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "-{:.0f}F".format(self.temp))
+        if not self.settingTarget: self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
 
 
     def warnOnTooLong(self,onTime):
