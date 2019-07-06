@@ -6,10 +6,12 @@ import time, threading
 from BaseClasses.baseServer import Server
 import logging, json
 from BaseClasses import myLogger
+from BaseClasses.utils import *
 import numpy as np
 from readADS1015 import *
 
 relayGPIO = 18      # GPIO used to control the relay
+rearmGPIO = 21
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -30,6 +32,7 @@ class Zapper(Server):
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(relayGPIO, pigpio.OUTPUT)
         self.pi.write(relayGPIO,0)
+        monitorButton(self.pi,self,rearmGPIO,lambda gpio,level,long,double : self.reArm())
         
         # The gain of the selectable gain in the AD converter. Between 0 and 5.
         self.gain = 0
@@ -135,6 +138,7 @@ class Zapper(Server):
         self.saveParams()
     
     def reArm(self):
+        print("REARM")
         logging.warning("Resetting, re-arming, curV %.2f calibV %.2f",self.curV,self.calibV)
         self.status = status_waiting
     

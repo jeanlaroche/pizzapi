@@ -314,23 +314,25 @@ def monitorButton(pi,caller,gpioPush,callback,between_click_ms=200):
                 time.sleep(.010)
             if pi.read(gpio) == 0:
                 doubleClick = 1
-            
         # restore the callback
         caller.cb[gpio]=pi.callback(gpio, pigpio.FALLING_EDGE, pushCB)
         # And call the supplied function
         callback(gpio,level,longPress,doubleClick)
+
     pi.set_mode(gpioPush, pigpio.INPUT)
     pi.set_pull_up_down(gpioPush, pigpio.PUD_UP)
     pi.set_glitch_filter(gpioPush, 100)
     if not hasattr(caller,'cb'): caller.cb={}
     caller.cb[gpioPush]=pi.callback(gpioPush, pigpio.FALLING_EDGE, pushCB)
-    
-def foo(gpio,level,long,double):
-    print("{} {} {} {}".format(gpio,level,long,double))
-    
-pi = pigpio.pi()
-class A(object):
-    pass
-monitorButton(pi,A,21,foo)
-while 1:
-    time.sleep(1)
+
+if __name__ == "__main__":
+
+    def foo(gpio,level,long,double):
+        print("{} {} {} {}".format(gpio,level,long,double))
+        
+    pi = pigpio.pi()
+    class A(object):
+        pass
+    monitorButton(pi,A,21,foo)
+    while 1:
+        time.sleep(1)
