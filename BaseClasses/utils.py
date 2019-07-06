@@ -295,4 +295,42 @@ def flashLED(pi,gpio,dur=0.100):
         pi.write(gpio,0)
     runDelayed(dur,turnOff)
     
+def monitorButton(pi,caller,gpioPush,callback,between_click_ms=200):
+    # Use this to monitor a button for long press, short press, double-clicks.
+    # Pass an object as caller (any), callback will be called as callback(gpio,level,long_press,double_click)
+    def pushCB(gpio,level,tick):
+        # Remove the callback so we don't get called twice in case of a double-click
+        caller.cb[gpio].cancel()
+        # Wait for release, for some reason I'm not able to use wait_for_edge ...
+        longPress = 0
+        doubleClick = 0
+        while pi.read(gpio) == 0 and pi.get_current_tick() - tick < between_click_ms*1e3:
+            time.sleep(.010)
+        if pi.read(gpio) == 0: longPress = 1
+        tick = pi.get_current_tick()
+        if not longPress:
+            # check for a double-click
+            while pi.read(gpio) == 1 and pi.get_current_tick() - tick < between_click_ms*1e3:
+                time.sleep(.010)
+            if pi.read(gpio) == 0:
+                doubleClick = 1
+            
+        # restore the callback
+        caller.cb[gpio]=pi.callback(gpio, pigpio.FALLING_EDGE, pushCB)
+        # And call the supplied function
+        callback(gpio,level,longPress,doubleClick)
+    pi.set_mode(gpioPush, pigpio.INPUT)
+    pi.set_pull_up_down(gpioPush, pigpio.PUD_UP)
+    pi.set_glitch_filter(gpioPush, 100)
+    if not hasattr(caller,'cb'): caller.cb={}
+    caller.cb[gpioPush]=pi.callback(gpioPush, pigpio.FALLING_EDGE, pushCB)
     
+def foo(gpio,level,long,double):
+    print("{} {} {} {}".format(gpio,level,long,double))
+    
+pi = pigpio.pi()
+class A(object):
+    pass
+monitorButton(pi,A,21,foo)
+while 1:
+    time.sleep(1)
