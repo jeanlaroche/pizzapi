@@ -69,8 +69,9 @@ class decoder:
         self.pi.set_pull_up_down(gpioA, pigpio.PUD_UP)
         self.pi.set_pull_up_down(gpioB, pigpio.PUD_UP)
         # THis is quite crucial with the shitty encoders.
-        self.pi.set_glitch_filter(gpioA, 1000)
-        self.pi.set_glitch_filter(gpioA, 1000)
+        filter = 500 if UAStyle else 1000 
+        self.pi.set_glitch_filter(gpioA, filter)
+        self.pi.set_glitch_filter(gpioA, filter)
         # RISING_EDGE (default), or FALLING_EDGE, EITHER_EDGE
         self.cbA = self.pi.callback(gpioA, pigpio.EITHER_EDGE, self._pulseUA if UAStyle else self._pulse)
         self.cbB = self.pi.callback(gpioB, pigpio.EITHER_EDGE, self._pulseUA if UAStyle else self._pulse)
@@ -120,7 +121,7 @@ class decoder:
         else:
             self.levB = level
         
-        if gpio != self.lastGpio:
+        if gpio != self.lastGpio or 1:
             #print("{} {}".format(self.levA,self.levB))
             self.lastGpio = gpio
             try:
