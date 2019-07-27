@@ -29,8 +29,8 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
 relayGPIO = 10
-ledClkGPIO=19
-ledDatGPIO=13
+ledClkGPIO=2
+ledDatGPIO=3
 
 class MainServer(Server):
     
@@ -38,6 +38,8 @@ class MainServer(Server):
     curTemp = 0
     targetTemp = 190
     heatOn = 0
+    histLength = 4
+    tempHist = np.zeros(histLength)
     
     def __init__(self):
         myLogger.setLogger('server.log',mode='a',dateFormat="%H:%M:%S",level=logging.WARNING)
@@ -65,11 +67,12 @@ class MainServer(Server):
             word = (d[0]<<8) | d[1]
             if (word & 0x8006) == 0: # Bits 15, 2, and 1 should be zero.
                 temp = (word >> 3)/4.0
-                print("{:.2f}".format(temp))
+                #print("{:.2f}".format(temp))
             else:
                 print("bad reading {:b}".format(word))
         else:
             print("bad reading {:b}".format(word))
+        time.sleep(.5)
         return temp
 
         
@@ -83,12 +86,17 @@ class MainServer(Server):
         
         def doLoop():
             while 1:
-                curTemp = self.readTemp()
+                curTemp = np.mean([self.readTemp() for ii in range(4)])
                 if curTemp == -1:
                     logging.error("Error reading temp")
                     time.sleep(1)
                     continue
                 self.curTemp = curTemp
+                self.tempHist[1:] = self.tempHist[0:-1]
+                self.tempHist[0] = self.curTemp
+                self.dTemp = (self.tempHist[0]-self.tempHist[-1])/self.histLength if self.tempHist[-1] else 0
+                print("T = {:.3f} --- DT = {:.3f}".format(curTemp,self.dTemp))
+                
                 self.ledDisp.show(" {:.0f}F".format(self.curTemp) if not self.heatOn else "_{:.0f}F".format(self.curTemp))
                 sendData("")                    
                 time.sleep(1)
