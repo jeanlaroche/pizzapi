@@ -1,112 +1,161 @@
 <!doctype html>
+<html lang="en">
 <head>
-<meta name="viewport" content="initial-scale=1, maximum-scale=1">
-<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css" />
-<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
-<script src="http://code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-</head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZAP the fuckers</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+<script type="text/javascript" charset="utf-8">
+//    var socket = io.connect('http://' + document.domain + ':' + location.port);
+//    socket.on('connect', function() {
+//        socket.emit('my event', {data: 'I\'m connected!'});
+//        socket.emit('my event', {data: 'Yepee'});
+//    });
+</script>
+  <script>
+  // Function called when the page is loaded.
+  $( function() {
+	$.getJSON('/_init', function(data)
+	{
+		$("#sliderOffset" ).slider('value',data.threshFactor*100)
+		$("#sliderZapTimeS" ).slider('value',data.zapTimeS*10)
+		$("#status")[0].style.fontSize = "xx-large";
+		$("#lastTripped")[0].style.fontSize = "xx-large";
+		$("#curV")[0].style.fontSize = "xx-large";
+		$("#calibV")[0].style.fontSize = "xx-large";
+		$("#Log").text(data.log);
+	})
+  } );
 
+$(document).ready(function(){
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    socket.on('currentValues', function(msg) {
+        $('#status').text(msg.status);
+		$('#status')[0].style.fontSize = "xx-large";
+		$('#status')[0].style.color = msg.status.includes('tripped') || msg.status.includes('riggering') ? "red" : "black";
+        $('#lastTripped').text(msg.lastTripped);
+        $('#time').text(msg.time);
+        $('#curV').text  ("Cur   " + msg.curV.toFixed(2) + " V");
+        $('#calibV').text("Calib " + msg.calibV.toFixed(2) + " V");
+        $('#threshV').text("Thresh: " + msg.threshV.toFixed(2) + " V");
+        $('#zapTimeS').text("ZapTime: " + msg.zapTimeS.toFixed(2) + " s");
+    });
+     $( "#sliderZapTimeS" ).slider({
+      slide: function( event, ui ) {
+		socket.emit('setZapTimeS', {data: ui.value});
+      },
+    });
+    $( "#sliderOffset" ).slider({
+      slide: function( event, ui ) {
+		socket.emit('setOffset', {data: ui.value});
+      },
+    });
+    $( "#OnButton" ).button({width: 155
+    });
+    $( "#OffButton" ).button({width: 155
+    });
+	$( "#OnButton" ).click(function() {
+		socket.emit('TurnOnOff', {data: 1});
+      });
+	$( "#OffButton" ).click(function() {
+		socket.emit('TurnOnOff', {data: 0});
+      });
+    $( "#Calib" ).button({});
+	$( "#Calib" ).click(function() {
+//		if(confirm("Are you sure?")==true)
+			socket.emit('Calib', {data: ""});
+      });
+    $( "#ReArm" ).button({});
+	$( "#ReArm" ).click(function() {
+		socket.emit('reArm');
+      });
+
+
+});
+  </script>
 <style>
 h3 {text-align: center;}
 h4 {text-align: left; color: green}
 span {font-weight: bold;}
 </style>
 
-<script type=text/javascript>
-	
-	// Javascript function for up button
-	function onUp() {
-		$.getJSON('/Gate/move/1', function(data)
-		{
-			refresh();
-		});
-	}
-	
-	// Javascript function for down button
-	function onDown() {
-		$.getJSON('/Gate/move/0', function(data)
-		{
-			refresh();
-		});
-	}
-	function onLog() {
-		$.getJSON('/Gate/getLog', function(data)
-		{
-			$("#Log").text(data.log);
-		});
-	}
-	
-	// Read all temps, when the page is reloaded.
-	function getFullData() {
-		$.getJSON('/getData');
-	}
-	
-	// This is called at regular intervals when the page is loaded.
-	function refresh() 
-	{
-		$.getJSON('/Gate/getData', function(data)
-			{
-				// The text() is a method of the selector to set the text of the selected elements.
-				// For general attributes, you use .attr(). $("#temperatureValue") is a selector, not a element from the DOM!
-				// Since many elements might match.
-				$("#uptime").text(data.uptime);
-				$("#status").text(data.statusStr);
-			});
-		setTimeout(refresh,4000);
-	}
-	
+  </head>
+<body>
+ 
+<div ><p><h2>ZAP THE FUCKERS</h2></p></div>
 
-	// This is a JQuery shorthand to define a function that's called when the page is loaded.
-    $(
-		function() 
-		{
-			// Binds the ajax request _pageUnload to onbeforeunload of the window.
-			window.onbeforeunload = function(){
-				// The ajax request must return something, but it's OK to ignore it.
-				$.get('/_pageUnload');
-			};
-			refresh();
-			onLog();
+<!--  <table style="height: 172px; width: 350px; border:2px solid black; padding:35px, " border=1 >
+<tbody>
+<tr>
+<td style="width: 350px;" colspan="2">VOLTS</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2"><div id="sliderV"></div></td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2">AMPS</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2"><div id="sliderA"></div></td>
+</tr>
+<tr>
+<td style="width: 350px; height: 10px" colspan="2"> </td>
+</tr>
+<tr>
+<td style="width: 175px;" id="VMax"> VMAX </td>
+<td style="width: 175px;"id="AMax" > AMAX </td>
+</tr>
+<tr>
+<td style="width: 350px; height: 10px" colspan="2">  </td>
+</tr>
+<tr>
+<td style="width: 175px;" id="VOut" ></td>
+<td style="width: 175px;" id="AOut" ></td>
+</tr>
+<tr>
+<td style="width: 155px;" id="OnButton">ON</td>
+<td style="width: 155px;" id="OffButton">OFF</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2" id="log2">status</td>
+</tr>
+</tbody>
+</table> -->
+<div style="width: 800px;" id="curV" ></div>
+<div style="width: 800px;" id="calibV" ></div>
+<div style="width: 800px;" id="status" ></div>
+<div style="width: 800px;" id="lastTripped" ></div>
+<div style="width: 800px;" id="time" ></div>
 
-			// This does an Ajax request for /_getFullData.
-			//$.getJSON('/_getData');
-		}
-    );
-	
-	
-	
-	
-</script>
-<!-- Simple JQuery Mobile page that display the getHumidity state on the breadoard -->
-<!-- The Raspberry Pi uptime is displayed in the footer (Jinja2 expands the template tag) -->
-
-<div data-role="page" data-theme="b">
-  <div data-role="header">
-    <div><h2><center>WINDOW CONTROL</center></h2></div>
-  </div>
-  
-  <div data-role="content">
-
-	<div data-role="fieldcontain">
-		<fieldset class="ui-grid-a">
-			<div class="ui-block-a"><button name="Up" id="Up" onclick="onUp()" data-theme="d">Open</button></div>
-			<div class="ui-block-b"><button name="Down" id="Down" onclick="onDown()" data-theme="d">Close</button></div>
-			<div class="ui-block-b"><button name="Down" id="Down" onclick="onLog()" data-theme="d">Log</button></div>
-	    </fieldset>
-	</div>
-  </div>
- <div data-role="footer">
-    <div><h4><span id="uptime" ></span></h4></div>
-    <div>Status: <h4><span id="status" ></span></h4></div>  
-  </div>
+<br />
+<br />
+<br />
+<div style="width: 130px;" id="Calib">Calibrate</div>
+<p />
+<p />
+<div style="width: 130px;" id="ReArm">Re-Arm</div>
+<p />
+<p />
+<div style="width: 130px;" id="OnButton">On</div>
+<p />
+<p />
+<div style="width: 130px;" id="OffButton">Off</div>
+<br />
+<p />
+<p />
+<div style="width: 200px;" id="sliderOffset"></div></td>
+<div style="width: 800px;" id="threshV" ></div>
+<div style="width: 200px;" id="sliderZapTimeS"></div></td>
+<div style="width: 800px;" id="zapTimeS" ></div>
 
 <div ><h2>Log:</h2></div>
  <div>
  <pre id="Log"></pre>
  </div>
 
- </div>
- </div>
+</body>
+</html>
