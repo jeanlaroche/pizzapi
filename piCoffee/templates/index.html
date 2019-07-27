@@ -21,37 +21,32 @@
   $( function() {
 	$.getJSON('/_init', function(data)
 	{
-		$("#sliderOffset" ).slider('value',data.threshFactor*100)
-		$("#sliderZapTimeS" ).slider('value',data.zapTimeS*10)
-		$("#status")[0].style.fontSize = "xx-large";
-		$("#lastTripped")[0].style.fontSize = "xx-large";
-		$("#curV")[0].style.fontSize = "xx-large";
-		$("#calibV")[0].style.fontSize = "xx-large";
-		$("#Log").text(data.log);
+//		$("#sliderOffset" ).slider('value',data.threshFactor*100)
+//		$("#sliderZapTimeS" ).slider('value',data.zapTimeS*10)
+//		$("#status")[0].style.fontSize = "xx-large";
+//		$("#lastTripped")[0].style.fontSize = "xx-large";
+//		$("#curV")[0].style.fontSize = "xx-large";
+//		$("#calibV")[0].style.fontSize = "xx-large";
+//		$("#Log").text(data.log);
 	})
   } );
 
 $(document).ready(function(){
     var socket = io.connect('http://' + document.domain + ':' + location.port);
     socket.on('currentValues', function(msg) {
-        $('#status').text(msg.status);
-		$('#status')[0].style.fontSize = "xx-large";
-		$('#status')[0].style.color = msg.status.includes('tripped') || msg.status.includes('riggering') ? "red" : "black";
-        $('#lastTripped').text(msg.lastTripped);
-        $('#time').text(msg.time);
-        $('#curV').text  ("Cur   " + msg.curV.toFixed(2) + " V");
-        $('#calibV').text("Calib " + msg.calibV.toFixed(2) + " V");
-        $('#threshV').text("Thresh: " + msg.threshV.toFixed(2) + " V");
-        $('#zapTimeS').text("ZapTime: " + msg.zapTimeS.toFixed(2) + " s");
+//        $('#status').text(msg.status);
+//		$('#status')[0].style.fontSize = "xx-large";
+//		$('#status')[0].style.color = msg.status.includes('tripped') || msg.status.includes('riggering') ? "red" : "black";
+ //       $('#lastTripped').text(msg.lastTripped);
+  //      $('#time').text(msg.time);
+//        $('#curV').text  ("Cur   " + msg.curV.toFixed(2) + " V");
+//        $('#calibV').text("Calib " + msg.calibV.toFixed(2) + " V");
+//        $('#threshV').text("Thresh: " + msg.threshV.toFixed(2) + " V");
+//        $('#zapTimeS').text("ZapTime: " + msg.zapTimeS.toFixed(2) + " s");
     });
      $( "#sliderZapTimeS" ).slider({
       slide: function( event, ui ) {
-		socket.emit('setZapTimeS', {data: ui.value});
-      },
-    });
-    $( "#sliderOffset" ).slider({
-      slide: function( event, ui ) {
-		socket.emit('setOffset', {data: ui.value});
+		//socket.emit('setZapTimeS', {data: ui.value});
       },
     });
     $( "#OnButton" ).button({width: 155
@@ -59,10 +54,10 @@ $(document).ready(function(){
     $( "#OffButton" ).button({width: 155
     });
 	$( "#OnButton" ).click(function() {
-		socket.emit('TurnOnOff', {data: 1});
+		//socket.emit('TurnOnOff', {data: 1});
       });
 	$( "#OffButton" ).click(function() {
-		socket.emit('TurnOnOff', {data: 0});
+		//socket.emit('TurnOnOff', {data: 0});
       });
     $( "#Calib" ).button({});
 	$( "#Calib" ).click(function() {
@@ -71,7 +66,7 @@ $(document).ready(function(){
       });
     $( "#ReArm" ).button({});
 	$( "#ReArm" ).click(function() {
-		socket.emit('reArm');
+		//socket.emit('reArm');
       });
 
 

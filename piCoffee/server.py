@@ -8,93 +8,28 @@ import logging, json
 from BaseClasses import myLogger
 from BaseClasses.utils import *
 import numpy as np
-from readADS1015 import *
-
-relayGPIO = 18      # GPIO used to control the relay
-rearmGPIO = 21
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
-status_waiting       = 0
-status_tripped       = 1
-status_off       = 2
+relayGPIO = 10
 
-class Zapper(Server):
+class MainServer(Server):
     
     paramFile = 'params.json'
     
     def __init__(self):
-        myLogger.setLogger('zapper.log',mode='a',dateFormat="%H:%M:%S",level=logging.WARNING)
-        self.logFileName = 'zapper.log'
+        myLogger.setLogger('server.log',mode='a',dateFormat="%H:%M:%S",level=logging.WARNING)
+        self.logFileName = 'server.log'
         logging.warning('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(relayGPIO, pigpio.OUTPUT)
         self.pi.write(relayGPIO,0)
-        monitorButton(self.pi,self,rearmGPIO,lambda gpio,level,long,double : self.reArm())
-        
-        # The gain of the selectable gain in the AD converter. Between 0 and 5.
-        self.gain = 0
-        # Max input voltage for each gain value.
-        self.maxVolts = [6.144,4.096,2.048,1.024,0.512,0.256]
-        # The output voltage is a 12 bit signed integer.
-        self.scale = np.power(2.,-11)
-        # Calibration voltage (voltage when nobody touches the probe)
-        self.calibV = 0
-        # Current measured voltage.
-        self.curV = 0
-        # self.threshFactor * self.calibV is the threshold below which we trigger the relay
-        self.threshFactor = .9 
-        # The relay is on for this amount of time.
-        self.zapTimeS = 4
-        # Status. 
-        self.status = status_off
-        # Last time tripped
-        self.lastTripTime = ''
-        
-        YL_40=0x48
-        self.handle = self.pi.i2c_open(1, YL_40, 0)
-        self.loadParams()
-        #self.testLoop()
-        self.watchForGopher()
-        
+                       
     def __delete__(self):
         print "DELETE"
         self.pi.stop()
-
-    # def readADInputs(self):
-        # self.counter = (self.counter + 1) % 10
-        # # Somehow input 1 does not seem to work any longer?
-        # inputs=[0,2]
-        # for a in range(0,2):
-            # # Massaging: get the mean of 512 values, then use the 1024 last one for the feedback and many more for the display
-            # values = readValues(chan=a,gain=self.gain,numVals=100,verbose=0)[0]
-            # meanVal = 1.*np.mean(values)*self.maxVolts[self.gain]
-            # self.outputVHist[a] = np.roll(self.outputVHist[a],1)
-            # self.outputVHist[a][0]= meanVal
-            # self.outputV[a]=np.mean(self.outputVHist[a][0:self.nMean])
-            # self.outputVSmooth[a] = np.mean(self.outputVHist[a])
-    
-    def testLoop(self):
-        def doLoop():
-            cnt = 0
-            cntOn = 0
-            chan = 0
-            gain = 1
-            maxVal=0
-            minVal=10000
-            pi.i2c_write_device(h, [0x01, 0xC0+(chan<<4)+(gain<<1), 0x83])
-            pi.i2c_write_device(h, [0x00])
-            while 1:
-                cnt += 1
-                num_read, data = pi.i2c_read_device(h, 2)
-                value = (unpack('>h',data[0:2])[0])>>4
-                #print "val {}".format(value)
-        t = threading.Thread(target=doLoop)
-        t.daemon = True
-        t.start()
-        
         
     def watchForGopher(self):
         
@@ -131,35 +66,15 @@ class Zapper(Server):
         t = threading.Thread(target=doLoop)
         t.daemon = True
         t.start()
-        
-    def calibrate(self):
-        logging.warning("Calibrating")
-        self.calibV = self.curV
-        self.saveParams()
-    
-    def reArm(self):
-        print("REARM")
-        logging.warning("Resetting, re-arming, curV %.2f calibV %.2f",self.curV,self.calibV)
-        self.status = status_waiting
-    
-    def turnOn(self,onOff):
-        if onOff:
-            if self.status == status_off: 
-                self.status = status_waiting
-        else:
-            self.status = status_off
-        
+                
     def saveParams(self):
         with open(self.paramFile,'w') as f:
-            json.dump({'calibV':self.calibV, 'gain':self.gain, 'threshFactor':self.threshFactor,'zapTimeS':self.zapTimeS},f)
+            pass
+#            json.dump({'calibV':self.calibV, 'gain':self.gain, 'threshFactor':self.threshFactor,'zapTimeS':self.zapTimeS},f)
     def loadParams(self):
         try:
             with open(self.paramFile) as f:
                 D = json.load(f)
-                self.calibV = D['calibV']
-                self.gain = D['gain']
-                self.threshFactor = D['threshFactor']
-                self.zapTimeS = D['zapTimeS']
         except:
             pass
         
@@ -172,88 +87,49 @@ def favicon():
             
 @app.route("/reboot")
 def reboot():
-    zapper.reboot()
+    server.reboot()
     return ('', 204)
     
 @app.route('/kg')
 def kg():
-    zapper.kg()
+    server.kg()
     return ('', 204)
 
 @app.route('/_init')
 def init():
     print "INIT"
-    return(jsonify(threshFactor=zapper.threshFactor,zapTimeS=zapper.zapTimeS, log=zapper.getLog(400)))
+    #return(jsonify(threshFactor=server.threshFactor,zapTimeS=server.zapTimeS, log=server.getLog(400)))
 
-@app.route('/setRatio_<int:param1>')
-def setRatio(param1):
-    zapper.targetOutV = param1/100.*256
-    return ('', param1)
+# @app.route('/setRatio_<int:param1>')
+# def setRatio(param1):
+    # server.targetOutV = param1/100.*256
+    # return ('', param1)
 
     # return index page when IP address of RPi is typed in the browser
 @app.route("/")
 def Index():
     print "/"
-    return zapper.Index()
+    return server.Index()
     
 @app.route("/funcName/<int:param1>/<int:param2>")
 def funcName(param1,param2):
     return jsonify(param1=param1,param2=param2)
 
-@socketio.on('setOffset')
-def setOffset(arg1):
-    zapper.threshFactor = float(arg1['data'])/100
-    zapper.saveParams()
-
-@socketio.on('setZapTimeS')
-def setZapTimeS(arg1):
-    zapper.zapTimeS = float(arg1['data'])/10
-    zapper.saveParams()
-
-@socketio.on('reArm')
-def reArm():
-    zapper.reArm()
-
-@socketio.on('TurnOnOff')
-def turnOnOff(arg1):
-    print "TURNING ON?OFF {}".format(arg1['data'])
-    val = int(arg1['data'])
-    zapper.turnOn(val)
 
 @socketio.on('Calib')
 def Calib(arg1):
     print "CALIBRATE {}".format(arg1['data'])
-    zapper.calibrate()
+    #server.calibrate()
 
 @app.route('/log')
 def log():
     print "LOG"
-    return jsonify(log=zapper.getLog())
+    return jsonify(log=server.getLog())
 
     
-zapper = Zapper()
+server = MainServer()
 
 if __name__ == "__main__":
-    #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
-    #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
-    #zapper.glow()
-    # try:
     socketio.run(app,host='0.0.0.0',port=8080)
-    #app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
-    # except:
-        # print "STOP"
-        # zapper.pi.stop()
     exit(0)
-
-    # while 1:
-        # a = raw_input('Command ->[]')
-        # a = int(a)
-        # lc.turnLigthOnOff(abs(a),a>0)
-
-    #zapper.setDutyCycle(1)
-    while 1:
-        a=raw_input('duty->')
-        ratio = float(a)
-        zapper.setDutyCycle(ratio)
-    
     
