@@ -28,6 +28,25 @@ class myTimer(object):
             logging.info('Adding event %s at %s:%d days %s',name,hour,min,days)
         self.timedEvents.append({'hour':hour,'min':min,'func':func,'params':params,'done':0,'name':name,'remove':0,'days':days})
         
+    def incEventTime(self,pattern,hour=0,min=0):
+        found = 0
+        for event in self.timedEvents:
+            if pattern in event['name']: 
+                event['hour']+=hour
+                event['min']+=min
+                while event['min']<0: 
+                    event['hour'] -= 1
+                    event['min'] += 60
+                while event['min']>=60: 
+                    event['hour'] += 1
+                    event['min'] -= 60
+                event['hour'] = (event['hour']+24)%24
+                    
+                logging.debug('Updating %s new hour %d new min %d',event['name'],event['hour'],event['min'])
+                found = 1
+        return found
+        
+        
     def addDelayedEvent(self,delayM,func,params,name,days=allDays):
         logging.info('Adding delayed event %s, delay %.0f',name,delayM)
         import pdb
@@ -237,10 +256,37 @@ def delayFunc(delayS):
 def runDelayed(delayS,function,*args):
     threading.Timer(delayS,function,*args).start()
 
+def runDelayedSingle(caller,delayS,function,*args):
+    # This cancels the timer if it's still active before setting a new timer, so it can be
+    # called repeatedly and the function will only be called at the very end.
+    if hasattr(caller,'delay_thread'):
+        caller.delay_thread.cancel()
+    caller.delay_thread = threading.Timer(delayS,function,*args)
+    caller.delay_thread.start()
+        
+
 def runThreaded(function,*args):
     t = threading.Thread(target=function,args=args)
     t.start()
     return t
+    
+def runThreadedSingle(caller,function,*args):
+    # This is to call a function in threaded mode, but in a way that does not allow multiple
+    # threads to be created if this is called over and over. This is good for displaying values
+    # if the display function is slow, but the values can change rapidly. The redo mechanism ensures
+    # that the last value is always displayed
+    caller.redo = 0
+    def helper():
+        function(*args)
+        if caller.redo:
+            caller.redo = 0
+            function(*args)
+    if not hasattr(caller,'single_thread') or not caller.single_thread.is_alive():
+        caller.single_thread = runThreaded(helper)
+    else:
+        # The thread is alive, don't start on, but ask it to re-run when done.
+        caller.redo=1
+    
     
 def flashLED(pi,gpio,dur=0.100):
     # Use this to flash a LED but return immediately
@@ -249,4 +295,44 @@ def flashLED(pi,gpio,dur=0.100):
         pi.write(gpio,0)
     runDelayed(dur,turnOff)
     
-    
+def monitorButton(pi,caller,gpioPush,callback,between_click_ms=200):
+    # Use this to monitor a button for long press, short press, double-clicks.
+    # Pass an object as caller (any), callback will be called as callback(gpio,level,long_press,double_click)
+    def pushCB(gpio,level,tick):
+        # Remove the callback so we don't get called twice in case of a double-click
+        caller.cb[gpio].cancel()
+        # Wait for release, for some reason I'm not able to use wait_for_edge ...
+        longPress = 0
+        doubleClick = 0
+        while pi.read(gpio) == 0 and pi.get_current_tick() - tick < between_click_ms*1e3:
+            time.sleep(.010)
+        if pi.read(gpio) == 0: longPress = 1
+        tick = pi.get_current_tick()
+        if not longPress:
+            # check for a double-click
+            while pi.read(gpio) == 1 and pi.get_current_tick() - tick < between_click_ms*1e3:
+                time.sleep(.010)
+            if pi.read(gpio) == 0:
+                doubleClick = 1
+        # restore the callback
+        caller.cb[gpio]=pi.callback(gpio, pigpio.FALLING_EDGE, pushCB)
+        # And call the supplied function
+        callback(gpio,level,longPress,doubleClick)
+
+    pi.set_mode(gpioPush, pigpio.INPUT)
+    pi.set_pull_up_down(gpioPush, pigpio.PUD_UP)
+    pi.set_glitch_filter(gpioPush, 100)
+    if not hasattr(caller,'cb'): caller.cb={}
+    caller.cb[gpioPush]=pi.callback(gpioPush, pigpio.FALLING_EDGE, pushCB)
+
+if __name__ == "__main__":
+
+    def foo(gpio,level,long,double):
+        print("{} {} {} {}".format(gpio,level,long,double))
+        
+    pi = pigpio.pi()
+    class A(object):
+        pass
+    monitorButton(pi,A,21,foo)
+    while 1:
+        time.sleep(1)

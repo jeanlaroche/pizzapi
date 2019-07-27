@@ -6,7 +6,7 @@ import time
 
 defaultFormat = '%(asctime)s - %(filename)s / %(funcName)s- %(levelname)s - %(message)s'
 defaultFormat = '%(asctime)s: %(message)s'
-defautDateFormat = "%Y-%m-%d %H:%M:%S"
+defautDateFormat = "%a %m-%d %H:%M:%S"
 smallFormat = '%(message)s'
 mstr = None
 lastMessage = ''

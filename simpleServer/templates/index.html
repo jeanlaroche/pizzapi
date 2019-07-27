@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZAP the fuckers</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+<script type="text/javascript" charset="utf-8">
+//    var socket = io.connect('http://' + document.domain + ':' + location.port);
+//    socket.on('connect', function() {
+//        socket.emit('my event', {data: 'I\'m connected!'});
+//        socket.emit('my event', {data: 'Yepee'});
+//    });
+</script>
+  <script>
+  // Function called when the page is loaded.
+  $( function() {
+	$.getJSON('/_init', function(data)
+	{
+//		$("#sliderOffset" ).slider('value',data.threshFactor*100)
+//		$("#sliderZapTimeS" ).slider('value',data.zapTimeS*10)
+//		$("#status")[0].style.fontSize = "xx-large";
+//		$("#lastTripped")[0].style.fontSize = "xx-large";
+//		$("#curV")[0].style.fontSize = "xx-large";
+//		$("#calibV")[0].style.fontSize = "xx-large";
+//		$("#Log").text(data.log);
+	})
+  } );
+
+$(document).ready(function(){
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    socket.on('currentValues', function(msg) {
+//        $('#status').text(msg.status);
+//		$('#status')[0].style.fontSize = "xx-large";
+//		$('#status')[0].style.color = msg.status.includes('tripped') || msg.status.includes('riggering') ? "red" : "black";
+ //       $('#lastTripped').text(msg.lastTripped);
+  //      $('#time').text(msg.time);
+//        $('#curV').text  ("Cur   " + msg.curV.toFixed(2) + " V");
+//        $('#calibV').text("Calib " + msg.calibV.toFixed(2) + " V");
+//        $('#threshV').text("Thresh: " + msg.threshV.toFixed(2) + " V");
+//        $('#zapTimeS').text("ZapTime: " + msg.zapTimeS.toFixed(2) + " s");
+    });
+     $( "#sliderZapTimeS" ).slider({
+      slide: function( event, ui ) {
+		//socket.emit('setZapTimeS', {data: ui.value});
+      },
+    });
+    $( "#OnButton" ).button({width: 155
+    });
+    $( "#OffButton" ).button({width: 155
+    });
+	$( "#OnButton" ).click(function() {
+		//socket.emit('TurnOnOff', {data: 1});
+      });
+	$( "#OffButton" ).click(function() {
+		//socket.emit('TurnOnOff', {data: 0});
+      });
+    $( "#Calib" ).button({});
+	$( "#Calib" ).click(function() {
+//		if(confirm("Are you sure?")==true)
+			socket.emit('Calib', {data: ""});
+      });
+    $( "#ReArm" ).button({});
+	$( "#ReArm" ).click(function() {
+		//socket.emit('reArm');
+      });
+
+
+});
+  </script>
+<style>
+h3 {text-align: center;}
+h4 {text-align: left; color: green}
+span {font-weight: bold;}
+</style>
+
+  </head>
+<body>
+ 
+<div ><p><h2>ZAP THE FUCKERS</h2></p></div>
+
+<!--  <table style="height: 172px; width: 350px; border:2px solid black; padding:35px, " border=1 >
+<tbody>
+<tr>
+<td style="width: 350px;" colspan="2">VOLTS</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2"><div id="sliderV"></div></td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2">AMPS</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2"><div id="sliderA"></div></td>
+</tr>
+<tr>
+<td style="width: 350px; height: 10px" colspan="2"> </td>
+</tr>
+<tr>
+<td style="width: 175px;" id="VMax"> VMAX </td>
+<td style="width: 175px;"id="AMax" > AMAX </td>
+</tr>
+<tr>
+<td style="width: 350px; height: 10px" colspan="2">  </td>
+</tr>
+<tr>
+<td style="width: 175px;" id="VOut" ></td>
+<td style="width: 175px;" id="AOut" ></td>
+</tr>
+<tr>
+<td style="width: 155px;" id="OnButton">ON</td>
+<td style="width: 155px;" id="OffButton">OFF</td>
+</tr>
+<tr>
+<td style="width: 350px;" colspan="2" id="log2">status</td>
+</tr>
+</tbody>
+</table> -->
+<div style="width: 800px;" id="curV" ></div>
+<div style="width: 800px;" id="calibV" ></div>
+<div style="width: 800px;" id="status" ></div>
+<div style="width: 800px;" id="lastTripped" ></div>
+<div style="width: 800px;" id="time" ></div>
+
+<br />
+<br />
+<br />
+<div style="width: 130px;" id="Calib">Calibrate</div>
+<p />
+<p />
+<div style="width: 130px;" id="ReArm">Re-Arm</div>
+<p />
+<p />
+<div style="width: 130px;" id="OnButton">On</div>
+<p />
+<p />
+<div style="width: 130px;" id="OffButton">Off</div>
+<br />
+<p />
+<p />
+<div style="width: 200px;" id="sliderOffset"></div></td>
+<div style="width: 800px;" id="threshV" ></div>
+<div style="width: 200px;" id="sliderZapTimeS"></div></td>
+<div style="width: 800px;" id="zapTimeS" ></div>
+
+<div ><h2>Log:</h2></div>
+ <div>
+ <pre id="Log"></pre>
+ </div>
+
+</body>
+</html>

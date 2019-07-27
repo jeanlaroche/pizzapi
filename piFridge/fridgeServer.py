@@ -10,7 +10,9 @@ from BaseClasses.baseServer import Server
 import logging
 from BaseClasses import myLogger
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from BaseClasses.utils import myTimer, printSeconds
+from BaseClasses.utils import myTimer, printSeconds, runThreaded,runThreadedSingle,runDelayed,runDelayedSingle
+from BaseClasses.segments import *
+from BaseClasses.rotary import *
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
@@ -19,6 +21,11 @@ app.config['SECRET_KEY'] = 'secret!'
 tempGPIO = 4
 humiGPIO = 17
 fanGPIO = 18
+ledClkGPIO=19
+ledDatGPIO=13
+pushGPIO =23
+rotAGPIO = 22
+rotBGPIO = 6
 
 class FridgeControl(Server):
     
@@ -38,8 +45,10 @@ class FridgeControl(Server):
     logDeltaS = 120  # Time interval in s between two data logs
     lastLogTime = 0
     t1,t2,h1,h2=0,0,0,0
-    totalOnTimeS = 0
-    lastTotalOnTimeS = 0
+    totOnTimeFridgeS = 0
+    totOnTimeHumiS = 0
+    lastTotalOnTimeFridgeS = 0
+    lastTotalOnTimeHumiS = 0
     warnOnTimeS = 20*60 # Warn if fridge is on for more than this time.
     fridgePowerW = 85
     
@@ -47,11 +56,25 @@ class FridgeControl(Server):
     doWriteJson = 0
     logFile = 'fridge.log'
     readErrorCnt = 0
-    
+    settingTarget = 0
+        
     def __init__(self,startThread=1):
         myLogger.setLogger(self.logFile,mode='a')
         logging.info('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
+        self.ledDisp = TM1637(clk=ledClkGPIO, dio=ledDatGPIO)
+        self.ledDisp.show("INIT")
+        
+        # Rotary decoder and push button.
+        self.decoder = decoder(self.pi, rotAGPIO, rotBGPIO, self.rotCallback,UAStyle=1,gpioPush=pushGPIO)
+        # self.pi.set_mode(pushGPIO, pigpio.INPUT)
+        # self.pi.set_pull_up_down(pushGPIO, pigpio.PUD_UP)
+        # self.pi.callback(pushGPIO, pigpio.FALLING_EDGE, self.pushCallback)
+        # self.pi.set_glitch_filter(pushGPIO, 100)
+
+        self.pi.set_mode(rotAGPIO, pigpio.INPUT)
+        self.pi.set_mode(rotBGPIO, pigpio.INPUT)
+        
         self.pi.set_mode(tempGPIO, pigpio.OUTPUT)
         self.pi.set_mode(humiGPIO, pigpio.OUTPUT)
         self.pi.set_mode(fanGPIO, pigpio.OUTPUT)
@@ -63,11 +86,14 @@ class FridgeControl(Server):
         if os.path.exists(self.jsonFile):
             with open(self.jsonFile) as f:
                 data = json.load(f)
-                self.targetTemp = data['targetTemp']
-                self.targetHumi = data['targetHumi']
-                self.coolingMode = data['coolingMode']
-                self.totalOnTimeS = data['totalOnTimeS']
-                self.lastTotalOnTimeS = data['lastTotalOnTimeS']
+                for key in data.keys():
+                    setattr(self,key,data[key])
+                # self.targetTemp = data['targetTemp']
+                # self.targetHumi = data['targetHumi']
+                # self.coolingMode = data['coolingMode']
+                # self.totOnTimeFridgeS = data['totOnTimeFridgeS']
+                # self.totOnTimeHumiS = data['totOnTimeHumiS']
+                # self.lastTotalOnTimeFridgeS = data['lastTotalOnTimeFridgeS']
         self.temp = self.targetTemp
         self.humi = self.targetHumi
         self.pi.write(tempGPIO,1-self.fridgeStatus)
@@ -77,9 +103,11 @@ class FridgeControl(Server):
         self.timer = myTimer()
         # Timer to reset the total on time, and memorize the previous one.
         def foo():
-            logging.info("Total on-time: %.0fm",self.totalOnTimeS/60.)
-            self.lastTotalOnTimeS = self.totalOnTimeS
-            self.totalOnTimeS=0
+            logging.info("Total on-time: %.0fm",self.totOnTimeFridgeS/60.)
+            self.lastTotalOnTimeFridgeS = self.totOnTimeFridgeS
+            self.lastTotalOnTimeHumiS = self.totOnTimeHumiS
+            self.totOnTimeFridgeS=0
+            self.totOnTimeHumiS=0
         self.timer.addEvent(0,10,foo,name='reset total time',params=[])
         self.timer.start()
         
@@ -89,16 +117,19 @@ class FridgeControl(Server):
                     self.regulate()
                 except Exception as e:
                     logging.error('Error in regulate: %s',e)
+                    self.ledDisp.show("Erro")
                     pass
                 time.sleep(4)
             logging.info('Exiting regulate loop')            
         self.timerThread = threading.Thread(target=mainLoop)
         self.timerThread.daemon = True
         if startThread: self.timerThread.start()
+        self.ledDisp.show("DONE")
         
     def writeJson(self):
         with open(self.jsonFile,'w') as f:
-            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode, 'totalOnTimeS':self.totalOnTimeS,'lastTotalOnTimeS':self.lastTotalOnTimeS},f)
+            json.dump({'targetTemp':self.targetTemp,'targetHumi':self.targetHumi,'coolingMode':self.coolingMode, 'totOnTimeFridgeS':self.totOnTimeFridgeS,'totOnTimeHumiS':self.totOnTimeHumiS,'lastTotalOnTimeFridgeS':self.lastTotalOnTimeFridgeS,
+            'lastTotalOnTimeHumiS':self.lastTotalOnTimeHumiS},f)
         self.doWriteJson = 0
     
     def stop(self):
@@ -234,6 +265,23 @@ class FridgeControl(Server):
         humi = 100.*humi/65536.
         return temp,humi
         
+    def rotCallback(self,pos,push=0):
+        def reset(): 
+            self.settingTarget = 0
+            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
+        if push:
+            self.settingTarget = 1-self.settingTarget
+            
+        if self.settingTarget==0:
+            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
+            return
+        runDelayedSingle(self,4,reset)
+        self.targetTemp += pos
+        print(self.targetTemp)
+        self.doWriteJson = 1
+        runThreadedSingle(self,lambda : self.ledDisp.show("T{:.0f}F".format(self.targetTemp)))
+       
+        
     def regulate(self):
         #temp_AM,humi_AM = self.read_AM()
         time.sleep(0.1)
@@ -248,8 +296,8 @@ class FridgeControl(Server):
             if self.temp < self.targetTemp - 0.5*self.tempDelta:
                 # Turn fridge off
                 if self.fridgeStatus:
-                    self.totalOnTimeS += (time.time()-self.lastTimeOn)
-                    logging.info("Turning cooling off %.2fF on for %.1f minutes. Tot time: %.1f mins",self.temp,(time.time()-self.lastTimeOn)/60.,self.totalOnTimeS/60.)
+                    self.totOnTimeFridgeS += (time.time()-self.lastTimeOn)
+                    logging.info("Turning cooling off %.2fF on for %.1f minutes. Tot time: %.1f mins",self.temp,(time.time()-self.lastTimeOn)/60.,self.totOnTimeFridgeS/60.)
                     self.doWriteJson = 1
                 self.fridgeStatus = 0
             if self.temp > self.targetTemp + .5*self.tempDelta:
@@ -293,6 +341,7 @@ class FridgeControl(Server):
             self.readErrorCnt = 0
         self.temp,self.humi = round(self.temp,ndigits=1),round(self.humi,ndigits=1)
         if self.doWriteJson : self.writeJson()
+        if not self.settingTarget: self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
 
 
     def warnOnTooLong(self,onTime):
@@ -306,7 +355,7 @@ class FridgeControl(Server):
         if full:
             X,Y,Z,TT,TH,Log = self.getPlotData()
             uptime = self.GetUptime()+" {:.1f}F {:.1f}%".format(self.t1,self.h1)
-            onTime = "On time today {} -- yesterday {}".format(printSeconds(self.totalOnTimeS),printSeconds(self.lastTotalOnTimeS))
+            onTime = "On time today {} -- yesterday {}".format(printSeconds(self.totOnTimeFridgeS),printSeconds(self.lastTotalOnTimeFridgeS))
         else:
             X,Y,Z,TT,TH,Log = [],[],[],[],[],''
             uptime,onTime = '',''
