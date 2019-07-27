@@ -8,16 +8,36 @@ import logging, json
 from BaseClasses import myLogger
 from BaseClasses.utils import *
 import numpy as np
+from BaseClasses.segments import *
+
+# Also this: https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
+# Pi pin          MAX6675 from https://www.raspberrypi.org/forums/viewtopic.php?p=1065060
+ # 6 (GND)  <---> GND
+ # 1 (3V3)  <---> VCC
+# 23 (SCLK) <---> SCK
+# 24 (CE0)  <---> CS
+# 21 (MISO) <---> SO
+    
+# pi.spi_open(0, 1000000, 0)    # CE0, 1Mbps, main SPI
+# pi.spi_open(1, 1000000, 0)    # CE1, 1Mbps, main SPI
+# pi.spi_open(0, 1000000, 256) # CE0, 1Mbps, auxiliary SPI
+# pi.spi_open(1, 1000000, 256) # CE1, 1Mbps, auxiliary SPI
+# pi.spi_open(2, 1000000, 256) # CE2, 1Mbps, auxiliary SPI
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
 relayGPIO = 10
+ledClkGPIO=19
+ledDatGPIO=13
 
 class MainServer(Server):
     
     paramFile = 'params.json'
+    curTemp = 0
+    targetTemp = 190
+    heatOn = 0
     
     def __init__(self):
         myLogger.setLogger('server.log',mode='a',dateFormat="%H:%M:%S",level=logging.WARNING)
@@ -26,55 +46,64 @@ class MainServer(Server):
         self.pi = pigpio.pi() # Connect to local Pi.
         self.pi.set_mode(relayGPIO, pigpio.OUTPUT)
         self.pi.write(relayGPIO,0)
+        self.sensor = self.pi.spi_open(0, 1000000, 0) # CE0 on main SPI
+        self.ledDisp = TM1637(clk=ledClkGPIO, dio=ledDatGPIO)
+        self.ledDisp.show("INIT")
+        self.loadParams()
+        self.startMainLoop()
+
                        
     def __delete__(self):
         print "DELETE"
         self.pi.stop()
+        self.saveParams()
+    
+    def readTemp(self):
+        c, d = self.pi.spi_read(self.sensor, 2)
+        temp = -1
+        if c == 2:
+            word = (d[0]<<8) | d[1]
+            if (word & 0x8006) == 0: # Bits 15, 2, and 1 should be zero.
+                temp = (word >> 3)/4.0
+                print("{:.2f}".format(temp))
+            else:
+                print("bad reading {:b}".format(word))
+        else:
+            print("bad reading {:b}".format(word))
+        return temp
+
         
-    def watchForGopher(self):
-        
+    def startMainLoop(self):
         def sendData(str):
             try:
-                socketio.emit('currentValues', {'status': str,'curV':self.curV,'calibV':self.calibV,'lastTripped':self.lastTripTime,
-                'time':'Current time: ' + time.ctime(time.time()),'threshV':self.threshFactor*self.calibV,'zapTimeS':self.zapTimeS})
+                socketio.emit('currentValues', {'status': str,'curTemp':self.curTemp,'targetTemp':self.targetTemp,
+                'time':'Current time: ' + time.ctime(time.time())})
             except:
                 pass
         
         def doLoop():
             while 1:
-                #self.readADInputs()
-                values = readValues(chan=0,gain=self.gain,numVals=100,verbose=0)[0]
-                meanVal = 1.*np.mean(values)*self.scale*self.maxVolts[self.gain]
-                #print "val {}".format(meanVal)
-                if self.status == status_waiting: str = 'Status: waiting... '
-                if self.status == status_tripped: str = 'Status: tripped... '
-                if self.status == status_off: str = 'Status: off... '
-                self.curV = meanVal
-                sendData(str)
-                if self.curV < self.calibV * self.threshFactor and self.status == status_waiting:
-                    # Turn the relay on
-                    logging.warning('ZAP! Triggering relay. V = %.2f Threshold = %.2f',self.curV,self.calibV * self.threshFactor)
-                    self.status = status_tripped
-                    self.pi.write(relayGPIO,1)
-                    sendData('Triggering relay')
-                    self.lastTripTime = 'Last zapped: {}'.format(time.asctime(time.localtime()))
-                    # Since we're on only for a little while, we can just sleep here, then reset the relay
-                    time.sleep(self.zapTimeS)
-                    self.pi.write(relayGPIO,0)
-                    
-                time.sleep(.1)
+                curTemp = self.readTemp()
+                if curTemp == -1:
+                    logging.error("Error reading temp")
+                    time.sleep(1)
+                    continue
+                self.curTemp = curTemp
+                self.ledDisp.show(" {:.0f}F".format(self.curTemp) if not self.heatOn else "_{:.0f}F".format(self.curTemp))
+                sendData("")                    
+                time.sleep(1)
         t = threading.Thread(target=doLoop)
         t.daemon = True
         t.start()
                 
     def saveParams(self):
         with open(self.paramFile,'w') as f:
-            pass
-#            json.dump({'calibV':self.calibV, 'gain':self.gain, 'threshFactor':self.threshFactor,'zapTimeS':self.zapTimeS},f)
+            json.dump({'targetTemp':self.targetTemp},f)
     def loadParams(self):
         try:
             with open(self.paramFile) as f:
                 D = json.load(f)
+                self.targetTemp = D['targetTemp']
         except:
             pass
         

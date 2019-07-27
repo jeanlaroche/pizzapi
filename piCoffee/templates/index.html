@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ZAP the fuckers</title>
+  <title>Espresso</title>
   <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
   <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -25,7 +25,7 @@
 //		$("#sliderZapTimeS" ).slider('value',data.zapTimeS*10)
 //		$("#status")[0].style.fontSize = "xx-large";
 //		$("#lastTripped")[0].style.fontSize = "xx-large";
-//		$("#curV")[0].style.fontSize = "xx-large";
+		$("#curTemp")[0].style.fontSize = "xx-large";
 //		$("#calibV")[0].style.fontSize = "xx-large";
 //		$("#Log").text(data.log);
 	})
@@ -39,7 +39,7 @@ $(document).ready(function(){
 //		$('#status')[0].style.color = msg.status.includes('tripped') || msg.status.includes('riggering') ? "red" : "black";
  //       $('#lastTripped').text(msg.lastTripped);
   //      $('#time').text(msg.time);
-//        $('#curV').text  ("Cur   " + msg.curV.toFixed(2) + " V");
+        $('#curTemp').text  ("Cur   " + msg.curTemp.toFixed(2) + " F");
 //        $('#calibV').text("Calib " + msg.calibV.toFixed(2) + " V");
 //        $('#threshV').text("Thresh: " + msg.threshV.toFixed(2) + " V");
 //        $('#zapTimeS').text("ZapTime: " + msg.zapTimeS.toFixed(2) + " s");
@@ -81,46 +81,9 @@ span {font-weight: bold;}
   </head>
 <body>
  
-<div ><p><h2>ZAP THE FUCKERS</h2></p></div>
+<div ><p><h2>ESPRESSO</h2></p></div>
 
-<!--  <table style="height: 172px; width: 350px; border:2px solid black; padding:35px, " border=1 >
-<tbody>
-<tr>
-<td style="width: 350px;" colspan="2">VOLTS</td>
-</tr>
-<tr>
-<td style="width: 350px;" colspan="2"><div id="sliderV"></div></td>
-</tr>
-<tr>
-<td style="width: 350px;" colspan="2">AMPS</td>
-</tr>
-<tr>
-<td style="width: 350px;" colspan="2"><div id="sliderA"></div></td>
-</tr>
-<tr>
-<td style="width: 350px; height: 10px" colspan="2"> </td>
-</tr>
-<tr>
-<td style="width: 175px;" id="VMax"> VMAX </td>
-<td style="width: 175px;"id="AMax" > AMAX </td>
-</tr>
-<tr>
-<td style="width: 350px; height: 10px" colspan="2">  </td>
-</tr>
-<tr>
-<td style="width: 175px;" id="VOut" ></td>
-<td style="width: 175px;" id="AOut" ></td>
-</tr>
-<tr>
-<td style="width: 155px;" id="OnButton">ON</td>
-<td style="width: 155px;" id="OffButton">OFF</td>
-</tr>
-<tr>
-<td style="width: 350px;" colspan="2" id="log2">status</td>
-</tr>
-</tbody>
-</table> -->
-<div style="width: 800px;" id="curV" ></div>
+<div style="width: 800px;" id="curTemp" ></div>
 <div style="width: 800px;" id="calibV" ></div>
 <div style="width: 800px;" id="status" ></div>
 <div style="width: 800px;" id="lastTripped" ></div>
