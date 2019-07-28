@@ -227,7 +227,7 @@ class blinker(object):
 # @repeatFunc(2)
 # def foo(x): print(x)
 # Stop it with foo.stopNow = 1
-def repeatFunc(delayS,nRepeats=-1):
+def repeatFunc(delayS,nRepeats=0):
     def innerDec(some_function):
         def wrapper(*args):
             some_function(*args)

@@ -36,13 +36,14 @@ class MainServer(Server):
     
     paramFile = 'params.json'
     curTemp = 0
+    dTemp = 0
     targetTemp = 190
     heatOn = 0
     histLength = 4
     tempHist = np.zeros(histLength)
     
     def __init__(self):
-        myLogger.setLogger('server.log',mode='a',dateFormat="%H:%M:%S",level=logging.WARNING)
+        myLogger.setLogger('server.log',mode='a',dateFormat="%H:%M:%S",level=logging.INFO)
         self.logFileName = 'server.log'
         logging.warning('Starting pigpio')
         self.pi = pigpio.pi() # Connect to local Pi.
@@ -73,6 +74,7 @@ class MainServer(Server):
         else:
             print("bad reading {:b}".format(word))
         time.sleep(.5)
+        temp = 32 + temp*1.8
         return temp
 
         
@@ -83,7 +85,14 @@ class MainServer(Server):
                 'time':'Current time: ' + time.ctime(time.time())})
             except:
                 pass
+                
+        @repeatFunc(10)
+        def logTemp():
+            print("T = {:.3f} --- DT = {:.3f}".format(self.curTemp,self.dTemp))
+            if self.curTemp:
+                logging.info("T %.1f",self.curTemp)
         
+        logTemp()
         def doLoop():
             while 1:
                 curTemp = np.mean([self.readTemp() for ii in range(4)])
@@ -95,9 +104,8 @@ class MainServer(Server):
                 self.tempHist[1:] = self.tempHist[0:-1]
                 self.tempHist[0] = self.curTemp
                 self.dTemp = (self.tempHist[0]-self.tempHist[-1])/self.histLength if self.tempHist[-1] else 0
-                print("T = {:.3f} --- DT = {:.3f}".format(curTemp,self.dTemp))
                 
-                self.ledDisp.show(" {:.0f}F".format(self.curTemp) if not self.heatOn else "_{:.0f}F".format(self.curTemp))
+                self.ledDisp.show("{:.0f}F".format(self.curTemp) if not self.heatOn else "_{:.0f}F".format(self.curTemp))
                 sendData("")                    
                 time.sleep(1)
         t = threading.Thread(target=doLoop)
