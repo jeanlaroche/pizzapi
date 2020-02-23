@@ -67,10 +67,6 @@ class FridgeControl(Server):
         
         # Rotary decoder and push button.
         self.decoder = decoder(self.pi, rotAGPIO, rotBGPIO, self.rotCallback,UAStyle=1,gpioPush=pushGPIO)
-        # self.pi.set_mode(pushGPIO, pigpio.INPUT)
-        # self.pi.set_pull_up_down(pushGPIO, pigpio.PUD_UP)
-        # self.pi.callback(pushGPIO, pigpio.FALLING_EDGE, self.pushCallback)
-        # self.pi.set_glitch_filter(pushGPIO, 100)
 
         self.pi.set_mode(rotAGPIO, pigpio.INPUT)
         self.pi.set_mode(rotBGPIO, pigpio.INPUT)
@@ -271,10 +267,14 @@ class FridgeControl(Server):
             self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
         if push:
             self.settingTarget = 1-self.settingTarget
-            
-        if self.settingTarget==0:
-            self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
+            if self.settingTarget==0:
+                self.ledDisp.show(" {:.0f}F".format(self.temp) if not self.fridgeStatus else "_{:.0f}F".format(self.temp))
+            else:
+                self.ledDisp.show("T{:.0f}F".format(self.targetTemp))
+                runDelayedSingle(self,4,reset)
             return
+        if not self.settingTarget: return
+
         runDelayedSingle(self,4,reset)
         self.targetTemp += pos
         print(self.targetTemp)

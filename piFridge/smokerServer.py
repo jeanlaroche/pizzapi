@@ -190,7 +190,7 @@ class SmokerControl(Server):
             if self.pi.read(gpio) == 0 and not self.longPress and gpio == pushGPIO: self.doubleClick=1
             logging.debug('cfb1 %d %d status %d changeWhat %d',self.longPress,self.doubleClick,self.runStatus,self.changeWhat)
             
-            if self.runStatus in [0]:
+            if self.runStatus in [0]: # Normal
                 if self.longPress:
                     # Long press -> program.
                     self.runStatus = 2
@@ -208,11 +208,15 @@ class SmokerControl(Server):
                     self.displayStuff()
                 return
 
-            if self.runStatus in [1]:
+            if self.runStatus in [1]: # Run program
                 if self.longPress:
                     # While running the program, a long press cancels.
                     self.stopProgram()
                     self.displayStuff()
+                    return
+                if self.doubleClick: 
+                    # Double-click goes to the next period
+                    self.timer.triggerEvents("Period")
                     return
                 if gpio == pushGPIO:
                     # While running the program, a click switches to changing the duration and vice-versa.
@@ -228,7 +232,7 @@ class SmokerControl(Server):
                         self.curDurMin += level
                     self.displayStuff()
                     return
-            elif self.runStatus == 2:
+            elif self.runStatus == 2: # Programming
                 # This is the programming handling.
                 if self.longPress:
                     # During programming, long press exits programming.
