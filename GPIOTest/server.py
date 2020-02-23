@@ -155,6 +155,7 @@ def preStart():
     tim.start()
     # Start thread to read outside temp
     rt.startOutsideTempReading()
+    print("DONE with prestart")
 
 preStart()
 
