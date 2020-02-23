@@ -9,9 +9,6 @@ except:
 weekDays = {0:"Mon",1:"Tue",2:"Wed",3:"Thu",4:"Fri",5:"Sat",6:"Sun"}
 allDays = ''.join(weekDays.values())
 
-weekDays = {0:"Mon",1:"Tue",2:"Wed",3:"Thu",4:"Fri",5:"Sat",6:"Sun"}
-allDays = ''.join(weekDays.values())
-
 class myTimer(object):
     ''' Useful class for timing events'''
     
