@@ -18,6 +18,7 @@ class myTimer(object):
     def __init__(self):
         self.timedEvents = []
         self.vacation = 0
+        self.hold = 0
         # Get the sunset times for today
         self.getSunsetTime()
         # Set an event for getting the sunset time every day.
@@ -158,6 +159,10 @@ class myTimer(object):
             while 1:
                 try:
                     locTime = time.localtime()
+                    if self.hold:
+                        # If on hold, don't trigger anything.
+                        time.sleep(1)
+                        continue
                     # If on vacation, set the local day to Sunday.
                     if self.vacation: 
                         locTime.tm_wday = 6
