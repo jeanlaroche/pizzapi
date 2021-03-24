@@ -216,12 +216,16 @@ slowBlink=1
 fastBlink=2
 noBlinkOn=3
 flashBlink=4
+ffastBlink=5
+fffastBlink=6
 class blinker(object):
     blinkStat = noBlinkOff
     sampT = 0.010
     flashDurS = 0.050
     slowFreq = 1
     fastFreq = 4
+    ffastFreq = 8
+    fffastFreq = 16
     cycleS = 2
     exitBlink = 0
     prevOnOff = 0
@@ -240,6 +244,8 @@ class blinker(object):
         self.sleepTimeS = self.sampT
         self.nSlow = int(round(1./self.sampT/self.slowFreq))
         self.nFast = int(round(1./self.sampT/self.fastFreq))
+        self.nFFast = int(round(1./self.sampT/self.ffastFreq))
+        self.nFFFast = int(round(1./self.sampT/self.fffastFreq))
         print self.cycleLen
         print self.nSlow
         print self.nFast
@@ -249,6 +255,10 @@ class blinker(object):
             offSlow = [uu for uu in range(self.cycleLen) if uu%(self.nSlow)>=self.nSlow/2]
             onFast = [uu for uu in range(self.cycleLen) if uu%(self.nFast)<self.nFast/2]
             offFast = [uu for uu in range(self.cycleLen) if uu%(self.nFast)>=self.nFast/2]
+            onFFast = [uu for uu in range(self.cycleLen) if uu%(self.nFFast)<self.nFFast/2]
+            offFFast = [uu for uu in range(self.cycleLen) if uu%(self.nFFast)>=self.nFFast/2]
+            onFFFast = [uu for uu in range(self.cycleLen) if uu%(self.nFFFast)<self.nFFFast/2]
+            offFFFast = [uu for uu in range(self.cycleLen) if uu%(self.nFFFast)>=self.nFFFast/2]
             iFlash = int(self.flashDurS/self.sampT)
             while self.exitBlink == 0:
                 if 1:
@@ -258,6 +268,8 @@ class blinker(object):
                     i = (i + 1) % self.cycleLen
                     if blinkStat == slowBlink: on,off = onSlow,offSlow
                     elif blinkStat == fastBlink: on, off = onFast,offFast
+                    elif blinkStat == ffastBlink: on, off = onFFast,offFFast
+                    elif blinkStat == fffastBlink: on, off = onFFFast,offFFFast
                     elif blinkStat == noBlinkOn: on,off = range(self.cycleLen),[]
                     elif blinkStat == noBlinkOff: on,off = [],range(self.cycleLen)
                     elif blinkStat == flashBlink: on,off = range(0,iFlash),range(iFlash,self.cycleLen)
