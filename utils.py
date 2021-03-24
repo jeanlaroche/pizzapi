@@ -9,15 +9,13 @@ except:
 weekDays = {0:"Mon",1:"Tue",2:"Wed",3:"Thu",4:"Fri",5:"Sat",6:"Sun"}
 allDays = ''.join(weekDays.values())
 
-weekDays = {0:"Mon",1:"Tue",2:"Wed",3:"Thu",4:"Fri",5:"Sat",6:"Sun"}
-allDays = ''.join(weekDays.values())
-
 class myTimer(object):
     ''' Useful class for timing events'''
     
     def __init__(self):
         self.timedEvents = []
         self.vacation = 0
+        self.hold = 0
         # Get the sunset times for today
         self.getSunsetTime()
         # Set an event for getting the sunset time every day.
@@ -100,13 +98,14 @@ class myTimer(object):
     def redoLastEvent(self):
         logging.info('Redo last event')
         locTime = time.localtime()
+        wday = locTime.tm_wday
         # If on vacation, set the local day to Sunday.
         if self.vacation: 
             logging.info('Vacation on, setting day to Sunday')
-            locTime.tm_wday = 6
+            wday = 6
         # Re-run the latest timed event in the past of now.
         _events = []
-        nowMin = locTime.tm_wday*24*60 + locTime.tm_hour*60 + locTime.tm_min
+        nowMin = wday*24*60 + locTime.tm_hour*60 + locTime.tm_min
         for event in self.timedEvents:
             if 'Update sunset time' in event['name']: continue
             if 'Newline' in event['name']: continue
@@ -115,7 +114,7 @@ class myTimer(object):
             if isinstance(hour,str): continue
             for ii in range(7):
                 # Go back day by day, see if even triggers that, day, when it does and you're in the past of now, stop.
-                thisDay = locTime.tm_wday-ii
+                thisDay = wday-ii
                 # See if the even triggers this day
                 if not weekDays[(7+thisDay)%7].lower() in days.lower(): continue
                 # See if the even is in the past of the current time (it should be unless ii==0)
@@ -158,9 +157,14 @@ class myTimer(object):
             while 1:
                 try:
                     locTime = time.localtime()
+                    wday = locTime.tm_wday
+                    if self.hold:
+                        # If on hold, don't trigger anything.
+                        time.sleep(1)
+                        continue
                     # If on vacation, set the local day to Sunday.
                     if self.vacation: 
-                        locTime.tm_wday = 6
+                        wday = 6
                     # Make a list of events to trigger. This way if one takes a long time to complete, the other will still run.
                     todo = []
                     for event in self.timedEvents:
@@ -175,7 +179,7 @@ class myTimer(object):
                             sunrise = self.sunrise+datetime.timedelta(minutes=min)
                             hour,min = sunrise.hour,sunrise.minute
                             # logging.info('Sunrise hour %d -- %d',hour,min)
-                        if locTime.tm_hour == hour and locTime.tm_min == min and weekDays[locTime.tm_wday].lower() in days.lower():
+                        if locTime.tm_hour == hour and locTime.tm_min == min and weekDays[wday].lower() in days.lower():
                             if done==0:
                                 todo.append(event)
                                 event['done']=1
