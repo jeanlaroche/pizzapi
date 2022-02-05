@@ -1,7 +1,7 @@
 # TEST OF THE mcp9600 library
 #sudo pip3 install mcp9600
 #sudo pip3 install smbus
-
+#sudo apt-get install i2ctools
 # Use sudo i2cdetect -y 1 to see the devices
 
 import mcp9600
@@ -25,11 +25,12 @@ class Temps():
             return 0,0
         return temp_m1,temp_m2
 
-T = Temps()
-while 1:
-    t_1,t_2 = T.getTemps()
-    print(f"Top: {t_1} Bottom: {t_2}")
-    time.sleep(1)
+if __name__ == "__main__":
+    T = Temps()
+    while 1:
+        t_1,t_2 = T.getTemps()
+        print(f"Top: {t_1} Bottom: {t_2}")
+        time.sleep(1)
 
 # top = mcp9600.MCP9600(0x67)
 # time.sleep(.1)
