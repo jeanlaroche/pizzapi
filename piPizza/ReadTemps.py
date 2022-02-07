@@ -23,7 +23,7 @@ class Temps():
         except Exception as e:
             print(f"Could not read temp: {e}")
             return 0,0
-        return temp_m1,temp_m2
+        return round(temp_m1,1),round(temp_m2,1)
 
 if __name__ == "__main__":
     T = Temps()
