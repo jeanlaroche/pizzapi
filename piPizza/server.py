@@ -2,8 +2,9 @@ from BaseClasses.baseServer import Server
 from ReadTemps import Temps
 import pigpio
 import time
+from datetime import datetime
 
-from BaseClasses.utils import runThreaded
+from BaseClasses.utils import runThreaded, readJsonFile, writeJsonFile
 from flask import Flask, jsonify
 
 app = Flask(__name__)
@@ -42,6 +43,10 @@ class PizzaServer(Server):
     botTemp = 0
     ambientTemp = 0
     isOn = 0
+    tempHistT = []
+    tempHistTop = []
+    tempHistBot = []
+    jsonFileName = 'params.json'
 
     def __init__(self):
         super().__init__()
@@ -53,12 +58,20 @@ class PizzaServer(Server):
         self.pi.set_mode(BotRelay, pigpio.OUTPUT)
         self.pi.write(TopRelay, 0)
         self.pi.write(BotRelay, 0)
-        self.topPID.targetTemp = 20
-        self.botPID.targetTemp = 20
+        data = readJsonFile(self.jsonFileName)
+        try:
+            self.topPID.targetTemp = data.get('topTargetTemp',20)
+            self.botPID.targetTemp = data.get('botTargetTemp',20)
+        except:
+            print("Error while loading json")
+        self.saveJson()
         runThreaded(self.processLoop)
 
     def __delete__(self):
         self.pi.stop()
+
+    def saveJson(self):
+        writeJsonFile(self.jsonFileName,{'topTargetTemp':self.topPID.targetTemp,'botTargetTemp':self.botPID.targetTemp})
 
     def onOff(self):
         self.isOn = 1-self.isOn
@@ -71,7 +84,17 @@ class PizzaServer(Server):
             self.botPID.isOn = self.isOn
             topVal = self.topPID.getValue(self.topTemp)
             botVal = self.botPID.getValue(self.botTemp)
-            print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
+            # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
+
+            if not len(self.tempHistT) or round(self.topTemp) != self.tempHistTop[-1]\
+                    or round(self.botTemp) != self.tempHistBot[-1]:
+                curTime = time.localtime()
+                curTime = datetime.now()
+                # print(curTime.isoformat())
+                #self.tempHistT.append(curTime.tm_hour + curTime.tm_min / 60 + curTime.tm_sec / 3600)
+                self.tempHistT.append(curTime.isoformat())
+                self.tempHistTop.append(round(self.topTemp))
+                self.tempHistBot.append(round(self.botTemp))
             time.sleep(0.5)
 
 @app.route('/favicon.ico')
@@ -103,7 +126,13 @@ def _onOff():
 def getTemps():
     return jsonify(topTemp = server.topTemp,botTemp=server.botTemp,topTarget=server.topPID.targetTemp,
                    botTarget=server.botPID.targetTemp,ambientTemp=server.ambientTemp,onOff = _onOff(),
-                   topPWM=round(server.topPID.outVal,2),botPWM=round(server.botPID.outVal,2))
+                   topPWM=round(server.topPID.outVal,2),botPWM=round(server.botPID.outVal,2),
+                   dataLen = len(server.tempHistT))
+
+@app.route("/getTempHist")
+def getTempHist():
+    return jsonify(xVals=server.tempHistT,yValsTop=server.tempHistTop,yValsBot=server.tempHistBot)
+
 
 @app.route("/onOff")
 def onOff():
@@ -116,11 +145,13 @@ def onOff():
 def incTopTemp(param1):
     print("incTopTemp",param1)
     server.topPID.targetTemp += param1
+    server.saveJson()
     return jsonify(topTarget=server.topPID.targetTemp)
 
 @app.route("/incBotTemp/<int(signed=True):param1>")
 def incBotTemp(param1):
     server.botPID.targetTemp += param1
+    server.saveJson()
     return jsonify(botTarget=server.botPID.targetTemp)
 
 

@@ -16,6 +16,8 @@ span {font-weight: bold;}
 </style>
 
 <script type=text/javascript>
+
+	var dataLen = 0;
 	
 	// Javascript function for top button
 	function onTopTemp(val) {
@@ -63,6 +65,11 @@ span {font-weight: bold;}
 				$("#ambientTemp").text(Math.round(data.ambientTemp*1.8+32));
 				$("#OnOff").text(data.onOff);
 				$("#OnOff").attr('style',data.onOff.includes("OFF") ? 'color:white' : 'color:red');
+				if(dataLen != data.dataLen)
+				{
+					redraw();
+					dataLen = data.dataLen
+				}
 
 <!--				$("#heaterValue").text(data.heaterValueStr);-->
 <!--				$("#setTemperatureValue").text(data.setTemperatureValue);-->
@@ -114,23 +121,18 @@ span {font-weight: bold;}
     );
 	
 	function redraw() {
-		$.getJSON('/_getTubStatus', function(data) {
+		$.getJSON('/getTempHist', function(data) {
 			Plots = document.getElementById('Plots');
 			//Plots.style = {width:window.innerWidth , height:150};
-			var X = data.heaterTime;
-			var Y = data.heaterValue;
-			var XLabels = data.heaterLabel;
-			var XTicks = data.heaterTicks;
+			var X = data.xVals;
+			var Y = data.yValsTop;
 			// second arg is data, third arg is layout.
 			var layout = { margin: { t: 30, l:30, r:20 },
 			  xaxis: {
-				title: 'Hour',
+				title: 'Time',
 				showgrid: true,
 				zeroline: false,
 				color: 'rgba(256,256,0,1)',
-				tickvals: XTicks,
-				ticktext: XLabels,
-				tickangle: 0,
 			  },
 				paper_bgcolor : 'rgba(0,0,0,0)',
 				plot_bgcolor : 'rgba(0,0,0,0)',
@@ -138,24 +140,19 @@ span {font-weight: bold;}
 				title: '',
 				showline: true,
 				showgrid: true,
-				range:[29, 101],
+				range:[0, 80],
 				//tickvals: [0,1],
 				//ticktext: ['0','1'],
 				color: 'rgba(256,256,0,1)'
 			  },
-			showlegend : false,
-			title: data.thisDayStr + " -- Usage: " + data.heaterStats[0],
+			showlegend : true,
+			title: "AH AH AH",
 			titlefont: {color: 'yellow'},
 			  };
-			$("#Stats").text(data.stats);
 			var d = new Date()
 			var hours = d.getHours() + d.getMinutes()/60.0
-			Plotly.newPlot( Plots, [{x: X,y: Y, fill: 'tozeroy'}], layout );
-			//Plotly.plot( Plots, [{x: [0,0],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
-			Plotly.plot( Plots, [{x: [12,12],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
-			Plotly.plot( Plots, [{x: [hours,hours],y: [0,1], mode: 'lines', line : {color : 'white', width : 2, dash : 'dash'}}], layout );
-			//Plotly.plot( Plots, [{x: [24,24],y: [0,1], mode: 'lines', line : {color : 'white', width : 2}}], layout );
-			Plotly.plot(Plots,[{x:data.airTime, y:data.airVal,line : {color : 'cyan', width : 2}}], layout );
+			Plotly.newPlot( Plots, [{x: X,y: data.yValsTop, name:"Top"},{x: X,y: data.yValsBot, name:"Bottom"}], layout );
+			//Plotly.newPlot( Plots, [{x: X,y: data.yValsBot}], layout );
 			});
 	}
 	
@@ -165,7 +162,7 @@ span {font-weight: bold;}
 //		$.getJSON('/_tempUp');
 //		}
 		function() {
-			//redraw()
+			redraw()
 		}
     );
 	
@@ -216,23 +213,6 @@ span {font-weight: bold;}
     <div><h4><span id="upTime" ></span></h4></div>
   </div>
 <div id="Plots" style="width:auto;height:250px;"></div>
-<fieldset class="ui-grid-d">
-	<div class="ui-block-a">
-		<span id="prevDay" data-theme="d">Prev. Day</span>
-	</div>
-	<div class="ui-block-b">
-		<span id="prevDay2" data-theme="d">Prev. Day</span>
-	</div>
-	<div class="ui-block-c">
-		<span id="prevDay3" data-theme="d">Prev. Day</span>
-	</div>
-	<div class="ui-block-d">
-		<span id="prevDay4" data-theme="d">Prev. Day</span>
-	</div>
-	<div class="ui-block-e">
-		<span id="prevDay5" data-theme="d">Prev. Day</span>
-	</div>
-</fieldset>
 <div ><h2>Stats Log:</h2></div>
  <div>
  <pre id="Stats"></pre>
