@@ -32,49 +32,15 @@ span {font-weight: bold;}
 			$("#botTarget").text(data.botTarget);
 		});
 	}
+
+	function onOnOff() {
+		$.getJSON('/onOff', function(data)
+		{
+			$("#OnOff").text(data.onOff);
+			$("#OnOff").attr('style',data.onOff.includes("OFF") ? 'color:white' : 'color:red');
+		});
+	}
 	
-	// Flask allows you to decode URLs like /_onDay_Prev and /_onDay_Next so they're sent to the same function.
-	// It would be a bit more succint on the python side.
-	function onNextDay() {
-		$.get('/_onNextDay', function(data)
-		{
-			redraw();
-		});
-	}
-
-	function onPrevDay() {
-		$.get('/_onPrevDay', function(data)
-		{
-			redraw();
-		});
-	}
-
-	function onToday() {
-		$.get('/_onToday', function(data)
-		{
-			redraw();
-		});
-	}
-
-	function onMinusWeek() {
-		$.get('/_onMinusWeek', function(data)
-		{
-			redraw();
-		});
-	}
-
-	function onPlusWeek() {
-		$.get('/_onPlusWeek', function(data)
-		{
-			redraw();
-		});
-	}
-
-	// Javascript function to run the schedule
-	function onSchedule() {
-		$.get('/_schedule');
-	}
-
 <!--	// Read all temps, when the page is reloaded.-->
 <!--	function getFullData() {-->
 <!--		$.getJSON('/_getFullData');-->
@@ -92,6 +58,12 @@ span {font-weight: bold;}
 				$("#botTemp").text(data.botTemp);
 				$("#topTarget").text(data.topTarget);
 				$("#botTarget").text(data.botTarget);
+				$("#topPWM").text(data.topPWM);
+				$("#botPWM").text(data.botPWM);
+				$("#ambientTemp").text(Math.round(data.ambientTemp*1.8+32));
+				$("#OnOff").text(data.onOff);
+				$("#OnOff").attr('style',data.onOff.includes("OFF") ? 'color:white' : 'color:red');
+
 <!--				$("#heaterValue").text(data.heaterValueStr);-->
 <!--				$("#setTemperatureValue").text(data.setTemperatureValue);-->
 <!--				$("#targetTemperatureValue").text(data.targetTemperatureValue);-->
@@ -207,17 +179,33 @@ span {font-weight: bold;}
   </div>
 	
   <div data-role="content">
-    <p><h2>Top temperature: <span id="topTemp"></span> C Top target: <span id="topTarget"></span> C</h2><br></p>
-    <p><h2>Bottom temperature: <span id="botTemp"></span> C Bottom Target: <span id="botTarget"></span> C </h2><br></p>
-    <p><h2>Pizza Set Temp: <span id="setTemperatureValue"></span> F</h2></p>
-    <p><h2>Pizza Target Temp: <span id="targetTemperatureValue"></span> F</h2></p>
-    <p><h2>Ambient Temp: <span id="outsideTemperature"></span> F -- Min Temp: <span id="minTemp"> </span> -- MaxTemp: <span id="maxTemp"></span></h2></p>
+<fieldset class="ui-grid-c">
+	<div class="ui-block-a">
+		<span> <h2>Top temp: <span id="topTemp"></span> C</h2></span>
+	</div>
+	<div class="ui-block-b">
+		<span> <h2>Target: <span id="topTarget"></span> C</h2></span>
+	</div>
+	<div class="ui-block-c">
+		<span> <h2>PWM: <span id="topPWM"></span></h2></span>
+	</div>
+	<div class="ui-block-a">
+		<span> <h2>Bot temp: <span id="botTemp"></span> C</h2></span>
+	</div>
+	<div class="ui-block-b">
+		<span> <h2>Target: <span id="botTarget"></span> C</h2></span>
+	</div>
+	<div class="ui-block-c">
+		<span> <h2>PWM: <span id="botPWM"></span></h2></span>
+	</div>
+</fieldset>
+    <p><h2>Ambient Temp: <span id="ambientTemp"></span> F </h2></p>
 	<div data-role="fieldcontain">
-		<fieldset class="ui-grid-b">
+		<fieldset class="ui-grid-c">
+			<div class="ui-block-a"><button name="OnOff" id="OnOff" onclick="onOnOff()" data-theme="d">ON?OFF</button></div>
+		<fieldset class="ui-grid-c">
 			<div class="ui-block-a"><button name="Up" id="TopUp" onclick="onTopTemp(+5)" data-theme="d">TOP UP</button></div>
 			<div class="ui-block-b"><button name="Down" id="TopDown" onclick="onTopTemp(-5)" data-theme="d">TOP DOWN</button></div>
-	    </fieldset>
-		<fieldset class="ui-grid-b">
 			<div class="ui-block-a"><button name="Up" id="BotUp" onclick="onBotTemp(+5)" data-theme="d">BOT UP</button></div>
 			<div class="ui-block-b"><button name="Down" id="BotDown" onclick="onBotTemp(-5)" data-theme="d">BOT DOWN</button></div>
 	    </fieldset>
@@ -226,25 +214,23 @@ span {font-weight: bold;}
  <div data-role="footer">
     <div ><h4><span id="lastMessage" ></span></h4></div>
     <div><h4><span id="upTime" ></span></h4></div>
-    <div ><h2>Heater Usage:</h2></div>
-    <div ><h4><span id="heaterStats0" style = "color:green"></span></h5></div>
   </div>
 <div id="Plots" style="width:auto;height:250px;"></div>
 <fieldset class="ui-grid-d">
 	<div class="ui-block-a">
-		<button id="prevDay"  onclick="onPrevDay()" data-theme="d">Prev. Day</button>
+		<span id="prevDay" data-theme="d">Prev. Day</span>
 	</div>
 	<div class="ui-block-b">
-		<button id="nextDay" onclick="onNextDay()" data-theme="d">Next Day</button>
+		<span id="prevDay2" data-theme="d">Prev. Day</span>
 	</div>
 	<div class="ui-block-c">
-		<button id="today" onclick="onToday()" data-theme="d">Today</button>
+		<span id="prevDay3" data-theme="d">Prev. Day</span>
 	</div>
 	<div class="ui-block-d">
-		<button id="minusWeek" onclick="onMinusWeek()" data-theme="d">-Week</button>
+		<span id="prevDay4" data-theme="d">Prev. Day</span>
 	</div>
 	<div class="ui-block-e">
-		<button id="plusWeek" onclick="onPlusWeek()" data-theme="d">+Week</button>
+		<span id="prevDay5" data-theme="d">Prev. Day</span>
 	</div>
 </fieldset>
 <div ><h2>Stats Log:</h2></div>
