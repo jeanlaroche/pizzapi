@@ -1,6 +1,9 @@
 import logging
 import datetime
 import time, threading
+import json
+import os
+
 try:
     import pigpio
 except:
@@ -434,12 +437,10 @@ def monitorButton(pi,caller,gpioPush,callback,between_click_ms=200,onOff=0):
         caller.cb[gpioPush]=pi.callback(gpioPush, pigpio.EITHER_EDGE, onOffCB)
 
 def writeJsonFile(fileName,data):
-    import json
     with open(fileName,'w') as f:
         json.dump(data,f)
 
 def readJsonFile(fileName):
-    import json
     try:
         with open(fileName,'r') as f:
             data = json.load(f)
@@ -447,6 +448,37 @@ def readJsonFile(fileName):
         print(f"Could not find {fileName}")
         data = {}
     return data
+
+def saveVarsToJson(fileName,obj,name):
+    try:
+        data0 = readJsonFile(fileName)
+    except:
+        data0 = {}
+    with open(fileName,'w') as f:
+        if name in data0: data = data0[name]
+        else: data = {}
+        for var in dir(obj):
+            val = getattr(obj,var)
+            if isinstance(val,int) or isinstance(val,float):
+                data[var] = val
+        data0[name] = data
+        json.dump(data0,f)
+
+def readVarsFromJson(fileName,obj,name):
+    try:
+        with open(fileName,'r') as f:
+            data = json.load(f)
+            if name not in data:
+                print(f"Could not find {name} in {fileName}")
+                return
+            data = data[name]
+            for key,val in data.items():
+                setattr(obj,key,val)
+    except:
+        pass
+    return
+
+
 
 if __name__ == "__main__":
     mt = myTimer()
