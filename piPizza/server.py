@@ -1,8 +1,10 @@
 from BaseClasses.baseServer import Server
 from ReadTemps import Temps
-from UI import UI
+from UI2 import UI
 import pigpio
 import time
+import subprocess
+import re
 from datetime import datetime
 
 from BaseClasses.utils import runThreaded, readJsonFile, writeJsonFile
@@ -72,6 +74,12 @@ class PizzaServer(Server):
         except:
             print("Error while loading json")
         self.saveJson()
+        try:
+            A=subprocess.check_output(['/sbin/ifconfig','wlan0']).decode()
+            ip = re.search('inet\s+(\S*)',A)
+            self.UI.setIPAddress(ip.group(1))
+        except:
+            pass
         runThreaded(self.processLoop)
 
     def __delete__(self):
@@ -98,7 +106,7 @@ class PizzaServer(Server):
             self.topPWM = self.topPID.getValue(self.topTemp)
             self.botPWM = self.botPID.getValue(self.botTemp)
             self.topPWM,self.botPWM = min(self.topPWM,self.maxPWM),min(self.botPWM,self.maxPWM)
-            self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn)
+            self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn,self.ambientTemp)
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
 
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
