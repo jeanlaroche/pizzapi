@@ -98,7 +98,7 @@ class PizzaServer(Server):
             self.topPWM = self.topPID.getValue(self.topTemp)
             self.botPWM = self.botPID.getValue(self.botTemp)
             self.topPWM,self.botPWM = min(self.topPWM,self.maxPWM),min(self.botPWM,self.maxPWM)
-            self.UI.setCurTemps(self.topTemp,self.botTemp)
+            self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn)
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
 
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
