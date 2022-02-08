@@ -1,18 +1,20 @@
-import PySimpleGUI as sg
+import PySimpleGUIWeb as sg
 
 from tkinter import *
 from tkinter import messagebox, ttk, font
 from functools import partial
 
+sg.theme("Python")
+
 class UI():
     def __init__(self,server):
-        self.tabMain = self.initPanelMain()
-        self.tabAux1 = [[sg.T('Aux1')],[sg.In(key='in')]]
-        self.layout = [[sg.TabGroup([[sg.Tab('Tab 1', self.tabMain, tooltip='tip'), sg.Tab('Tab 2', self.tabAux1)]],
-                               tooltip='TIP2')], [sg.Button('Read')]]
-        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5)
         self.height,self.width = 480,800
         self.server = server
+        self.useC = 1
+        self.tabMain = self.initPanelMain()
+        self.tabAux1 = self.initPanelAux1()
+        self.layout = [[sg.TabGroup([[sg.Tab('Tab 1', self.tabMain), sg.Tab('Tab 2', self.tabAux1)]])], [sg.Button('Read')]]
+        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5)
 
     def initPanelMain(self):
         params = {'size':(15,1),'font':("Helvetica", 35)}
@@ -33,33 +35,34 @@ class UI():
             [self.power]
         ]
         return self.tabMain
-        # POWER BUTTON:
-        self.onOff = Button(parent, text="AAAA", command=lambda : self.server.onOff())
-        self.onOff.grid(column=0, row=5, columnspan=2, rowspan=1,**padding)
-        self.onOff['fg'] = 'black'
 
     def initPanelAux1(self):
-        # https://riptutorial.com/tkinter/example/29713/grid--
-        # https://www.tutorialspoint.com/python/python_gui_programming.htm
-        parent = self.tabAux1
-        height = 3
-        ### ROW1
-        self.btn = Button(parent, text="A",height=height)
-        self.btn.grid(column=0,row=0,sticky="E W")
-        self.btn = Button(parent, text="B",height=height)
-        self.btn.grid(column=1,row=0,sticky="E W")
+        params = {'size':(35,1),'font':("Helvetica", 35)}
+        self.ipAddress = sg.T("IP",**params)
+        # self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
+        # self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
+        self.C = sg.Radio("Celcius",0,default=self.useC,key='cel',**params)
+        self.F = sg.Radio("Fahrenheit",0,default=not self.useC,key='fah',**params)
+        self.tabAux1 = [[sg.Frame("",[[self.ipAddress]])],[sg.Frame("",[[self.C],[self.F]])]]
+        return self.tabAux1
+
+    def cvTemp(self,temp):
+        return f" {temp:.0f} C" if self.useC else f" {temp*1.8+32:.0f} F"
 
     def setTargetTemps(self,topTemp,botTemp):
-        self.topTarget.update(value=f"Target {topTemp} C")
-        self.botTarget.update(value=f"Target {botTemp} C")
+        self.topTarget.update(value=f"Target" + self.cvTemp(topTemp))
+        self.botTarget.update(value=f"Target" + self.cvTemp(botTemp))
 
     def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff):
-        self.topTemp.update(value=f"TOP Current {topTemp:.0f} C")
-        self.botTemp.update(value=f"BOT Current {botTemp:.0f} C")
+        self.topTemp.update(value=f"TOP Current" + self.cvTemp(topTemp))
+        self.botTemp.update(value=f"BOT Current" + self.cvTemp(botTemp))
         self.topPWM.update(value=f"PWM {topPWM:.2f}")
         self.botPWM.update(value=f"PWM {botPWM:.2f}")
         self.power.update(text = "TURN POWER OFF" if isOnOff else "TURN POWER ON")
         self.power.update(button_color = ('red',None) if isOnOff else ('black',None))
+
+    def setIPAddress(self,ipAdd):
+        self.ipAddress.update(value=f"IP Address: {ipAdd}")
 
 
     def incTemp(self,p1,p2):
@@ -79,8 +82,11 @@ class UI():
             if event == "Bot up": self.incTemp(1,5)
             if event == "Bot down": self.incTemp(1,-5)
             if event == "Power": self.server.onOff()
+            if event == "cel": self.useC = 1
+            if event == "fah": self.useC = 0
             if event == "Read": self.setTargetTemps(35,56)
             if event == "Read": self.setCurTemps(20,25,.8,.9,1)
+            if event == "Read": self.setIPAddress("192.168.1.100")
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 
