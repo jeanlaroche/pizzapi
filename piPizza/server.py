@@ -47,6 +47,7 @@ class PizzaServer(Server):
     tempHistTop = []
     tempHistBot = []
     jsonFileName = 'params.json'
+    lastHistTime = 0
 
     def __init__(self):
         super().__init__()
@@ -86,9 +87,9 @@ class PizzaServer(Server):
             botVal = self.botPID.getValue(self.botTemp)
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
 
-            if not len(self.tempHistT) or round(self.topTemp) != self.tempHistTop[-1]\
+            if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
                     or round(self.botTemp) != self.tempHistBot[-1]:
-                curTime = time.localtime()
+                self.lastHistTime = time.time()
                 curTime = datetime.now()
                 # print(curTime.isoformat())
                 #self.tempHistT.append(curTime.tm_hour + curTime.tm_min / 60 + curTime.tm_sec / 3600)
@@ -127,7 +128,7 @@ def getTemps():
     return jsonify(topTemp = server.topTemp,botTemp=server.botTemp,topTarget=server.topPID.targetTemp,
                    botTarget=server.botPID.targetTemp,ambientTemp=server.ambientTemp,onOff = _onOff(),
                    topPWM=round(server.topPID.outVal,2),botPWM=round(server.botPID.outVal,2),
-                   dataLen = len(server.tempHistT))
+                   dataLen = len(server.tempHistT),time=time.ctime(time.time()))
 
 @app.route("/getTempHist")
 def getTempHist():

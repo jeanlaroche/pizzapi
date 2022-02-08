@@ -63,8 +63,10 @@ span {font-weight: bold;}
 				$("#topPWM").text(data.topPWM);
 				$("#botPWM").text(data.botPWM);
 				$("#ambientTemp").text(Math.round(data.ambientTemp*1.8+32));
+				$("#time").text(data.time);
 				$("#OnOff").text(data.onOff);
 				$("#OnOff").attr('style',data.onOff.includes("OFF") ? 'color:white' : 'color:red');
+				$("#time")[0].style.fontSize = "small";
 				if(dataLen != data.dataLen)
 				{
 					redraw();
@@ -146,7 +148,8 @@ span {font-weight: bold;}
 				color: 'rgba(256,256,0,1)'
 			  },
 			showlegend : true,
-			title: "AH AH AH",
+			title: "Temp History",
+			height: 500,
 			titlefont: {color: 'yellow'},
 			  };
 			var d = new Date()
@@ -197,6 +200,7 @@ span {font-weight: bold;}
 	</div>
 </fieldset>
     <p><h2>Ambient Temp: <span id="ambientTemp"></span> F </h2></p>
+    <p><span id="time"></span></p>
 	<div data-role="fieldcontain">
 		<fieldset class="ui-grid-c">
 			<div class="ui-block-a"><button name="OnOff" id="OnOff" onclick="onOnOff()" data-theme="d">ON?OFF</button></div>
@@ -213,8 +217,4 @@ span {font-weight: bold;}
     <div><h4><span id="upTime" ></span></h4></div>
   </div>
 <div id="Plots" style="width:auto;height:250px;"></div>
-<div ><h2>Stats Log:</h2></div>
- <div>
- <pre id="Stats"></pre>
- </div>
  </div>
