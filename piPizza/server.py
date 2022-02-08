@@ -7,7 +7,7 @@ import subprocess
 import re
 from datetime import datetime
 
-from BaseClasses.utils import runThreaded, readJsonFile, writeJsonFile
+from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
 
 app = Flask(__name__)
@@ -50,7 +50,6 @@ class PizzaServer(Server):
     tempHistTop = []
     tempHistBot = []
     jsonFileName = 'params.json'
-    lastHistTime = 0
     maxPWM = 0.9
     topPWM = 0
     botPWM = 0
@@ -66,14 +65,13 @@ class PizzaServer(Server):
         self.pi.set_mode(BotRelay, pigpio.OUTPUT)
         self.pi.write(TopRelay, 0)
         self.pi.write(BotRelay, 0)
-        data = readJsonFile(self.jsonFileName)
-        try:
-            self.topPID.targetTemp = data.get('topTargetTemp',20)
-            self.botPID.targetTemp = data.get('botTargetTemp',20)
-            self.maxPWM = data.get('maxPWM',1)
-        except:
-            print("Error while loading json")
-        self.saveJson()
+
+        readVarsFromJson(self.jsonFileName,self,"server")
+        readVarsFromJson(self.jsonFileName,self.topPID,"topPID")
+        readVarsFromJson(self.jsonFileName,self.botPID,"botPID")
+        readVarsFromJson(self.jsonFileName,self.UI,"UI")
+        self.lastHistTime = 0
+
         try:
             A=subprocess.check_output(['/sbin/ifconfig','wlan0']).decode()
             ip = re.search('inet\s+(\S*)',A)
@@ -86,8 +84,10 @@ class PizzaServer(Server):
         self.pi.stop()
 
     def saveJson(self):
-        writeJsonFile(self.jsonFileName,{'topTargetTemp':self.topPID.targetTemp,'botTargetTemp':self.botPID.targetTemp,'maxPWM':self.maxPWM})
-        self.UI.setTargetTemps(self.topPID.targetTemp,self.botPID.targetTemp)
+        saveVarsToJson(self.jsonFileName,self,"server")
+        saveVarsToJson(self.jsonFileName,self.topPID,"topPID")
+        saveVarsToJson(self.jsonFileName,self.botPID,"botPID")
+        saveVarsToJson(self.jsonFileName,self.UI,"UI")
 
     def onOff(self):
         self.isOn = 1-self.isOn
@@ -107,6 +107,7 @@ class PizzaServer(Server):
             self.botPWM = self.botPID.getValue(self.botTemp)
             self.topPWM,self.botPWM = min(self.topPWM,self.maxPWM),min(self.botPWM,self.maxPWM)
             self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn,self.ambientTemp)
+            self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
 
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\

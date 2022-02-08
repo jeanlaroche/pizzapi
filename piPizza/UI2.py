@@ -87,9 +87,10 @@ class UI():
             if event == "Power": self.server.onOff()
             if event == "cel": self.useC = 1
             if event == "fah": self.useC = 0
-            if event == "Read": self.setTargetTemps(35,56)
-            if event == "Read": self.setCurTemps(20,25,.8,.9,1)
-            if event == "Read": self.setIPAddress("192.168.1.100")
+            if event == "cel" or event == 'fah': self.server.saveJson()
+            # if event == "Read": self.setTargetTemps(35,56)
+            # if event == "Read": self.setCurTemps(20,25,.8,.9,1)
+            # if event == "Read": self.setIPAddress("192.168.1.100")
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 

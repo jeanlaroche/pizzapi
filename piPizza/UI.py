@@ -23,6 +23,8 @@ class UI():
         self.initPanelMain()
         self.initPanelAux1()
 
+    def doInit(self):
+
     def initPanelMain(self):
         # https://riptutorial.com/tkinter/example/29713/grid--
         # https://www.tutorialspoint.com/python/python_gui_programming.htm
