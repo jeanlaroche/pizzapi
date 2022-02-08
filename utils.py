@@ -250,9 +250,9 @@ class blinker(object):
         self.nFast = int(round(1./self.sampT/self.fastFreq))
         self.nFFast = int(round(1./self.sampT/self.ffastFreq))
         self.nFFFast = int(round(1./self.sampT/self.fffastFreq))
-        print self.cycleLen
-        print self.nSlow
-        print self.nFast
+        #print self.cycleLen
+        ##print self.nSlow
+        #print self.nFast
         def doBlink():
             i = 0
             onSlow = [uu for uu in range(self.cycleLen) if uu%(self.nSlow)<self.nSlow/2]
@@ -432,6 +432,21 @@ def monitorButton(pi,caller,gpioPush,callback,between_click_ms=200,onOff=0):
         caller.cb[gpioPush]=pi.callback(gpioPush, pigpio.FALLING_EDGE, pushCB)
     else:
         caller.cb[gpioPush]=pi.callback(gpioPush, pigpio.EITHER_EDGE, onOffCB)
+
+def writeJsonFile(fileName,data):
+    import json
+    with open(fileName,'w') as f:
+        json.dump(data,f)
+
+def readJsonFile(fileName):
+    import json
+    try:
+        with open(fileName,'r') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        print(f"Could not find {fileName}")
+        data = {}
+    return data
 
 if __name__ == "__main__":
     mt = myTimer()

@@ -3,7 +3,7 @@ from threading import Timer
 import pdb
 import re
 import threading, time, os
-import myLogger
+from . import myLogger
 
 # Can use this for the sunset time: https://en.wikipedia.org/wiki/Sunrise_equation
 
