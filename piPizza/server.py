@@ -1,5 +1,6 @@
 from BaseClasses.baseServer import Server
 from ReadTemps import Temps
+from UI import UI
 import pigpio
 import time
 from datetime import datetime
@@ -48,12 +49,16 @@ class PizzaServer(Server):
     tempHistBot = []
     jsonFileName = 'params.json'
     lastHistTime = 0
+    maxPWM = 0.9
+    topPWM = 0
+    botPWM = 0
 
     def __init__(self):
         super().__init__()
         self.Temps = Temps()
         self.topPID = PID()
         self.botPID = PID()
+        self.UI = UI(self)
         self.pi = pigpio.pi()  # Connect to local Pi.
         self.pi.set_mode(TopRelay, pigpio.OUTPUT)
         self.pi.set_mode(BotRelay, pigpio.OUTPUT)
@@ -63,6 +68,7 @@ class PizzaServer(Server):
         try:
             self.topPID.targetTemp = data.get('topTargetTemp',20)
             self.botPID.targetTemp = data.get('botTargetTemp',20)
+            self.maxPWM = data.get('maxPWM',1)
         except:
             print("Error while loading json")
         self.saveJson()
@@ -72,27 +78,33 @@ class PizzaServer(Server):
         self.pi.stop()
 
     def saveJson(self):
-        writeJsonFile(self.jsonFileName,{'topTargetTemp':self.topPID.targetTemp,'botTargetTemp':self.botPID.targetTemp})
+        writeJsonFile(self.jsonFileName,{'topTargetTemp':self.topPID.targetTemp,'botTargetTemp':self.botPID.targetTemp,'maxPWM':self.maxPWM})
+        self.UI.setTargetTemps(self.topPID.targetTemp,self.botPID.targetTemp)
 
     def onOff(self):
         self.isOn = 1-self.isOn
         print("ISON: ",self.isOn)
+
+    def incTemp(self,p1,p2):
+        if p1 == 0: self.topPID.targetTemp += p2
+        if p1 == 1: self.botPID.targetTemp += p2
+        server.saveJson()
 
     def processLoop(self):
         while 1:
             self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
             self.topPID.isOn = self.isOn
             self.botPID.isOn = self.isOn
-            topVal = self.topPID.getValue(self.topTemp)
-            botVal = self.botPID.getValue(self.botTemp)
+            self.topPWM = self.topPID.getValue(self.topTemp)
+            self.botPWM = self.botPID.getValue(self.botTemp)
+            self.topPWM,self.botPWM = min(self.topPWM,self.maxPWM),min(self.botPWM,self.maxPWM)
+            self.UI.setCurTemps(self.topTemp,self.botTemp)
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
 
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
                     or round(self.botTemp) != self.tempHistBot[-1]:
                 self.lastHistTime = time.time()
                 curTime = datetime.now()
-                # print(curTime.isoformat())
-                #self.tempHistT.append(curTime.tm_hour + curTime.tm_min / 60 + curTime.tm_sec / 3600)
                 self.tempHistT.append(curTime.isoformat())
                 self.tempHistTop.append(round(self.topTemp))
                 self.tempHistBot.append(round(self.botTemp))
@@ -127,7 +139,7 @@ def _onOff():
 def getTemps():
     return jsonify(topTemp = server.topTemp,botTemp=server.botTemp,topTarget=server.topPID.targetTemp,
                    botTarget=server.botPID.targetTemp,ambientTemp=server.ambientTemp,onOff = _onOff(),
-                   topPWM=round(server.topPID.outVal,2),botPWM=round(server.botPID.outVal,2),
+                   topPWM=round(server.topPWM,2),botPWM=round(server.botPWM,2),
                    dataLen = len(server.tempHistT),time=time.ctime(time.time()))
 
 @app.route("/getTempHist")
@@ -165,4 +177,8 @@ if __name__ == "__main__":
     print("Go to http://192.168.1.129:8080")
 
     #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
-    app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=True)
+    def foo():
+        app.run(host='0.0.0.0', port=8080, debug=True, threaded=False, use_reloader=False)
+
+    runThreaded(foo)
+    server.UI.mainLoop()
