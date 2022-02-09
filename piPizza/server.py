@@ -19,6 +19,10 @@ class PID():
     # Class that implements the PID controller.
     targetTemp = 1
     currentTemp = 0
+    # PID Parameters. p should be > 0 and d < 0.
+    p = 10      # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
+    d = -1      # Differential factor. 100 means that a 1% delta per second between target and current -> full PWM
+
     dTemp = 0
     outVal = 0
     lastTime = 0
@@ -33,8 +37,6 @@ class PID():
         self.dTemp = 0 if self.lastTime == 0 else (currentTemp - self.currentTemp) / (thisTime - self.lastTime)
         self.currentTemp = currentTemp
         self.lastTime = thisTime
-        self.p = 10   # Proportional factor
-        self.d = 1  # Differential factor
         outVal = self.p * (self.targetTemp - self.currentTemp)/self.targetTemp + self.d * self.dTemp / self.targetTemp
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
         return self.outVal
