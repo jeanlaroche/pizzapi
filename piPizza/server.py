@@ -17,7 +17,7 @@ BotRelay    = 15
 
 class PID():
     # Class that implements the PID controller.
-    targetTemp = 1
+    targetTemp = 20
     currentTemp = 0
     # PID Parameters. p should be > 0 and d < 0.
     p = 10      # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
@@ -104,6 +104,8 @@ class PizzaServer(Server):
     def incMaxPWM(self,p1,p2):
         if p1 == 0: self.topMaxPWM += p2
         if p1 == 1: self.botMaxPWM += p2
+        self.topMaxPWM = max(0,min(self.topMaxPWM,1))
+        self.botMaxPWM = max(0,min(self.botMaxPWM,1))
         server.saveJson()
 
     def processLoop(self):
@@ -116,6 +118,7 @@ class PizzaServer(Server):
             self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
             self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn,self.ambientTemp)
             self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
+            self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
                     or round(self.botTemp) != self.tempHistBot[-1]:

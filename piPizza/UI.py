@@ -14,7 +14,7 @@ class UI():
         self.tabMain = self.initPanelMain()
         self.tabAux1 = self.initPanelAux1()
         self.tabAux2 = self.initPanelAux2()
-        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Aux1', self.tabAux1), sg.Tab('Aux2', self.tabAux2)]])], [sg.Button('Read')]]
+        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('PWM', self.tabAux1), sg.Tab('IP', self.tabAux2)]])], [sg.Button('Read')]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1)
 
     def initPanelMain(self):
@@ -26,7 +26,6 @@ class UI():
         self.topPWM = sg.T("PWM",**params)
         self.botPWM = sg.T("PWM",**params)
         self.power = sg.Button("Power",**params)
-        self.ambientTemp = sg.T("Ambient",**params)
         self.tabMain = [[sg.Frame('targets',layout=[
             [sg.Button('Top up',**params),sg.Button('Top down',**params),self.topTarget],
             [sg.Button('Bot up',**params), sg.Button('Bot down',**params), self.botTarget]
@@ -34,29 +33,35 @@ class UI():
             [sg.Frame('current',layout=[
             [self.topTemp, self.topPWM],
             [self.botTemp, self.botPWM]])],
-            [self.ambientTemp],
             [self.power]
         ]
         return self.tabMain
 
-    def initPanelAux1(self):
+    def initPanelAux2(self):
         params = {'size':(35,1),'font':("Helvetica", 25)}
         self.ipAddress = sg.T("IP",**params)
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
         self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
         #self.C = sg.Radio("Celcius",0,default=self.useC,key='cel',**params)
         #self.F = sg.Radio("Fahrenheit",0,default=not self.useC,key='fah',**params)
-        self.tabAux1 = [[sg.Frame("",[[self.ipAddress]])],[sg.Frame("",[[self.C],[self.F]])]]
-        return self.tabAux1
+        self.ambientTemp = sg.T("Ambient",**params)
+        self.tabAux2 = [
+            [sg.Frame("",[[self.ipAddress]])],
+            [sg.Frame("",[[self.C],[self.F]])],
+            [self.ambientTemp]
+            ]
+        return self.tabAux2
 
-    def initPanelAux2(self):
-        params = {'size':(35,1),'font':("Helvetica", 25)}
+    def initPanelAux1(self):
+        params = {'size':(15,1),'font':("Helvetica", 20)}
         self.topMaxPWM = sg.T("Top Max PWM",**params)
         self.botMaxPWM = sg.T("Top Max PWM",**params)
-        A = sg.Frame('',[[sg.Button('Top max pwm up',**params),sg.Button('Top max pwm down',**params),self.topMaxPWM],
-                         [sg.Button('Bot max pwm up',**params),sg.Button('Bot max pwmdown',**params),self.botMaxPWM]])
-        self.tabAux2 = [[A]]
-        return self.tabAux2
+        A = sg.Frame('MAX PWM',[[sg.Button('Top up',**params,key='tum'),
+                                 sg.Button('Top down',**params,key='tdm'),self.topMaxPWM],
+                         [sg.Button('Bot up',**params,key='bum'),
+                          sg.Button('Bot down',**params,key='bdm'),self.botMaxPWM]])
+        self.tabAux1 = [[A]]
+        return self.tabAux1
 
     def cvTemp(self,temp):
         return f" {temp:.0f} C" if self.useC else f" {temp*1.8+32:.0f} F"
@@ -66,8 +71,8 @@ class UI():
         self.botTarget.update(value=f"Target" + self.cvTemp(botTemp))
 
     def setMaxPWM(self,topMaxPWM,botMaxPWM):
-        self.topMaxPWM.update(value=f"Top Max PWM {topMaxPWM}")
-        self.botMaxPWM.update(value=f"Bot Max PWM {botMaxPWM}")
+        self.topMaxPWM.update(value=f" {topMaxPWM:.2f}")
+        self.botMaxPWM.update(value=f" {botMaxPWM:.2f}")
 
     def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp):
         self.topTemp.update(value=f"TOP Current" + self.cvTemp(topTemp))
@@ -93,10 +98,10 @@ class UI():
             if event == "Top down": self.server.incTemp(0,-5)
             if event == "Bot up": self.server.incTemp(1,5)
             if event == "Bot down": self.server.incTemp(1,-5)
-            if event == "Top max pwm up": self.server.incMaxPWM(0,.5)
-            if event == "Top max pwm down": self.server.incMaxPWM(0,-.5)
-            if event == "Bot max pwm up": self.server.incMaxPWM(1,.5)
-            if event == "Bot max pwm down": self.server.incMaxPWM(1,-.5)
+            if event == "tum": self.server.incMaxPWM(0,.05)
+            if event == "tdm": self.server.incMaxPWM(0,-.05)
+            if event == "bum": self.server.incMaxPWM(1,.05)
+            if event == "bdm": self.server.incMaxPWM(1,-.05)
             if event == "Power": self.server.onOff()
             if event == "cel": self.useC = 1
             if event == "fah": self.useC = 0
