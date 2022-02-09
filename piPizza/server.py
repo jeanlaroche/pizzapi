@@ -109,7 +109,6 @@ class PizzaServer(Server):
             self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn,self.ambientTemp)
             self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
-
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
                     or round(self.botTemp) != self.tempHistBot[-1]:
                 self.lastHistTime = time.time()
@@ -117,6 +116,11 @@ class PizzaServer(Server):
                 self.tempHistT.append(curTime.isoformat())
                 self.tempHistTop.append(round(self.topTemp))
                 self.tempHistBot.append(round(self.botTemp))
+            curTime = time.localtime()
+            # Erase the temp history every night at 1am.
+            if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
+                self.tempHistTop,self.tempHistBot,self.tempHistT,self.lastHistTime = [],[],[],0
+
             time.sleep(0.5)
 
 @app.route('/favicon.ico')
