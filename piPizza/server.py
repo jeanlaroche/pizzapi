@@ -106,6 +106,11 @@ class PizzaServer(Server):
         if p1 == 1: self.botPID.targetTemp += p2
         self.dirty = 1
 
+    def setTemps(self,p1,p2):
+        self.topPID.targetTemp += p1
+        self.botPID.targetTemp += p2
+        self.dirty = 1
+
     def incMaxPWM(self,p1,p2):
         if p1 == 0: self.topMaxPWM += p2
         if p1 == 1: self.botMaxPWM += p2

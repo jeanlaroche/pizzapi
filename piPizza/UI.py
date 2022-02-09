@@ -34,9 +34,14 @@ class UI():
         self.topPWM = sg.T("PWM",**params)
         self.botPWM = sg.T("PWM",**params)
         self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))
-        self.tabMain = [[sg.Frame('Target temps',layout=[
-            [sg.Button('Top +',**paramsButs,key='TTU'),sg.Button('Top -',**paramsButs,key='TTD'),self.topTarget],
-            [sg.Button('Bot +',**paramsButs,key='BTU'), sg.Button('Bot -',**paramsButs,key='BTD'), self.botTarget]
+        paramsSilders = {'range':(0,400),'orientation':'h','enable_events':1}
+        paramsSilders.update(fontParams)
+        self.tabMain = [
+            [sg.Frame('Target temps',layout=[
+            # [sg.Button('Top +',**paramsButs,key='TTU'),sg.Button('Top -',**paramsButs,key='TTD'),self.topTarget],
+            # [sg.Button('Bot +',**paramsButs,key='BTU'), sg.Button('Bot -',**paramsButs,key='BTD'), self.botTarget]
+            [sg.Slider(**paramsSilders,key='TTS'),self.topTarget],
+            [sg.Slider(**paramsSilders,key='BTS'), self.botTarget]
             ],**fontParams)],
             [sg.Frame('Current temps',layout=[
             [self.topTemp, self.topPWM],
@@ -130,6 +135,8 @@ class UI():
                 self.server.dirty = 1
             if event in ['TP','TD','BP','BD']:
                 self.server.setPID((values[i] for i in ['TP','TD','BP','BD']))
+            if event in ['TTS','BTS']:
+                self.server.setTemps((values[i] for i in ['TTS','BTS']))
             if event == "maximize":
                 self.window.close()
                 self.finishInit(no_titlebar=1-self.no_titlebar)
