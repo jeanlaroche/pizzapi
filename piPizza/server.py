@@ -52,7 +52,8 @@ class PizzaServer(Server):
     tempHistTop = []
     tempHistBot = []
     jsonFileName = 'params.json'
-    maxPWM = 0.9
+    topMaxPWM = 0.9
+    botMaxPWM = 0.9
     topPWM = 0
     botPWM = 0
 
@@ -100,6 +101,11 @@ class PizzaServer(Server):
         if p1 == 1: self.botPID.targetTemp += p2
         server.saveJson()
 
+    def incMaxPWM(self,p1,p2):
+        if p1 == 0: self.topMaxPWM += p2
+        if p1 == 1: self.botMaxPWM += p2
+        server.saveJson()
+
     def processLoop(self):
         while 1:
             self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
@@ -107,7 +113,7 @@ class PizzaServer(Server):
             self.botPID.isOn = self.isOn
             self.topPWM = self.topPID.getValue(self.topTemp)
             self.botPWM = self.botPID.getValue(self.botTemp)
-            self.topPWM,self.botPWM = min(self.topPWM,self.maxPWM),min(self.botPWM,self.maxPWM)
+            self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
             self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn,self.ambientTemp)
             self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")

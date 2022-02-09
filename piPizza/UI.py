@@ -13,7 +13,8 @@ class UI():
         self.useC = 1
         self.tabMain = self.initPanelMain()
         self.tabAux1 = self.initPanelAux1()
-        self.layout = [[sg.TabGroup([[sg.Tab('Tab 1', self.tabMain), sg.Tab('Tab 2', self.tabAux1)]])], [sg.Button('Read')]]
+        self.tabAux2 = self.initPanelAux2()
+        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Aux1', self.tabAux1), sg.Tab('Aux2', self.tabAux2)]])], [sg.Button('Read')]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1)
 
     def initPanelMain(self):
@@ -48,12 +49,25 @@ class UI():
         self.tabAux1 = [[sg.Frame("",[[self.ipAddress]])],[sg.Frame("",[[self.C],[self.F]])]]
         return self.tabAux1
 
+    def initPanelAux2(self):
+        params = {'size':(35,1),'font':("Helvetica", 25)}
+        self.topMaxPWM = sg.T("Top Max PWM",**params)
+        self.botMaxPWM = sg.T("Top Max PWM",**params)
+        A = sg.Frame('',[[sg.Button('Top max pwm up',**params),sg.Button('Top max pwm down',**params),self.topMaxPWM],
+                         [sg.Button('Bot max pwm up',**params),sg.Button('Bot max pwmdown',**params),self.botMaxPWM]])
+        self.tabAux2 = [[A]]
+        return self.tabAux2
+
     def cvTemp(self,temp):
         return f" {temp:.0f} C" if self.useC else f" {temp*1.8+32:.0f} F"
 
     def setTargetTemps(self,topTemp,botTemp):
         self.topTarget.update(value=f"Target" + self.cvTemp(topTemp))
         self.botTarget.update(value=f"Target" + self.cvTemp(botTemp))
+
+    def setMaxPWM(self,topMaxPWM,botMaxPWM):
+        self.topMaxPWM.update(value=f"Top Max PWM {topMaxPWM}")
+        self.botMaxPWM.update(value=f"Bot Max PWM {botMaxPWM}")
 
     def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp):
         self.topTemp.update(value=f"TOP Current" + self.cvTemp(topTemp))
@@ -67,11 +81,6 @@ class UI():
     def setIPAddress(self,ipAdd):
         self.ipAddress.update(value=f"IP Address: {ipAdd}")
 
-
-    def incTemp(self,p1,p2):
-        print(f"INCTEMP {p1} {p2}")
-        self.server.incTemp(p1,p2)
-
     # find button callback
     def hello(self):
       messagebox.showinfo("Hello", "Callback worked!")
@@ -80,10 +89,14 @@ class UI():
         while True:
             event, values = self.window.read()
             print(event, values)
-            if event == "Top up": self.incTemp(0,5)
-            if event == "Top down": self.incTemp(0,-5)
-            if event == "Bot up": self.incTemp(1,5)
-            if event == "Bot down": self.incTemp(1,-5)
+            if event == "Top up": self.server.incTemp(0,5)
+            if event == "Top down": self.server.incTemp(0,-5)
+            if event == "Bot up": self.server.incTemp(1,5)
+            if event == "Bot down": self.server.incTemp(1,-5)
+            if event == "Top max pwm up": self.server.incMaxPWM(0,.5)
+            if event == "Top max pwm down": self.server.incMaxPWM(0,-.5)
+            if event == "Bot max pwm up": self.server.incMaxPWM(1,.5)
+            if event == "Bot max pwm down": self.server.incMaxPWM(1,-.5)
             if event == "Power": self.server.onOff()
             if event == "cel": self.useC = 1
             if event == "fah": self.useC = 0
