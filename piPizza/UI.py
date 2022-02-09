@@ -48,17 +48,22 @@ class UI():
         fontParams = {'font':(fontName, 16)}
         params = {'size':(15,1)}
         params.update(fontParams)
-        paramsSilders = {'range':(0,1),'resolution':0.01,'orientation':'h','font':(fontName, 20)}
+        paramsSilders = {'range':(0,10),'resolution':0.01,'orientation':'h','font':(fontName, 20),
+                         'enable_events':1}
         self.topMaxPWM = sg.T("Top Max PWM",**params)
         self.botMaxPWM = sg.T("Top Max PWM",**params)
         A = sg.Frame('MAX PWM',[[sg.Button('Top +',**params,key='TUM'),
                                  sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
                          [sg.Button('Bot +',**params,key='BUM'),
                           sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]],**fontParams)
-        B = sg.Frame('PID',[[sg.Frame('Top P',[[sg.Slider(defaultValue = .9, **paramsSilders)]]),
-                                 sg.Frame('Top D',[[sg.Slider(defaultValue = .9, **paramsSilders)]])],
-                         [sg.Frame('Bot P',[[sg.Slider(defaultValue = .9, **paramsSilders)]]),
-                          sg.Frame('Bot D',[[sg.Slider(defaultValue = .9, **paramsSilders)]])]],**fontParams)
+        B = sg.Frame('PID',
+                     [[sg.Frame('Top P',[[sg.Slider(default_value  = self.server.topPID.p, **paramsSilders, key='TP')]]),
+                       sg.Frame('Top D',[[sg.Slider(default_value  = self.server.topPID.d, **paramsSilders, key='TD')]])
+                       ],
+                     [
+                       sg.Frame('Bot P',[[sg.Slider(default_value  = self.server.botPID.p, **paramsSilders, key='BP')]]),
+                       sg.Frame('Bot D',[[sg.Slider(default_value  = self.server.botPID.d, **paramsSilders, key='BD')]])
+                     ]],**fontParams)
         self.tabAux1 = [[A],[B]]
         return self.tabAux1
 
@@ -121,6 +126,8 @@ class UI():
             if event == "fah": self.useC = 0
             if event == "cel" or event == 'fah':
                 self.server.dirty = 1
+            if event in ['TP','TD','BP','BD']:
+                self.server.setPID((values[i] for i in ['TP','TD','BP','BD']))
             # if event == "Read": self.setTargetTemps(35,56)
             # if event == "Read": self.setCurTemps(20,25,.8,.9,1)
             # if event == "Read": self.setIPAddress("192.168.1.100")
@@ -129,6 +136,13 @@ class UI():
 
 
 if __name__ == '__main__':
-    ui = UI(None)
+    class P:
+        p=0
+        d=1
+    class S:
+        topPID = P()
+        botPID = P()
+        pass
+    ui = UI(S)
     ui.finishInit()
     ui.mainLoop()

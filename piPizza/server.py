@@ -19,9 +19,9 @@ class PID():
     # Class that implements the PID controller.
     targetTemp = 20
     currentTemp = 0
-    # PID Parameters. p should be > 0 and d < 0.
+    # PID Parameters.
     p = 10      # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
-    d = -1      # Differential factor. 100 means that a 1% delta per second between target and current -> full PWM
+    d = 1      # Differential factor. 100 means that a 1% delta per second between target and current -> full PWM
 
     dTemp = 0
     outVal = 0
@@ -37,7 +37,7 @@ class PID():
         self.dTemp = 0 if self.lastTime == 0 else (currentTemp - self.currentTemp) / (thisTime - self.lastTime)
         self.currentTemp = currentTemp
         self.lastTime = thisTime
-        outVal = self.p * (self.targetTemp - self.currentTemp)/self.targetTemp + self.d * self.dTemp / self.targetTemp
+        outVal = self.p * (self.targetTemp - self.currentTemp)/self.targetTemp - self.d * self.dTemp / self.targetTemp
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
         return self.outVal
 
@@ -113,6 +113,10 @@ class PizzaServer(Server):
         self.botMaxPWM = max(0,min(self.botMaxPWM,1))
         self.dirty = 1
 
+    def setPID(self,allVals):
+        self.topPID.p,self.topPID.d,self.botPID.p,self.botPID.d = allVals
+        self.dirty = 1
+
     def processLoop(self):
         while 1:
             self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
@@ -121,8 +125,8 @@ class PizzaServer(Server):
             self.topPWM = self.topPID.getValue(self.topTemp)
             self.botPWM = self.botPID.getValue(self.botTemp)
             self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
+            self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp)
             if self.dirty:
-                self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn,self.ambientTemp)
                 self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
                 self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
                 self.saveJson()
