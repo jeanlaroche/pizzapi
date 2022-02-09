@@ -15,12 +15,12 @@ class UI():
         self.useC = 1
 
     def finishInit(self):
-        fontParams = {'font':(fontName, 16)}
+        fontParams = {'font':(fontName, 14)}
         self.tabMain = self.initPanelMain()
         self.tabAux1 = self.initPanelAux1()
         self.tabAux2 = self.initPanelAux2()
-        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('PWM and PID', self.tabAux1), sg.Tab('Status', self.tabAux2)]],**fontParams)], [sg.Button('Read')]]
-        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height))
+        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('PWM and PID', self.tabAux1), sg.Tab('Status', self.tabAux2)]],**fontParams)]]
+        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = 1)
 
     def initPanelMain(self):
         fontParams = {'font':(fontName, 16)}
@@ -78,7 +78,8 @@ class UI():
         self.tabAux2 = [
             [sg.Frame("",[[self.ipAddress]])],
             [sg.Frame("",[[self.C],[self.F]])],
-            [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp]
+            [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
+            [sg.Button("Show Desktop",**params)]
             ]
         return self.tabAux2
 
@@ -128,6 +129,9 @@ class UI():
                 self.server.dirty = 1
             if event in ['TP','TD','BP','BD']:
                 self.server.setPID((values[i] for i in ['TP','TD','BP','BD']))
+            if event == "Show Desktop":
+                self.window.no_titlebar = 0
+                self.window.refresh()
             # if event == "Read": self.setTargetTemps(35,56)
             # if event == "Read": self.setCurTemps(20,25,.8,.9,1)
             # if event == "Read": self.setIPAddress("192.168.1.100")
