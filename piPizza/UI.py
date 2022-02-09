@@ -54,14 +54,18 @@ class UI():
         fontParams = {'font':(fontName, 16)}
         params = {'size':(15,1)}
         params.update(fontParams)
-        paramsSilders = {'range':(0,10),'resolution':0.01,'orientation':'h','font':(fontName, 20),
+        paramsSilders = {'range':(0,1),'resolution':0.01,'orientation':'h','font':(fontName, 20),
                          'enable_events':1}
         self.topMaxPWM = sg.T("Top Max PWM",**params)
         self.botMaxPWM = sg.T("Top Max PWM",**params)
-        A = sg.Frame('MAX PWM',[[sg.Button('Top +',**params,key='TUM'),
-                                 sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
-                         [sg.Button('Bot +',**params,key='BUM'),
-                          sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]],**fontParams)
+        A = sg.Frame('MAX PWM',
+                     [
+                      # [sg.Button('Top +',**params,key='TUM'),sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
+                      # [sg.Button('Bot +',**params,key='BUM'),sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]
+                      [sg.Slider(**paramsSilders,key='TMS'),self.topMaxPWM],
+                      [sg.Slider(**paramsSilders,key='BMS'),self.botMaxPWM]
+                     ],**fontParams)
+        paramsSilders['range'] = (0,10)
         B = sg.Frame('PID',
                      [[sg.Frame('Top P',[[sg.Slider(default_value  = self.server.topPID.p, **paramsSilders, key='TP')]]),
                        sg.Frame('Top D',[[sg.Slider(default_value  = self.server.topPID.d, **paramsSilders, key='TD')]])
@@ -135,6 +139,8 @@ class UI():
                 self.server.dirty = 1
             if event in ['TP','TD','BP','BD']:
                 self.server.setPID((values[i] for i in ['TP','TD','BP','BD']))
+            if event in ['TMS','BMS']:
+                self.server.setMaxPWM((values[i] for i in ['TMS','BMS']))
             if event in ['TTS','BTS']:
                 self.server.setTemps((values[i] for i in ['TTS','BTS']))
             if event == "maximize":
