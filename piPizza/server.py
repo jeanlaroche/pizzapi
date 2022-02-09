@@ -56,6 +56,7 @@ class PizzaServer(Server):
     botMaxPWM = 0.9
     topPWM = 0
     botPWM = 0
+    dirty = 1
 
     def __init__(self):
         super().__init__()
@@ -73,7 +74,10 @@ class PizzaServer(Server):
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID")
         readVarsFromJson(self.jsonFileName,self.botPID,"botPID")
         readVarsFromJson(self.jsonFileName,self.UI,"UI")
+        self.UI.finishInit()
         self.lastHistTime = 0
+        self.isOn = 0
+        self.dirty = 1
 
         try:
             A=subprocess.check_output(['/sbin/ifconfig','wlan0']).decode()
@@ -94,19 +98,20 @@ class PizzaServer(Server):
 
     def onOff(self):
         self.isOn = 1-self.isOn
+        self.dirty = 1
         print("ISON: ",self.isOn)
 
     def incTemp(self,p1,p2):
         if p1 == 0: self.topPID.targetTemp += p2
         if p1 == 1: self.botPID.targetTemp += p2
-        server.saveJson()
+        self.dirty = 1
 
     def incMaxPWM(self,p1,p2):
         if p1 == 0: self.topMaxPWM += p2
         if p1 == 1: self.botMaxPWM += p2
         self.topMaxPWM = max(0,min(self.topMaxPWM,1))
         self.botMaxPWM = max(0,min(self.botMaxPWM,1))
-        server.saveJson()
+        self.dirty = 1
 
     def processLoop(self):
         while 1:
@@ -116,9 +121,11 @@ class PizzaServer(Server):
             self.topPWM = self.topPID.getValue(self.topTemp)
             self.botPWM = self.botPID.getValue(self.botTemp)
             self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
-            self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn,self.ambientTemp)
-            self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
-            self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
+            if self.dirty:
+                self.UI.setCurTemps(self.topTemp,self.botTemp,self.topPWM,self.botPWM,self.isOn,self.ambientTemp)
+                self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
+                self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
+                self.saveJson()
             # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
                     or round(self.botTemp) != self.tempHistBot[-1]:
@@ -132,7 +139,8 @@ class PizzaServer(Server):
             if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
                 self.tempHistTop,self.tempHistBot,self.tempHistT,self.lastHistTime = [],[],[],0
 
-            time.sleep(0.5)
+            self.dirty = 0
+            time.sleep(0.2)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -174,6 +182,7 @@ def getTempHist():
 @app.route("/onOff")
 def onOff():
     server.onOff()
+    server.dirty = 1
     return jsonify(onOff = _onOff())
 
 
@@ -182,13 +191,13 @@ def onOff():
 def incTopTemp(param1):
     print("incTopTemp",param1)
     server.topPID.targetTemp += param1
-    server.saveJson()
+    server.dirty = 1
     return jsonify(topTarget=server.topPID.targetTemp)
 
 @app.route("/incBotTemp/<int(signed=True):param1>")
 def incBotTemp(param1):
     server.botPID.targetTemp += param1
-    server.saveJson()
+    server.dirty = 1
     return jsonify(botTarget=server.botPID.targetTemp)
 
 
