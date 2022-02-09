@@ -6,6 +6,8 @@ from functools import partial
 
 sg.theme("Python")
 
+fontName = "Helvetica"
+
 class UI():
     def __init__(self,server):
         self.height,self.width = 480,800
@@ -13,35 +15,55 @@ class UI():
         self.useC = 1
 
     def finishInit(self):
+        fontParams = {'font':(fontName, 16)}
         self.tabMain = self.initPanelMain()
         self.tabAux1 = self.initPanelAux1()
         self.tabAux2 = self.initPanelAux2()
-        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('PWM', self.tabAux1), sg.Tab('Status', self.tabAux2)]])], [sg.Button('Read')]]
+        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('PWM and PID', self.tabAux1), sg.Tab('Status', self.tabAux2)]],**fontParams)], [sg.Button('Read')]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height))
 
     def initPanelMain(self):
-        params = {'size':(10,1),'font':("Helvetica", 28)}
-        paramsButs = {'size':(9,1),'font':("Helvetica", 28)}
+        fontParams = {'font':(fontName, 16)}
+        params = {'size':(10,1),'font':(fontName, 28)}
+        paramsButs = {'size':(9,1),'font':(fontName, 28)}
         self.topTarget = sg.T("Target",**params)
         self.botTarget = sg.T("Target",**params)
         self.topTemp = sg.T("Temp",**params)
         self.botTemp = sg.T("Temp",**params)
         self.topPWM = sg.T("PWM",**params)
         self.botPWM = sg.T("PWM",**params)
-        self.power = sg.Button("Power",size=(10,3),font=("Helvetica", 25))
+        self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))
         self.tabMain = [[sg.Frame('Target temps',layout=[
             [sg.Button('Top +',**paramsButs,key='TTU'),sg.Button('Top -',**paramsButs,key='TTD'),self.topTarget],
             [sg.Button('Bot +',**paramsButs,key='BTU'), sg.Button('Bot -',**paramsButs,key='BTD'), self.botTarget]
-            ])],
+            ],**fontParams)],
             [sg.Frame('Current temps',layout=[
             [self.topTemp, self.topPWM],
-            [self.botTemp, self.botPWM]]),self.power],
+            [self.botTemp, self.botPWM]],**fontParams),self.power],
 #            [self.power]
         ]
         return self.tabMain
 
+    def initPanelAux1(self):
+        fontParams = {'font':(fontName, 16)}
+        params = {'size':(15,1)}
+        params.update(fontParams)
+        paramsSilders = {'range':(0,1),'resolution':0.01,'orientation':'h','font':(fontName, 20)}
+        self.topMaxPWM = sg.T("Top Max PWM",**params)
+        self.botMaxPWM = sg.T("Top Max PWM",**params)
+        A = sg.Frame('MAX PWM',[[sg.Button('Top +',**params,key='TUM'),
+                                 sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
+                         [sg.Button('Bot +',**params,key='BUM'),
+                          sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]],**fontParams)
+        B = sg.Frame('PID',[[sg.Frame('Top P',[[sg.Slider(defaultValue = .9, **paramsSilders)]]),
+                                 sg.Frame('Top D',[[sg.Slider(defaultValue = .9, **paramsSilders)]])],
+                         [sg.Frame('Bot P',[[sg.Slider(defaultValue = .9, **paramsSilders)]]),
+                          sg.Frame('Bot D',[[sg.Slider(defaultValue = .9, **paramsSilders)]])]],**fontParams)
+        self.tabAux1 = [[A],[B]]
+        return self.tabAux1
+
     def initPanelAux2(self):
-        params = {'size':(12,1),'font':("Helvetica", 28)}
+        params = {'size':(12,1),'font':(fontName, 28)}
         self.ipAddress = sg.T("IP",**params)
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
         self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
@@ -51,20 +73,9 @@ class UI():
         self.tabAux2 = [
             [sg.Frame("",[[self.ipAddress]])],
             [sg.Frame("",[[self.C],[self.F]])],
-            [sg.T("Ambient temp",font=("Helvetica", 28)),self.ambientTemp]
+            [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp]
             ]
         return self.tabAux2
-
-    def initPanelAux1(self):
-        params = {'size':(15,1),'font':("Helvetica", 20)}
-        self.topMaxPWM = sg.T("Top Max PWM",**params)
-        self.botMaxPWM = sg.T("Top Max PWM",**params)
-        A = sg.Frame('MAX PWM',[[sg.Button('Top +',**params,key='TUM'),
-                                 sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
-                         [sg.Button('Bot +',**params,key='BUM'),
-                          sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]])
-        self.tabAux1 = [[A]]
-        return self.tabAux1
 
     def cvTemp(self,temp):
         return f" {temp:.0f} C" if self.useC else f" {temp*1.8+32:.0f} F"
@@ -119,4 +130,5 @@ class UI():
 
 if __name__ == '__main__':
     ui = UI(None)
+    ui.finishInit()
     ui.mainLoop()
