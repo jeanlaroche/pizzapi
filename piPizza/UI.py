@@ -1,94 +1,71 @@
+import PySimpleGUI as sg
+
 from tkinter import *
 from tkinter import messagebox, ttk, font
 from functools import partial
 
+sg.theme("Python")
+
 class UI():
     def __init__(self,server):
-        self.win = Tk()
-        self.win.title("")
         self.height,self.width = 480,800
-        self.win.minsize(self.width,self.height)
         self.server = server
-        self.frame = ttk.Notebook(self.win)
-        self.tabMain = Frame(self.frame)
-        self.tabAux1 = Frame(self.frame)
-        self.tabAux2 = Frame(self.frame)
-        self.frame.add(self.tabMain, text="Main")
-        self.frame.add(self.tabAux1, text="Aux1")
-        self.frame.add(self.tabAux2, text="Aux2")
-        self.frame.pack(expand=1, fill='both')
-        self.defaultFont = font.nametofont("TkDefaultFont")
-        self.defaultFont.configure(size=30,)
-        self.win.option_add("*Font", self.defaultFont)
-        self.initPanelMain()
-        self.initPanelAux1()
-
-    def doInit(self):
+        self.useC = 1
+        self.tabMain = self.initPanelMain()
+        self.tabAux1 = self.initPanelAux1()
+        self.layout = [[sg.TabGroup([[sg.Tab('Tab 1', self.tabMain), sg.Tab('Tab 2', self.tabAux1)]])], [sg.Button('Read')]]
+        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1)
 
     def initPanelMain(self):
-        # https://riptutorial.com/tkinter/example/29713/grid--
-        # https://www.tutorialspoint.com/python/python_gui_programming.htm
-        parent = self.tabMain
-        height = 1
-        padding = {'padx': '1m', 'pady': '1m','sticky':"E W N S"}
-        ### ROW1
-        self.btn = Button(parent, text="Top Up", command=partial(self.incTemp,0,5),height=height)
-        self.btn.grid(column=0,row=0,**padding)
-        self.btn = Button(parent, text="Top Down", command=partial(self.incTemp,0,-5),height=height)
-        self.btn.grid(column=1,row=0,**padding)
-        self.targetTop = Text(parent,height=height,width=10)
-        self.targetTop.grid(column=2,row=0,**padding)
-        ### ROW2
-        self.btn = Button(parent, text="Bot Up", command=partial(self.incTemp,1,5),height=height)
-        self.btn.grid(column=0,row=1,**padding)
-        self.btn = Button(parent, text="Bot Down", command=partial(self.incTemp,1,-5),height=height)
-        self.btn.grid(column=1,row=1,**padding)
-        self.targetBot = Text(parent,height=height,width=10)
-        self.targetBot.grid(column=2,row=1,**padding)
-        ### ROW3
-        self.curTop = Text(parent,height=height,width=10)
-        self.curTop.grid(column=0,row=2,columnspan =2,rowspan=2,**padding)
-        self.curBot = Text(parent,height=height,width=10)
-        self.curBot.grid(column=0,row=4,columnspan =2,rowspan=2,**padding)
-        self.topPWM = Text(parent,height=height,width=10)
-        self.topPWM.grid(column=2,row=2,columnspan =1,rowspan=2,**padding)
-        self.botPWM = Text(parent,height=height,width=10)
-        self.botPWM.grid(column=2,row=4,columnspan =1,rowspan=2,**padding)
-
-        # POWER BUTTON:
-        self.onOff = Button(parent, text="AAAA", command=lambda : self.server.onOff())
-        self.onOff.grid(column=0, row=5, columnspan=2, rowspan=1,**padding)
-        self.onOff['fg'] = 'black'
+        params = {'size':(15,1),'font':("Helvetica", 25)}
+        self.topTarget = sg.T("Target",**params)
+        self.botTarget = sg.T("Target",**params)
+        self.topTemp = sg.T("Temp",**params)
+        self.botTemp = sg.T("Temp",**params)
+        self.topPWM = sg.T("PWM",**params)
+        self.botPWM = sg.T("PWM",**params)
+        self.power = sg.Button("Power",**params)
+        self.ambientTemp = sg.T("Ambient",**params)
+        self.tabMain = [[sg.Frame('targets',layout=[
+            [sg.Button('Top up',**params),sg.Button('Top down',**params),self.topTarget],
+            [sg.Button('Bot up',**params), sg.Button('Bot down',**params), self.botTarget]
+            ])],
+            [sg.Frame('current',layout=[
+            [self.topTemp, self.topPWM],
+            [self.botTemp, self.botPWM]])],
+            [self.ambientTemp],
+            [self.power]
+        ]
+        return self.tabMain
 
     def initPanelAux1(self):
-        # https://riptutorial.com/tkinter/example/29713/grid--
-        # https://www.tutorialspoint.com/python/python_gui_programming.htm
-        parent = self.tabAux1
-        height = 3
-        ### ROW1
-        self.btn = Button(parent, text="A",height=height)
-        self.btn.grid(column=0,row=0,sticky="E W")
-        self.btn = Button(parent, text="B",height=height)
-        self.btn.grid(column=1,row=0,sticky="E W")
+        params = {'size':(35,1),'font':("Helvetica", 25)}
+        self.ipAddress = sg.T("IP",**params)
+        self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
+        self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
+        #self.C = sg.Radio("Celcius",0,default=self.useC,key='cel',**params)
+        #self.F = sg.Radio("Fahrenheit",0,default=not self.useC,key='fah',**params)
+        self.tabAux1 = [[sg.Frame("",[[self.ipAddress]])],[sg.Frame("",[[self.C],[self.F]])]]
+        return self.tabAux1
+
+    def cvTemp(self,temp):
+        return f" {temp:.0f} C" if self.useC else f" {temp*1.8+32:.0f} F"
 
     def setTargetTemps(self,topTemp,botTemp):
-        self.targetTop.delete(1.0,END)
-        self.targetBot.delete(1.0,END)
-        self.targetTop.insert(END,f"Target {topTemp}")
-        self.targetBot.insert(END,f"Target {botTemp}")
+        self.topTarget.update(value=f"Target" + self.cvTemp(topTemp))
+        self.botTarget.update(value=f"Target" + self.cvTemp(botTemp))
 
-    def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff):
-        self.curTop.delete(1.0,END)
-        self.curBot.delete(1.0,END)
-        self.curTop.insert(END,f"Current TOP {topTemp:.0f} C")
-        self.curBot.insert(END,f"Current BOT {botTemp:.0f} C")
-        self.topPWM.delete(1.0,END)
-        self.botPWM.delete(1.0,END)
-        self.topPWM.insert(END,f"PWM {topPWM:.2f}")
-        self.botPWM.insert(END,f"PWM {botPWM:.2f}")
-        self.onOff['text'] = "TURN POWER OFF" if isOnOff else "TURN POWER ON"
-        self.onOff['fg'] = 'red' if isOnOff else "black"
-        self.onOff['activeforeground'] = 'red' if isOnOff else "black"
+    def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp):
+        self.topTemp.update(value=f"TOP Current" + self.cvTemp(topTemp))
+        self.botTemp.update(value=f"BOT Current" + self.cvTemp(botTemp))
+        self.topPWM.update(value=f"PWM {topPWM:.2f}")
+        self.botPWM.update(value=f"PWM {botPWM:.2f}")
+        self.power.update(text = "TURN POWER OFF" if isOnOff else "TURN POWER ON")
+        self.power.update(button_color = ('red',None) if isOnOff else ('black',None))
+        self.ambientTemp.update(value = "Ambient temp" + self.cvTemp(ambientTemp))
+
+    def setIPAddress(self,ipAdd):
+        self.ipAddress.update(value=f"IP Address: {ipAdd}")
 
 
     def incTemp(self,p1,p2):
@@ -100,8 +77,24 @@ class UI():
       messagebox.showinfo("Hello", "Callback worked!")
 
     def mainLoop(self):
-        mainloop()
+        while True:
+            event, values = self.window.read()
+            print(event, values)
+            if event == "Top up": self.incTemp(0,5)
+            if event == "Top down": self.incTemp(0,-5)
+            if event == "Bot up": self.incTemp(1,5)
+            if event == "Bot down": self.incTemp(1,-5)
+            if event == "Power": self.server.onOff()
+            if event == "cel": self.useC = 1
+            if event == "fah": self.useC = 0
+            if event == "cel" or event == 'fah': self.server.saveJson()
+            # if event == "Read": self.setTargetTemps(35,56)
+            # if event == "Read": self.setCurTemps(20,25,.8,.9,1)
+            # if event == "Read": self.setIPAddress("192.168.1.100")
+            if event == sg.WIN_CLOSED:  # always,  always give a way out!
+                break
+
 
 if __name__ == '__main__':
-    ui = UI()
+    ui = UI(None)
     ui.mainLoop()

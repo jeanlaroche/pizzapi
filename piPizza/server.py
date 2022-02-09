@@ -1,6 +1,6 @@
 from BaseClasses.baseServer import Server
 from ReadTemps import Temps
-from UI2 import UI
+from UI import UI
 import pigpio
 import time
 import subprocess
