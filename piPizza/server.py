@@ -28,11 +28,12 @@ class PID():
     p = 10              # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
     d = 1               # Differential factor. 100 means that a 1% delta per second between target and current -> full PWM
     # Update parameters
-    smoothPeriodS = 10  # The dynamics (slopes) are computed over this duration.
+    smoothPeriodS = 20  # The dynamics (slopes) are computed over this duration.
     dTemp = 0
     outVal = 0
     lastTime = 0
     isOn = 0
+    timeToTarget = ""
 
     def __init__(self,updatePeriodS):
         # updatePeriodS controls how often we update the output pwm value. If we update every second and
@@ -41,6 +42,7 @@ class PID():
         self.updatePeriodS = updatePeriodS
         self.lastTimes = deque(maxlen=dqLen)
         self.lastTemps = deque(maxlen=dqLen)
+        self.timeToTarget = "Wait..."
         pass
 
     def getValue(self, currentTemp):
@@ -54,7 +56,6 @@ class PID():
         self.lastTemps.append(currentTemp)
         # We need the deque to be full to compute the dynamics.
         if len(self.lastTimes) < self.lastTimes.maxlen : return self.outVal
-        print("RUN PID")
         lastTime = self.lastTimes[0]
         lastTemp = self.lastTemps[0]
         self.dTemp = (currentTemp - lastTemp) / (thisTime - lastTime)
@@ -63,16 +64,18 @@ class PID():
         else:
             outVal = 0
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
+        self.timeToTarget = self.getTimeToTarget()
         return self.outVal
 
-    def timeToTarget(self):
+    def getTimeToTarget(self):
+        if abs(self.targetTemp-self.currentTemp) < 0.02*self.targetTemp: return "At temp"
         if self.dTemp == 0: return "Inf"
         ttt = (self.targetTemp - self.currentTemp)/self.dTemp
-        print(self.dTemp,self.targetTemp - self.currentTemp,ttt)
         if ttt < 0 : return "Inf"
         if ttt < 60: return f"{ttt:.0f} sec"
         if ttt < 3600: return f"{ttt/60:.0f} min"
-        return "> 1 hour"
+        if ttt < 3600*2: return "> 1 hour"
+        return "Inf"
 
 
 class PizzaServer(Server):
@@ -198,7 +201,7 @@ class PizzaServer(Server):
                 self.pi.set_PWM_dutycycle(BotRelay, self.botPWM*self.pi.get_PWM_range(BotRelay))
                 # Reflect new temps and pwm on UI
                 self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp,
-                                    self.topPID.timeToTarget(),self.botPID.timeToTarget())
+                                    self.topPID.timeToTarget,self.botPID.timeToTarget)
                 if self.dirty:
                     self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
                     self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
