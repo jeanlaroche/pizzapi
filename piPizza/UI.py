@@ -176,6 +176,7 @@ class UI():
                 if ret == "OK":
                     ret = self.server.runUpdate()
                     sg.popup_ok(ret, font=(fontName, 30), keep_on_top=1)
+                    self.server.runUpdate(1)
             # if event == "Read": self.setTargetTemps(35,56)
             # if event == "Read": self.setCurTemps(20,25,.8,.9,1)
             # if event == "Read": self.setIPAddress("192.168.1.100")

@@ -6,6 +6,7 @@ import time
 import subprocess
 import re
 from datetime import datetime
+import signal,os
 
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
@@ -92,17 +93,18 @@ class PizzaServer(Server):
     def __delete__(self):
         self.pi.stop()
 
-    def runUpdate(self):
-        print("RUN UPDATE")
-        A = ""
-        try:
-            A=subprocess.check_output('git pull upstream'.split()).decode()
-        except Exception as e:
-            A = f"Failed to update: {e}"
-        print(A)
-        return A
-
-
+    def runUpdate(self,restart=0):
+        if not restart:
+            print("RUN UPDATE")
+            A = ""
+            try:
+                A=subprocess.check_output('git pull upstream'.split()).decode()
+            except Exception as e:
+                A = f"Failed to update: {e}"
+            print(A)
+            return A
+        else:
+            os.kill(os.getpid(),signal.SIGABRT)
 
     def saveJson(self):
         saveVarsToJson(self.jsonFileName,self,"server")
