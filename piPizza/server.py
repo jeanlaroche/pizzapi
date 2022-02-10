@@ -1,3 +1,4 @@
+#! /usr/bin/python3
 from BaseClasses.baseServer import Server
 from ReadTemps import Temps
 from UI import UI
@@ -11,7 +12,7 @@ import os
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
 
-__version__ = "1.0.0"
+__version__ = "1.0.0 (2/9/2022)"
 
 app = Flask(__name__)
 
@@ -81,7 +82,6 @@ class PizzaServer(Server):
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID")
         readVarsFromJson(self.jsonFileName,self.botPID,"botPID")
         readVarsFromJson(self.jsonFileName,self.UI,"UI")
-        self.UI.finishInit()
         self.lastHistTime = 0
         self.isOn = 0
         self.dirty = 1
@@ -91,9 +91,9 @@ class PizzaServer(Server):
         try:
             A=subprocess.check_output(['/sbin/ifconfig','wlan0']).decode()
             self.ip = re.search('inet\s+(\S*)',A).group(1)
-            self.UI.setIPAddress(self.ip)
         except:
             pass
+        self.UI.finishInit()
         runThreaded(self.processLoop)
 
     def __delete__(self):
@@ -104,9 +104,13 @@ class PizzaServer(Server):
             try:
                 A=subprocess.check_output('git pull upstream'.split()).decode()
             except Exception as e:
+                print(e)
                 A=f"Failed to update: {e}"
-            print(A)
-            return A
+                return A,0
+            if "Already up to date" in A:
+                return "Already up to date, restarting now",1
+            else:
+                return "Update done, will restart now",1
         else:
             # Kill this process and relaunch it.
             os.system(f'sh -c "kill -9 {os.getpid()} ; /usr/bin/python3 /home/pi/piPizza/server.py"')

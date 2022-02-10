@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 
 sg.theme("Python")
 fontName = "Helvetica"
+import os
 
 class UI():
     def __init__(self,server):
@@ -19,12 +20,14 @@ class UI():
         self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         self.window.set_cursor("none")
+        # Force an update from the server.
+        #self.server.dirty = 1
 
     def initPanelMain(self):
         fontParams = {'font':(fontName, 16)}
         params = {'size':(10,1),'font':(fontName, 28)}
-        self.topTarget = sg.T("Target",**params)
-        self.botTarget = sg.T("Target",**params)
+        self.topTarget = sg.T(self.cvTemp(self.server.topPID.targetTemp),**params)
+        self.botTarget = sg.T(self.cvTemp(self.server.botPID.targetTemp),**params)
         self.topTemp = sg.T("Temp",**params)
         self.botTemp = sg.T("Temp",**params)
         self.topPWM = sg.T("PWM",**params)
@@ -70,29 +73,29 @@ class UI():
         params.update(fontParams)
         paramsSilders = {'range':(0,10),'resolution':0.01,'orientation':'h','font':(fontName, 20),
                          'enable_events':1,'size':(20,30)}
-        A= sg.Frame('PID',
-                     [[sg.Frame('Top P',[[sg.Slider(default_value  = self.server.topPID.p, **paramsSilders, key='TP')]]),
-                       sg.Frame('Top D',[[sg.Slider(default_value  = self.server.topPID.d, **paramsSilders, key='TD')]])
+        A= [[sg.Frame('Top P',[[sg.Slider(default_value  = self.server.topPID.p, **paramsSilders, key='TP')]],**fontParams),
+                       sg.Frame('Top D',[[sg.Slider(default_value  = self.server.topPID.d, **paramsSilders, key='TD')]],**fontParams)
                        ],
                      [
-                       sg.Frame('Bot P',[[sg.Slider(default_value  = self.server.botPID.p, **paramsSilders, key='BP')]]),
-                       sg.Frame('Bot D',[[sg.Slider(default_value  = self.server.botPID.d, **paramsSilders, key='BD')]])
-                     ]],**fontParams)
-        self.tabPID = [[A]]
+                       sg.Frame('Bot P',[[sg.Slider(default_value  = self.server.botPID.p, **paramsSilders, key='BP')]],**fontParams),
+                       sg.Frame('Bot D',[[sg.Slider(default_value  = self.server.botPID.d, **paramsSilders, key='BD')]],**fontParams)
+                     ]]
+        self.tabPID = A
         return self.tabPID
 
     def iniPanelStatus(self):
         params = {'size':(14,1),'font':(fontName, 28)}
-        self.ipAddress = sg.T("IP",**params)
+        ipAddress = sg.T(self.server.ip,**params)
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
         self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
         self.ambientTemp = sg.T("Ambient",**params)
         self.tabStatus = [
-            [sg.Frame("IP address",[[self.ipAddress]]),sg.Frame("Version",[[sg.T(self.server.version,**params)]])],
+            [sg.Frame("IP address",[[ipAddress]]),sg.Frame("Version",[[sg.T(self.server.version,**params)]])],
             [sg.Frame("Units",[[self.C],[self.F]])],
             [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
-            [sg.Button("Show Desktop" if self.no_titlebar else "Hide Disktop",**params,key="maximize"),
-             sg.Button("Update",**params,key="update")]
+            [sg.Button("Show PI Desktop" if self.no_titlebar else "Hide PI Desktop",**params,key="maximize"),
+             sg.Button("Update / Restart",**params,key="update")],
+            [sg.Button("Reboot", **params, key="reboot")],
             ]
         return self.tabStatus
 
@@ -100,8 +103,8 @@ class UI():
         return f" {temp:.0f} C" if self.useC else f" {temp*1.8+32:.0f} F"
 
     def setTargetTemps(self,topTemp,botTemp):
-        self.topTarget.update(value=f"Target" + self.cvTemp(topTemp))
-        self.botTarget.update(value=f"Target" + self.cvTemp(botTemp))
+        self.topTarget.update(value=self.cvTemp(topTemp))
+        self.botTarget.update(value=self.cvTemp(botTemp))
         self.topTargetSlider.update(value=topTemp)
         self.botTargetSlider.update(value=botTemp)
 
@@ -116,9 +119,6 @@ class UI():
         self.power.update(text = "TURN POWER OFF" if isOnOff else "TURN POWER ON")
         self.power.update(button_color = ('red',None) if isOnOff else ('black',None))
         self.ambientTemp.update(value = self.cvTemp(ambientTemp))
-
-    def setIPAddress(self,ipAdd):
-        self.ipAddress.update(value=ipAdd)
 
     def mainLoop(self):
         while True:
@@ -151,9 +151,13 @@ class UI():
             if event == "update":
                 ret = sg.popup_ok_cancel("Update software?",font=(fontName,30),keep_on_top=1)
                 if ret == "OK":
-                    ret = self.server.runUpdate()
+                    ret,code = self.server.runUpdate()
                     sg.popup_ok(ret, font=(fontName, 30), keep_on_top=1)
-                    self.server.runUpdate(1)
+                    if code == 1: self.server.runUpdate(1)
+            if event == "reboot":
+                ret = sg.popup_ok_cancel("Reboot now?",font=(fontName,30),keep_on_top=1)
+                if ret == "OK":
+                    os.system('sudo reboot now')
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 
