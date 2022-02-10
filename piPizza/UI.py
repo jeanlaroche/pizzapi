@@ -56,18 +56,23 @@ class UI():
         fontParams = {'font':(fontName, 16)}
         params = {'size':(15,1)}
         params.update(fontParams)
-        paramsSilders = {'range':(0,1),'resolution':0.1,'orientation':'h','font':(fontName, 20),
+        paramsSilders = {'range':(0,1),'resolution':0.05,'orientation':'h','font':(fontName, 20),
                          'enable_events':1,'size':(30,30)}
         self.topMaxPWM = sg.T("Top Max PWM",**params)
         self.botMaxPWM = sg.T("Top Max PWM",**params)
-        A = sg.Frame('MAX PWM',
+        A = sg.Frame('Top Max PWM',
                      [
                       # [sg.Button('Top +',**params,key='TUM'),sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
                       # [sg.Button('Bot +',**params,key='BUM'),sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]
                       [sg.Slider(**paramsSilders,key='TMS',default_value  = self.server.topMaxPWM)],
+                     ],**fontParams)
+        B = sg.Frame('Bot Max PWM',
+                     [
+                      # [sg.Button('Top +',**params,key='TUM'),sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
+                      # [sg.Button('Bot +',**params,key='BUM'),sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]
                       [sg.Slider(**paramsSilders,key='BMS',default_value  = self.server.botMaxPWM)]
                      ],**fontParams)
-        self.tabPWM = [[A]]
+        self.tabPWM = [[A],[B]]
         return self.tabPWM
 
     def initPanelPID(self):
@@ -90,7 +95,7 @@ class UI():
         return self.tabPID
 
     def iniPanelStatus(self):
-        params = {'size':(12,1),'font':(fontName, 28)}
+        params = {'size':(14,1),'font':(fontName, 28)}
         self.ipAddress = sg.T("IP",**params)
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
         self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
@@ -98,10 +103,11 @@ class UI():
         #self.F = sg.Radio("Fahrenheit",0,default=not self.useC,key='fah',**params)
         self.ambientTemp = sg.T("Ambient",**params)
         self.tabStatus = [
-            [sg.Frame("",[[self.ipAddress]])],
-            [sg.Frame("",[[self.C],[self.F]])],
+            [sg.Frame("IP address",[[self.ipAddress]])],
+            [sg.Frame("Units",[[self.C],[self.F]])],
             [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
-            [sg.Button("Show Desktop" if self.no_titlebar else "Hide Disktop",**params,key="maximize")]
+            [sg.Button("Show Desktop" if self.no_titlebar else "Hide Disktop",**params,key="maximize"),
+             sg.Button("Update",**params,key="update")]
             ]
         return self.tabStatus
 
@@ -127,7 +133,7 @@ class UI():
         self.ambientTemp.update(value = self.cvTemp(ambientTemp))
 
     def setIPAddress(self,ipAdd):
-        self.ipAddress.update(value=f"IP Address: {ipAdd}")
+        self.ipAddress.update(value=ipAdd)
 
     # find button callback
     def hello(self):
@@ -161,6 +167,9 @@ class UI():
                 self.window.close()
                 self.finishInit(no_titlebar=1-self.no_titlebar)
                 self.server.stopUI = 0
+            if event == "update":
+                ret = sg.popup_ok_cancel("Update software?",font=(fontName,30),keep_on_top=1)
+                if ret == "OK": self.server.runUpdate()
             # if event == "Read": self.setTargetTemps(35,56)
             # if event == "Read": self.setCurTemps(20,25,.8,.9,1)
             # if event == "Read": self.setIPAddress("192.168.1.100")

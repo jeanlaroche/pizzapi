@@ -92,6 +92,16 @@ class PizzaServer(Server):
     def __delete__(self):
         self.pi.stop()
 
+    def runUpdate(self):
+        print("RUN UPDATE")
+        try:
+            A=subprocess.check_output('git pull -u upstream'.split()).decode()
+            print(A)
+        except Exception as e:
+            print("Failed to update",e)
+
+
+
     def saveJson(self):
         saveVarsToJson(self.jsonFileName,self,"server")
         saveVarsToJson(self.jsonFileName,self.topPID,"topPID")
