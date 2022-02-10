@@ -57,6 +57,7 @@ class PizzaServer(Server):
     topPWM = 0
     botPWM = 0
     dirty = 1
+    stopUI = 0
 
     def __init__(self):
         super().__init__()
@@ -78,6 +79,7 @@ class PizzaServer(Server):
         self.lastHistTime = 0
         self.isOn = 0
         self.dirty = 1
+        self.stopUI = 0
 
         try:
             A=subprocess.check_output(['/sbin/ifconfig','wlan0']).decode()
@@ -121,8 +123,15 @@ class PizzaServer(Server):
         self.topPID.p,self.topPID.d,self.botPID.p,self.botPID.d = vals
         self.dirty = 1
 
+    def setMaxPWM(self,vals):
+        self.topMaxPWM, self.botMaxPWM = vals
+        self.dirty = 1
+
     def processLoop(self):
         while 1:
+            if self.stopUI:
+                time.sleep(.5)
+                continue
             self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
             self.topPID.isOn = self.isOn
             self.botPID.isOn = self.isOn

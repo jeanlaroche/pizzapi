@@ -21,7 +21,8 @@ class UI():
         self.tabAux1 = self.initPanelAux1()
         self.tabAux2 = self.initPanelAux2()
         self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('PWM and PID', self.tabAux1), sg.Tab('Status', self.tabAux2)]],**fontParams)]]
-        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar)
+        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
+        self.window.set_cursor("none")
 
     def initPanelMain(self):
         fontParams = {'font':(fontName, 16)}
@@ -34,14 +35,14 @@ class UI():
         self.topPWM = sg.T("PWM",**params)
         self.botPWM = sg.T("PWM",**params)
         self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))
-        paramsSilders = {'range':(0,400),'orientation':'h','enable_events':1}
+        paramsSilders = {'range':(20,400),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':(25,30)}
         paramsSilders.update(fontParams)
         self.tabMain = [
             [sg.Frame('Target temps',layout=[
             # [sg.Button('Top +',**paramsButs,key='TTU'),sg.Button('Top -',**paramsButs,key='TTD'),self.topTarget],
             # [sg.Button('Bot +',**paramsButs,key='BTU'), sg.Button('Bot -',**paramsButs,key='BTD'), self.botTarget]
-            [sg.Slider(**paramsSilders,key='TTS'),self.topTarget],
-            [sg.Slider(**paramsSilders,key='BTS'), self.botTarget]
+            [sg.Slider(**paramsSilders,default_value=self.server.topPID.targetTemp,key='TTS'),self.topTarget],
+            [sg.Slider(**paramsSilders,default_value=self.server.botPID.targetTemp,key='BTS'), self.botTarget]
             ],**fontParams)],
             [sg.Frame('Current temps',layout=[
             [self.topTemp, self.topPWM],
@@ -54,14 +55,19 @@ class UI():
         fontParams = {'font':(fontName, 16)}
         params = {'size':(15,1)}
         params.update(fontParams)
-        paramsSilders = {'range':(0,10),'resolution':0.01,'orientation':'h','font':(fontName, 20),
-                         'enable_events':1}
+        paramsSilders = {'range':(0,1),'resolution':0.1,'orientation':'h','font':(fontName, 20),
+                         'enable_events':1,'size':(25,22)}
         self.topMaxPWM = sg.T("Top Max PWM",**params)
         self.botMaxPWM = sg.T("Top Max PWM",**params)
-        A = sg.Frame('MAX PWM',[[sg.Button('Top +',**params,key='TUM'),
-                                 sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
-                         [sg.Button('Bot +',**params,key='BUM'),
-                          sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]],**fontParams)
+        A = sg.Frame('MAX PWM',
+                     [
+                      # [sg.Button('Top +',**params,key='TUM'),sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
+                      # [sg.Button('Bot +',**params,key='BUM'),sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]
+                      [sg.Slider(**paramsSilders,key='TMS',default_value  = self.server.topMaxPWM)],
+                      [sg.Slider(**paramsSilders,key='BMS',default_value  = self.server.botMaxPWM)]
+                     ],**fontParams)
+        paramsSilders['range'] = (0,10)
+        paramsSilders['resolution'] = 0.01
         B = sg.Frame('PID',
                      [[sg.Frame('Top P',[[sg.Slider(default_value  = self.server.topPID.p, **paramsSilders, key='TP')]]),
                        sg.Frame('Top D',[[sg.Slider(default_value  = self.server.topPID.d, **paramsSilders, key='TD')]])
@@ -97,8 +103,9 @@ class UI():
         self.botTarget.update(value=f"Target" + self.cvTemp(botTemp))
 
     def setMaxPWM(self,topMaxPWM,botMaxPWM):
-        self.topMaxPWM.update(value=f" {topMaxPWM:.2f}")
-        self.botMaxPWM.update(value=f" {botMaxPWM:.2f}")
+        pass
+        # self.topMaxPWM.update(value=f" {topMaxPWM:.2f}")
+        # self.botMaxPWM.update(value=f" {botMaxPWM:.2f}")
 
     def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp):
         self.topTemp.update(value=f"TOP " + self.cvTemp(topTemp))
@@ -135,11 +142,15 @@ class UI():
                 self.server.dirty = 1
             if event in ['TP','TD','BP','BD']:
                 self.server.setPID((values[i] for i in ['TP','TD','BP','BD']))
+            if event in ['TMS','BMS']:
+                self.server.setMaxPWM((values[i] for i in ['TMS','BMS']))
             if event in ['TTS','BTS']:
                 self.server.setTemps((values[i] for i in ['TTS','BTS']))
             if event == "maximize":
+                self.server.stopUI = 1
                 self.window.close()
                 self.finishInit(no_titlebar=1-self.no_titlebar)
+                self.server.stopUI = 0
             # if event == "Read": self.setTargetTemps(35,56)
             # if event == "Read": self.setCurTemps(20,25,.8,.9,1)
             # if event == "Read": self.setIPAddress("192.168.1.100")
@@ -151,9 +162,12 @@ if __name__ == '__main__':
     class P:
         p=0
         d=1
+        targetTemp = 50
     class S:
         topPID = P()
         botPID = P()
+        topMaxPWM=1
+        botMaxPWM=.5
         pass
     ui = UI(S)
     ui.finishInit()
