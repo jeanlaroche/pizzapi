@@ -106,9 +106,8 @@ class PizzaServer(Server):
         if p1 == 1: self.botPID.targetTemp += p2
         self.dirty = 1
 
-    def setTemps(self,p1,p2):
-        self.topPID.targetTemp += p1
-        self.botPID.targetTemp += p2
+    def setTemps(self,vals):
+        self.topPID.targetTemp,self.botPID.targetTemp = vals
         self.dirty = 1
 
     def incMaxPWM(self,p1,p2):
@@ -118,8 +117,8 @@ class PizzaServer(Server):
         self.botMaxPWM = max(0,min(self.botMaxPWM,1))
         self.dirty = 1
 
-    def setPID(self,allVals):
-        self.topPID.p,self.topPID.d,self.botPID.p,self.botPID.d = allVals
+    def setPID(self,vals):
+        self.topPID.p,self.topPID.d,self.botPID.p,self.botPID.d = vals
         self.dirty = 1
 
     def processLoop(self):
