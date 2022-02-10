@@ -18,9 +18,10 @@ class UI():
         fontParams = {'font':(fontName, 14)}
         self.no_titlebar = no_titlebar
         self.tabMain = self.initPanelMain()
-        self.tabAux1 = self.initPanelAux1()
-        self.tabAux2 = self.initPanelAux2()
-        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('PWM and PID', self.tabAux1), sg.Tab('Status', self.tabAux2)]],**fontParams)]]
+        self.tabPWM = self.initPanelPWM()
+        self.tabStatus = self.iniPanelStatus()
+        self.tabPID = self.initPanelPID()
+        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         self.window.set_cursor("none")
 
@@ -51,12 +52,12 @@ class UI():
         ]
         return self.tabMain
 
-    def initPanelAux1(self):
+    def initPanelPWM(self):
         fontParams = {'font':(fontName, 16)}
         params = {'size':(15,1)}
         params.update(fontParams)
         paramsSilders = {'range':(0,1),'resolution':0.1,'orientation':'h','font':(fontName, 20),
-                         'enable_events':1,'size':(25,22)}
+                         'enable_events':1,'size':(30,30)}
         self.topMaxPWM = sg.T("Top Max PWM",**params)
         self.botMaxPWM = sg.T("Top Max PWM",**params)
         A = sg.Frame('MAX PWM',
@@ -66,9 +67,18 @@ class UI():
                       [sg.Slider(**paramsSilders,key='TMS',default_value  = self.server.topMaxPWM)],
                       [sg.Slider(**paramsSilders,key='BMS',default_value  = self.server.botMaxPWM)]
                      ],**fontParams)
-        paramsSilders['range'] = (0,10)
-        paramsSilders['resolution'] = 0.01
-        B = sg.Frame('PID',
+        self.tabPWM = [[A]]
+        return self.tabPWM
+
+    def initPanelPID(self):
+        fontParams = {'font':(fontName, 16)}
+        params = {'size':(15,1)}
+        params.update(fontParams)
+        paramsSilders = {'range':(0,10),'resolution':0.01,'orientation':'h','font':(fontName, 20),
+                         'enable_events':1,'size':(20,30)}
+        # self.topMaxPWM = sg.T("Top Max PWM",**params)
+        # self.botMaxPWM = sg.T("Top Max PWM",**params)
+        A= sg.Frame('PID',
                      [[sg.Frame('Top P',[[sg.Slider(default_value  = self.server.topPID.p, **paramsSilders, key='TP')]]),
                        sg.Frame('Top D',[[sg.Slider(default_value  = self.server.topPID.d, **paramsSilders, key='TD')]])
                        ],
@@ -76,10 +86,10 @@ class UI():
                        sg.Frame('Bot P',[[sg.Slider(default_value  = self.server.botPID.p, **paramsSilders, key='BP')]]),
                        sg.Frame('Bot D',[[sg.Slider(default_value  = self.server.botPID.d, **paramsSilders, key='BD')]])
                      ]],**fontParams)
-        self.tabAux1 = [[A],[B]]
-        return self.tabAux1
+        self.tabPID = [[A]]
+        return self.tabPID
 
-    def initPanelAux2(self):
+    def iniPanelStatus(self):
         params = {'size':(12,1),'font':(fontName, 28)}
         self.ipAddress = sg.T("IP",**params)
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
@@ -87,13 +97,13 @@ class UI():
         #self.C = sg.Radio("Celcius",0,default=self.useC,key='cel',**params)
         #self.F = sg.Radio("Fahrenheit",0,default=not self.useC,key='fah',**params)
         self.ambientTemp = sg.T("Ambient",**params)
-        self.tabAux2 = [
+        self.tabStatus = [
             [sg.Frame("",[[self.ipAddress]])],
             [sg.Frame("",[[self.C],[self.F]])],
             [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
-            [sg.Button("Show Desktop" if self.no_titlebar else "Maximize",**params,key="maximize")]
+            [sg.Button("Show Desktop" if self.no_titlebar else "Hide Disktop",**params,key="maximize")]
             ]
-        return self.tabAux2
+        return self.tabStatus
 
     def cvTemp(self,temp):
         return f" {temp:.0f} C" if self.useC else f" {temp*1.8+32:.0f} F"
