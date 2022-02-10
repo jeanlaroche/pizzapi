@@ -6,7 +6,7 @@ import time
 import subprocess
 import re
 from datetime import datetime
-import signal,os
+import os
 
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
@@ -72,8 +72,10 @@ class PizzaServer(Server):
         self.pi = pigpio.pi()  # Connect to local Pi.
         self.pi.set_mode(TopRelay, pigpio.OUTPUT)
         self.pi.set_mode(BotRelay, pigpio.OUTPUT)
-        self.pi.write(TopRelay, 0)
-        self.pi.write(BotRelay, 0)
+        self.pi.set_PWM_frequency(TopRelay, 0)
+        self.pi.set_PWM_frequency(BotRelay, 0)
+        self.pi.set_PWM_dutycycle(TopRelay, 0)
+        self.pi.set_PWM_dutycycle(BotRelay, 0)
 
         readVarsFromJson(self.jsonFileName,self,"server")
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID")
@@ -84,11 +86,12 @@ class PizzaServer(Server):
         self.isOn = 0
         self.dirty = 1
         self.stopUI = 0
+        self.ip = ""
 
         try:
             A=subprocess.check_output(['/sbin/ifconfig','wlan0']).decode()
-            ip = re.search('inet\s+(\S*)',A)
-            self.UI.setIPAddress(ip.group(1))
+            self.ip = re.search('inet\s+(\S*)',A).group(1)
+            self.UI.setIPAddress(self.ip)
         except:
             pass
         runThreaded(self.processLoop)
@@ -98,17 +101,15 @@ class PizzaServer(Server):
 
     def runUpdate(self,restart=0):
         if not restart:
-            print("RUN UPDATE")
-            A = ""
             try:
                 A=subprocess.check_output('git pull upstream'.split()).decode()
             except Exception as e:
-                A = f"Failed to update: {e}"
+                A=f"Failed to update: {e}"
             print(A)
             return A
         else:
-            print("KILL COMMAND")
-            os.system(f'sh -c "kill -9 {os.getpid()} ; /usr/bin/python3 /home/pi/piPizza/server.py "')
+            # Kill this process and relaunch it.
+            os.system(f'sh -c "kill -9 {os.getpid()} ; /usr/bin/python3 /home/pi/piPizza/server.py"')
 
     def saveJson(self):
         saveVarsToJson(self.jsonFileName,self,"server")
@@ -148,21 +149,27 @@ class PizzaServer(Server):
     def processLoop(self):
         while 1:
             try:
+                # This can happen when the UI is doing something and it should not be interrupted.
                 if self.stopUI:
                     time.sleep(.5)
                     continue
+                # Get temps from the thermocouples
                 self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
-                self.topPID.isOn = self.isOn
-                self.botPID.isOn = self.isOn
+                self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
+                # Run the PID to compute the new pwm values
                 self.topPWM = self.topPID.getValue(self.topTemp)
                 self.botPWM = self.botPID.getValue(self.botTemp)
                 self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
+                # Set the PWM duty cycle on the relays
+                self.pi.set_PWM_dutycycle(TopRelay, self.botPWM*self.pi.get_PWM_range(TopRelay))
+                self.pi.set_PWM_dutycycle(BotRelay, self.botPWM*self.pi.get_PWM_range(BotRelay))
+                # Reflect new temps and pwm on UI
                 self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp)
                 if self.dirty:
                     self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
                     self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
                     self.saveJson()
-                # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
+                # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
                 if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
                         or round(self.botTemp) != self.tempHistBot[-1]:
                     self.lastHistTime = time.time()
@@ -196,8 +203,6 @@ def kg():
     server.kg()
     return ('', 204)
 
-
-# return index page when IP address of RPi is typed in the browser
 @app.route("/")
 def Index():
     return server.Index()
@@ -224,7 +229,6 @@ def onOff():
     return jsonify(onOff = _onOff())
 
 
-
 @app.route("/incTopTemp/<int(signed=True):param1>")
 def incTopTemp(param1):
     print("incTopTemp",param1)
@@ -238,14 +242,14 @@ def incBotTemp(param1):
     server.dirty = 1
     return jsonify(botTarget=server.botPID.targetTemp)
 
-
-@app.route("/funcName/<int:param1>/<int:param2>")
-def funcName(param1, param2):
-    return jsonify(param1=param1, param2=param2)
+# Example of how to pass parameters to a function
+# @app.route("/funcName/<int:param1>/<int:param2>")
+# def funcName(param1, param2):
+#     return jsonify(param1=param1, param2=param2)
 
 if __name__ == "__main__":
     server = PizzaServer()
-    print("Go to http://192.168.1.129:8080")
+    print(f"Go to {server.ip}:8080")
 
     #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)
     def foo():
