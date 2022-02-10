@@ -38,12 +38,14 @@ class UI():
         self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))
         paramsSilders = {'range':(20,400),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':(25,30)}
         paramsSilders.update(fontParams)
+        self.topTargetSlider = sg.Slider(**paramsSilders, default_value=self.server.topPID.targetTemp, key='TTS')
+        self.botTargetSlider = sg.Slider(**paramsSilders,default_value=self.server.botPID.targetTemp,key='BTS')
         self.tabMain = [
             [sg.Frame('Target temps',layout=[
             # [sg.Button('Top +',**paramsButs,key='TTU'),sg.Button('Top -',**paramsButs,key='TTD'),self.topTarget],
             # [sg.Button('Bot +',**paramsButs,key='BTU'), sg.Button('Bot -',**paramsButs,key='BTD'), self.botTarget]
-            [sg.Slider(**paramsSilders,default_value=self.server.topPID.targetTemp,key='TTS'),self.topTarget],
-            [sg.Slider(**paramsSilders,default_value=self.server.botPID.targetTemp,key='BTS'), self.botTarget]
+            [self.topTargetSlider,self.topTarget],
+            [self.botTargetSlider, self.botTarget]
             ],**fontParams)],
             [sg.Frame('Current temps',layout=[
             [self.topTemp, self.topPWM],
@@ -117,6 +119,8 @@ class UI():
     def setTargetTemps(self,topTemp,botTemp):
         self.topTarget.update(value=f"Target" + self.cvTemp(topTemp))
         self.botTarget.update(value=f"Target" + self.cvTemp(botTemp))
+        self.topTargetSlider.update(value=topTemp)
+        self.botTargetSlider.update(value=botTemp)
 
     def setMaxPWM(self,topMaxPWM,botMaxPWM):
         pass
