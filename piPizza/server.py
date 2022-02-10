@@ -52,7 +52,7 @@ class PizzaServer(Server):
     tempHistT = []
     tempHistTop = []
     tempHistBot = []
-    jsonFileName = 'params.json'
+    jsonFileName = '/home/pi/piPizza/params.json'
     topMaxPWM = 0.9
     botMaxPWM = 0.9
     topPWM = 0
@@ -94,6 +94,8 @@ class PizzaServer(Server):
         self.pi.stop()
 
     def runUpdate(self,restart=0):
+        os.system(f'sh -c "kill -9 {os.getpid()} ; /usr/bin/python3 /home/pi/piPizza/server.py "')
+
         if not restart:
             print("RUN UPDATE")
             A = ""
@@ -104,7 +106,11 @@ class PizzaServer(Server):
             print(A)
             return A
         else:
-            os.kill(os.getpid(),signal.SIGABRT)
+            #print("AT COMMAND")
+            #os.system('sh -c "sleep 2; /usr/bin/python3 /home/pi/piPizza/server.py | at -M now"')
+            print("KILL COMMAND")
+            #os.kill(os.getpid(),signal.SIGABRT)
+            os.system(f"sh -c kill -9 {os.getpid()} ; /usr/bin/python3 /home/pi/piPizza/server.py ")
 
     def saveJson(self):
         saveVarsToJson(self.jsonFileName,self,"server")
