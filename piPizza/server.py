@@ -48,6 +48,7 @@ class PID():
     def timeToTarget(self):
         if self.dTemp == 0: return "Inf"
         ttt = (self.targetTemp - self.currentTemp)/self.dTemp/60
+        print(self.dTemp,self.targetTemp - self.currentTemp,ttt)
         if ttt < 0 : return "Inf"
         if ttt < 60: return f"{ttt:.0f} min"
         return "> 1 hour"
@@ -68,6 +69,7 @@ class PizzaServer(Server):
     botPWM = 0
     dirty = 1
     stopUI = 0
+    pidRunPeriod = 5
     version = __version__
 
     def __init__(self):
@@ -157,6 +159,7 @@ class PizzaServer(Server):
         self.dirty = 1
 
     def processLoop(self):
+        self.lastPIDRunTime = 0
         while 1:
             try:
                 # This can happen when the UI is doing something and it should not be interrupted.
@@ -167,9 +170,11 @@ class PizzaServer(Server):
                 self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
                 self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
                 # Run the PID to compute the new pwm values
-                self.topPWM = self.topPID.getValue(self.topTemp)
-                self.botPWM = self.botPID.getValue(self.botTemp)
-                self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
+                if time.time() - self.lastPIDRunTime > self.pidRunPeriod:
+                    self.topPWM = self.topPID.getValue(self.topTemp)
+                    self.botPWM = self.botPID.getValue(self.botTemp)
+                    self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
+                    self.lastPIDRunTime = time.time()
                 # Set the PWM duty cycle on the relays
                 self.pi.set_PWM_dutycycle(TopRelay, self.botPWM*self.pi.get_PWM_range(TopRelay))
                 self.pi.set_PWM_dutycycle(BotRelay, self.botPWM*self.pi.get_PWM_range(BotRelay))

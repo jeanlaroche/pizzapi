@@ -47,8 +47,7 @@ class UI():
             [self.topTemp, self.topPWM],
             [self.botTemp, self.botPWM]],**fontParams,expand_x=1)
         C = sg.Frame('Time to target',layout=[
-            [self.topTimeToTarget],
-            [self.botTimeToTarget]],**fontParams,expand_x=1)
+            [self.topTimeToTarget,self.botTimeToTarget]],**fontParams,expand_x=1)
         Col = sg.Column([[B],[C]])
         #self.tabMain = [ [A], [B,self.power], [C]]
         self.tabMain = [ [A], [Col,self.power]]
@@ -125,8 +124,8 @@ class UI():
         self.power.update(text = "TURN POWER OFF" if isOnOff else "TURN POWER ON")
         self.power.update(button_color = ('red',None) if isOnOff else ('black',None))
         self.ambientTemp.update(value = self.cvTemp(ambientTemp))
-        self.topTimeToTarget.update(values=topTimeToTarget)
-        self.botTimeToTarget.update(values=botTimeToTarget)
+        self.topTimeToTarget.update(value=topTimeToTarget)
+        self.botTimeToTarget.update(value=botTimeToTarget)
 
     def mainLoop(self):
         while True:
