@@ -21,7 +21,7 @@ class UI():
         self.tabPWM = self.initPanelPWM()
         self.tabStatus = self.iniPanelStatus()
         self.tabPID = self.initPanelPID()
-        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
+        self.layout = [[sg.TabGroup([[sg.Tab('Main ah ah ah', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         self.window.set_cursor("none")
 
