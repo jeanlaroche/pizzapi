@@ -8,6 +8,7 @@ import subprocess
 import re
 from datetime import datetime
 import os
+from collections import deque
 
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
@@ -24,24 +25,42 @@ class PID():
     targetTemp = 20
     currentTemp = 0
     # PID Parameters.
-    p = 10      # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
-    d = 1      # Differential factor. 100 means that a 1% delta per second between target and current -> full PWM
-
+    p = 10              # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
+    d = 1               # Differential factor. 100 means that a 1% delta per second between target and current -> full PWM
+    # Update parameters
+    smoothPeriodS = 10  # The dynamics (slopes) are computed over this duration.
     dTemp = 0
     outVal = 0
     lastTime = 0
     isOn = 0
 
-    def __init__(self):
+    def __init__(self,updatePeriodS):
+        # updatePeriodS controls how often we update the output pwm value. If we update every second and
+        # want a smooth period of 10s, we need to keep the 10 past values.
+        dqLen = int(self.smoothPeriodS / updatePeriodS)
+        self.updatePeriodS = updatePeriodS
+        self.lastTimes = deque(maxlen=dqLen)
+        self.lastTemps = deque(maxlen=dqLen)
         pass
 
     def getValue(self, currentTemp):
         # Returns the pwm value given the current temp.
-        thisTime = time.time()
-        self.dTemp = 0 if self.lastTime == 0 else (currentTemp - self.currentTemp) / (thisTime - self.lastTime)
         self.currentTemp = currentTemp
-        self.lastTime = thisTime
-        outVal = self.p * (self.targetTemp - self.currentTemp)/self.targetTemp - self.d * self.dTemp / self.targetTemp
+        thisTime = time.time()
+        # Don't run unless updatePeriodS seconds have elapsed.
+        if len(self.lastTimes) and thisTime - self.lastTimes[-1] < self.updatePeriodS: return self.outVal
+        # Append time and temperature to our deque, we append on the right ([-1]) and read on the left
+        self.lastTimes.append(thisTime)
+        self.lastTemps.append(currentTemp)
+        # We need the deque to be full to compute the dynamics.
+        if len(self.lastTimes) < self.lastTimes.maxlen : return self.outVal
+        lastTime = self.lastTimes[0]
+        lastTemp = self.lastTemps[0]
+        self.dTemp = (currentTemp - lastTemp) / (thisTime - lastTime)
+        if self.targetTemp:
+            outVal = self.p * (self.targetTemp - self.currentTemp)/self.targetTemp - self.d * self.dTemp / self.targetTemp
+        else:
+            outVal = 0
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
         return self.outVal
 
@@ -55,28 +74,28 @@ class PID():
 
 
 class PizzaServer(Server):
-    topTemp = 0
-    botTemp = 0
-    ambientTemp = 0
-    isOn = 0
-    tempHistT = []
-    tempHistTop = []
-    tempHistBot = []
-    jsonFileName = '/home/pi/piPizza/params.json'
-    topMaxPWM = 0.9
-    botMaxPWM = 0.9
-    topPWM = 0
-    botPWM = 0
-    dirty = 1
-    stopUI = 0
-    pidRunPeriod = 5
-    version = __version__
+    pidCallPeriodS     =    2                                     # How often we call the PID to get new PWM values.
+    topTemp            =    0                                     #
+    botTemp            =    0                                     #
+    ambientTemp        =    0                                     #
+    isOn               =    0                                     # Flag to indicate whether we're on or off
+    tempHistT          =    []                                    # Histories of temps, this is the time values
+    tempHistTop        =    []                                    #
+    tempHistBot        =    []                                    #
+    jsonFileName       =    '/home/pi/piPizza/params.json'        #
+    topMaxPWM          =    0.9                                   #
+    botMaxPWM          =    0.9                                   #
+    topPWM             =    0                                     #
+    botPWM             =    0                                     #
+    dirty              =    1                                     # Flag indicating some values have changed.
+    stopUI             =    0                                     # Flag to prevent updaing the UI.
+    version            =    __version__                           #
 
     def __init__(self):
         super().__init__()
         self.Temps = Temps()
-        self.topPID = PID()
-        self.botPID = PID()
+        self.topPID = PID(self.pidCallPeriodS)
+        self.botPID = PID(self.pidCallPeriodS)
         self.UI = UI(self)
         self.pi = pigpio.pi()  # Connect to local Pi.
         self.pi.set_mode(TopRelay, pigpio.OUTPUT)
@@ -159,7 +178,6 @@ class PizzaServer(Server):
         self.dirty = 1
 
     def processLoop(self):
-        self.lastPIDRunTime = 0
         while 1:
             try:
                 # This can happen when the UI is doing something and it should not be interrupted.
@@ -170,11 +188,9 @@ class PizzaServer(Server):
                 self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
                 self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
                 # Run the PID to compute the new pwm values
-                if time.time() - self.lastPIDRunTime > self.pidRunPeriod:
-                    self.topPWM = self.topPID.getValue(self.topTemp)
-                    self.botPWM = self.botPID.getValue(self.botTemp)
-                    self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
-                    self.lastPIDRunTime = time.time()
+                self.topPWM = self.topPID.getValue(self.topTemp)
+                self.botPWM = self.botPID.getValue(self.botTemp)
+                self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
                 # Set the PWM duty cycle on the relays
                 self.pi.set_PWM_dutycycle(TopRelay, self.botPWM*self.pi.get_PWM_range(TopRelay))
                 self.pi.set_PWM_dutycycle(BotRelay, self.botPWM*self.pi.get_PWM_range(BotRelay))
