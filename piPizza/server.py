@@ -11,6 +11,8 @@ import signal,os
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
 
+__version__ = "1.0.0"
+
 app = Flask(__name__)
 
 TopRelay    = 14
@@ -59,6 +61,7 @@ class PizzaServer(Server):
     botPWM = 0
     dirty = 1
     stopUI = 0
+    version = __version__
 
     def __init__(self):
         super().__init__()

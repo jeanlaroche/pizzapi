@@ -1,11 +1,6 @@
 import PySimpleGUI as sg
 
-from tkinter import *
-from tkinter import messagebox, ttk, font
-from functools import partial
-
 sg.theme("Python")
-
 fontName = "Helvetica"
 
 class UI():
@@ -21,14 +16,13 @@ class UI():
         self.tabPWM = self.initPanelPWM()
         self.tabStatus = self.iniPanelStatus()
         self.tabPID = self.initPanelPID()
-        self.layout = [[sg.TabGroup([[sg.Tab('Main ah ah ah', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
+        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         self.window.set_cursor("none")
 
     def initPanelMain(self):
         fontParams = {'font':(fontName, 16)}
         params = {'size':(10,1),'font':(fontName, 28)}
-        paramsButs = {'size':(9,1),'font':(fontName, 28)}
         self.topTarget = sg.T("Target",**params)
         self.botTarget = sg.T("Target",**params)
         self.topTemp = sg.T("Temp",**params)
@@ -42,15 +36,12 @@ class UI():
         self.botTargetSlider = sg.Slider(**paramsSilders,default_value=self.server.botPID.targetTemp,key='BTS')
         self.tabMain = [
             [sg.Frame('Target temps',layout=[
-            # [sg.Button('Top +',**paramsButs,key='TTU'),sg.Button('Top -',**paramsButs,key='TTD'),self.topTarget],
-            # [sg.Button('Bot +',**paramsButs,key='BTU'), sg.Button('Bot -',**paramsButs,key='BTD'), self.botTarget]
             [self.topTargetSlider,self.topTarget],
             [self.botTargetSlider, self.botTarget]
             ],**fontParams)],
             [sg.Frame('Current temps',layout=[
             [self.topTemp, self.topPWM],
             [self.botTemp, self.botPWM]],**fontParams),self.power],
-#            [self.power]
         ]
         return self.tabMain
 
@@ -64,14 +55,10 @@ class UI():
         self.botMaxPWM = sg.T("Top Max PWM",**params)
         A = sg.Frame('Top Max PWM',
                      [
-                      # [sg.Button('Top +',**params,key='TUM'),sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
-                      # [sg.Button('Bot +',**params,key='BUM'),sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]
                       [sg.Slider(**paramsSilders,key='TMS',default_value  = self.server.topMaxPWM)],
                      ],**fontParams)
         B = sg.Frame('Bot Max PWM',
                      [
-                      # [sg.Button('Top +',**params,key='TUM'),sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
-                      # [sg.Button('Bot +',**params,key='BUM'),sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]
                       [sg.Slider(**paramsSilders,key='BMS',default_value  = self.server.botMaxPWM)]
                      ],**fontParams)
         self.tabPWM = [[A],[B]]
@@ -83,8 +70,6 @@ class UI():
         params.update(fontParams)
         paramsSilders = {'range':(0,10),'resolution':0.01,'orientation':'h','font':(fontName, 20),
                          'enable_events':1,'size':(20,30)}
-        # self.topMaxPWM = sg.T("Top Max PWM",**params)
-        # self.botMaxPWM = sg.T("Top Max PWM",**params)
         A= sg.Frame('PID',
                      [[sg.Frame('Top P',[[sg.Slider(default_value  = self.server.topPID.p, **paramsSilders, key='TP')]]),
                        sg.Frame('Top D',[[sg.Slider(default_value  = self.server.topPID.d, **paramsSilders, key='TD')]])
@@ -101,11 +86,9 @@ class UI():
         self.ipAddress = sg.T("IP",**params)
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
         self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
-        #self.C = sg.Radio("Celcius",0,default=self.useC,key='cel',**params)
-        #self.F = sg.Radio("Fahrenheit",0,default=not self.useC,key='fah',**params)
         self.ambientTemp = sg.T("Ambient",**params)
         self.tabStatus = [
-            [sg.Frame("IP address",[[self.ipAddress]])],
+            [sg.Frame("IP address",[[self.ipAddress]]),sg.Frame("Version",[[sg.T(self.server.version,**params)]])],
             [sg.Frame("Units",[[self.C],[self.F]])],
             [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
             [sg.Button("Show Desktop" if self.no_titlebar else "Hide Disktop",**params,key="maximize"),
@@ -124,8 +107,6 @@ class UI():
 
     def setMaxPWM(self,topMaxPWM,botMaxPWM):
         pass
-        # self.topMaxPWM.update(value=f" {topMaxPWM:.2f}")
-        # self.botMaxPWM.update(value=f" {botMaxPWM:.2f}")
 
     def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp):
         self.topTemp.update(value=f"TOP " + self.cvTemp(topTemp))
@@ -138,10 +119,6 @@ class UI():
 
     def setIPAddress(self,ipAdd):
         self.ipAddress.update(value=ipAdd)
-
-    # find button callback
-    def hello(self):
-      messagebox.showinfo("Hello", "Callback worked!")
 
     def mainLoop(self):
         while True:
@@ -177,9 +154,6 @@ class UI():
                     ret = self.server.runUpdate()
                     sg.popup_ok(ret, font=(fontName, 30), keep_on_top=1)
                     self.server.runUpdate(1)
-            # if event == "Read": self.setTargetTemps(35,56)
-            # if event == "Read": self.setCurTemps(20,25,.8,.9,1)
-            # if event == "Read": self.setIPAddress("192.168.1.100")
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 
