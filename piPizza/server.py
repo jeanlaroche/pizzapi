@@ -94,11 +94,13 @@ class PizzaServer(Server):
 
     def runUpdate(self):
         print("RUN UPDATE")
+        A = ""
         try:
-            A=subprocess.check_output('git pull -u upstream'.split()).decode()
-            print(A)
+            A=subprocess.check_output('git pull upstream'.split()).decode()
         except Exception as e:
-            print("Failed to update",e)
+            A = f"Failed to update: {e}"
+        print(A)
+        return A
 
 
 
@@ -139,34 +141,37 @@ class PizzaServer(Server):
 
     def processLoop(self):
         while 1:
-            if self.stopUI:
-                time.sleep(.5)
-                continue
-            self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
-            self.topPID.isOn = self.isOn
-            self.botPID.isOn = self.isOn
-            self.topPWM = self.topPID.getValue(self.topTemp)
-            self.botPWM = self.botPID.getValue(self.botTemp)
-            self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
-            self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp)
-            if self.dirty:
-                self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
-                self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
-                self.saveJson()
-            # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
-            if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
-                    or round(self.botTemp) != self.tempHistBot[-1]:
-                self.lastHistTime = time.time()
-                curTime = datetime.now()
-                self.tempHistT.append(curTime.isoformat())
-                self.tempHistTop.append(round(self.topTemp))
-                self.tempHistBot.append(round(self.botTemp))
-            curTime = time.localtime()
-            # Erase the temp history every night at 1am.
-            if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
-                self.tempHistTop,self.tempHistBot,self.tempHistT,self.lastHistTime = [],[],[],0
+            try:
+                if self.stopUI:
+                    time.sleep(.5)
+                    continue
+                self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
+                self.topPID.isOn = self.isOn
+                self.botPID.isOn = self.isOn
+                self.topPWM = self.topPID.getValue(self.topTemp)
+                self.botPWM = self.botPID.getValue(self.botTemp)
+                self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
+                self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp)
+                if self.dirty:
+                    self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
+                    self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
+                    self.saveJson()
+                # print(f"TopVal {topVal:.2f} BotVal {botVal:.2f}")
+                if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
+                        or round(self.botTemp) != self.tempHistBot[-1]:
+                    self.lastHistTime = time.time()
+                    curTime = datetime.now()
+                    self.tempHistT.append(curTime.isoformat())
+                    self.tempHistTop.append(round(self.topTemp))
+                    self.tempHistBot.append(round(self.botTemp))
+                curTime = time.localtime()
+                # Erase the temp history every night at 1am.
+                if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
+                    self.tempHistTop,self.tempHistBot,self.tempHistT,self.lastHistTime = [],[],[],0
 
-            self.dirty = 0
+                self.dirty = 0
+            except Exception as e:
+                print("Error in loop",e)
             time.sleep(0.2)
 
 @app.route('/favicon.ico')
