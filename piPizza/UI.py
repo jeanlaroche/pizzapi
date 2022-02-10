@@ -32,7 +32,7 @@ class UI():
         self.botTemp = sg.T("Temp",**params)
         self.topPWM = sg.T("PWM",**params)
         self.botPWM = sg.T("PWM",**params)
-        self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))
+        self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))#,image_filename="/home/pi/piPizza/power.png")
         paramsSilders = {'range':(20,400),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':(25,30)}
         paramsSilders.update(fontParams)
         self.topTargetSlider = sg.Slider(**paramsSilders, default_value=self.server.topPID.targetTemp, key='TTS')
