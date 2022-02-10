@@ -13,7 +13,7 @@ from collections import deque
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
 
-__version__ = "1.0.0 (2/9/2022)"
+__version__ = "1.0.1 (2/10/2022)"
 
 app = Flask(__name__)
 

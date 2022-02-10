@@ -2,13 +2,16 @@ import PySimpleGUI as sg
 
 sg.theme("Python")
 fontName = "Helvetica"
-import os
-
+import os, tkinter
+import matplotlib.pyplot as pl
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2Tk
+import matplotlib.dates as mdates
 class UI():
     def __init__(self,server):
         self.height,self.width = 480,800
         self.server = server
         self.useC = 1
+
 
     def finishInit(self,no_titlebar=1):
         fontParams = {'font':(fontName, 14)}
@@ -17,9 +20,16 @@ class UI():
         self.tabPWM = self.initPanelPWM()
         self.tabStatus = self.iniPanelStatus()
         self.tabPID = self.initPanelPID()
-        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
+        self.tabPlot = self.initPanelPlot()
+        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('PLOT', self.tabPlot), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         self.window.set_cursor("none")
+        self.fig = pl.figure()
+        self.tkcanvas = FigureCanvasTkAgg(self.fig, master=self.canvas.TKCanvas)
+        self.tkcanvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        toolbar = NavigationToolbar2Tk(self.tkcanvas, self.canvas.TKCanvas)
+        toolbar.update()
+        self.tkcanvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         # Force an update from the server.
         #self.server.dirty = 1
 
@@ -88,6 +98,11 @@ class UI():
         self.tabPID = A
         return self.tabPID
 
+    def initPanelPlot(self):
+        self.canvas = sg.Canvas()
+        self.tabPlot = [[self.canvas]]
+        return self.tabPlot
+
     def iniPanelStatus(self):
         params = {'size':(14,1),'font':(fontName, 28)}
         ipAddress = sg.T(self.server.ip,**params)
@@ -127,6 +142,15 @@ class UI():
         self.topTimeToTarget.update(value=topTimeToTarget)
         self.botTimeToTarget.update(value=botTimeToTarget)
 
+    def plotTemps(self,times,topTemps,botTemps):
+        pl.clf()
+        pl.plot(times, topTemps)
+        pl.plot(times, botTemps)
+        pl.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
+        pl.gca().xaxis.set_major_locator(mdates.DayLocator())
+        pl.legend(['Top','Bottom'])
+        self.tkcanvas.draw()
+
     def mainLoop(self):
         while True:
             event, values = self.window.read()
@@ -139,7 +163,9 @@ class UI():
             if event == "TDM": self.server.incMaxPWM(0,-.05)
             if event == "BUM": self.server.incMaxPWM(1,.05)
             if event == "BDM": self.server.incMaxPWM(1,-.05)
-            if event == "Power": self.server.onOff()
+            if event == "Power":
+                #self.plotTemps([0,10],[0,20],[0,40])
+                self.server.onOff()
             if event == "cel": self.useC = 1
             if event == "fah": self.useC = 0
             if event == "cel" or event == 'fah':
