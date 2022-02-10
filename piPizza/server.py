@@ -54,6 +54,7 @@ class PID():
         self.lastTemps.append(currentTemp)
         # We need the deque to be full to compute the dynamics.
         if len(self.lastTimes) < self.lastTimes.maxlen : return self.outVal
+        print("RUN PID")
         lastTime = self.lastTimes[0]
         lastTemp = self.lastTemps[0]
         self.dTemp = (currentTemp - lastTemp) / (thisTime - lastTime)
@@ -66,10 +67,11 @@ class PID():
 
     def timeToTarget(self):
         if self.dTemp == 0: return "Inf"
-        ttt = (self.targetTemp - self.currentTemp)/self.dTemp/60
+        ttt = (self.targetTemp - self.currentTemp)/self.dTemp
         print(self.dTemp,self.targetTemp - self.currentTemp,ttt)
         if ttt < 0 : return "Inf"
-        if ttt < 60: return f"{ttt:.0f} min"
+        if ttt < 60: return f"{ttt:.0f} sec"
+        if ttt < 3600: return f"{ttt/60:.0f} min"
         return "> 1 hour"
 
 
