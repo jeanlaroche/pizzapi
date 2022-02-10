@@ -32,20 +32,26 @@ class UI():
         self.botTemp = sg.T("Temp",**params)
         self.topPWM = sg.T("PWM",**params)
         self.botPWM = sg.T("PWM",**params)
+        self.topTimeToTarget = sg.T("Time to target Top",**params)
+        self.botTimeToTarget = sg.T("Time to target Bot",**params)
         self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))#,image_filename="/home/pi/piPizza/power.png")
         paramsSilders = {'range':(20,400),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':(25,30)}
         paramsSilders.update(fontParams)
         self.topTargetSlider = sg.Slider(**paramsSilders, default_value=self.server.topPID.targetTemp, key='TTS')
         self.botTargetSlider = sg.Slider(**paramsSilders,default_value=self.server.botPID.targetTemp,key='BTS')
-        self.tabMain = [
-            [sg.Frame('Target temps',layout=[
+        A = sg.Frame('Target temps',layout=[
             [self.topTargetSlider,self.topTarget],
             [self.botTargetSlider, self.botTarget]
-            ],**fontParams)],
-            [sg.Frame('Current temps',layout=[
+            ],**fontParams,expand_x=1)
+        B = sg.Frame('Current temps',layout=[
             [self.topTemp, self.topPWM],
-            [self.botTemp, self.botPWM]],**fontParams),self.power],
-        ]
+            [self.botTemp, self.botPWM]],**fontParams,expand_x=1)
+        C = sg.Frame('Time to target',layout=[
+            [self.topTimeToTarget],
+            [self.botTimeToTarget]],**fontParams,expand_x=1)
+        Col = sg.Column([[B],[C]])
+        #self.tabMain = [ [A], [B,self.power], [C]]
+        self.tabMain = [ [A], [Col,self.power]]
         return self.tabMain
 
     def initPanelPWM(self):
@@ -111,7 +117,7 @@ class UI():
     def setMaxPWM(self,topMaxPWM,botMaxPWM):
         pass
 
-    def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp):
+    def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp,topTimeToTarget,botTimeToTarget):
         self.topTemp.update(value=f"TOP " + self.cvTemp(topTemp))
         self.botTemp.update(value=f"BOT " + self.cvTemp(botTemp))
         self.topPWM.update(value=f"PWM {topPWM:.2f}")
@@ -119,6 +125,8 @@ class UI():
         self.power.update(text = "TURN POWER OFF" if isOnOff else "TURN POWER ON")
         self.power.update(button_color = ('red',None) if isOnOff else ('black',None))
         self.ambientTemp.update(value = self.cvTemp(ambientTemp))
+        self.topTimeToTarget.update(values=topTimeToTarget)
+        self.botTimeToTarget.update(values=botTimeToTarget)
 
     def mainLoop(self):
         while True:
@@ -172,6 +180,8 @@ if __name__ == '__main__':
         botPID = P()
         topMaxPWM=1
         botMaxPWM=.5
+        ip='192.168.1.110'
+        version='ah ah ah'
         pass
     ui = UI(S)
     ui.finishInit()

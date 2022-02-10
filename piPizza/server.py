@@ -45,6 +45,12 @@ class PID():
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
         return self.outVal
 
+    def timeToTarget(self):
+        if self.dTemp == 0: return "Inf"
+        ttt = (self.targetTemp - self.currentTemp)/self.dTemp/60
+        if ttt < 0 : return "Inf"
+        if ttt < 60: return f"{ttt:.0f} min"
+        return "> 1 hour"
 
 
 class PizzaServer(Server):
@@ -168,7 +174,8 @@ class PizzaServer(Server):
                 self.pi.set_PWM_dutycycle(TopRelay, self.botPWM*self.pi.get_PWM_range(TopRelay))
                 self.pi.set_PWM_dutycycle(BotRelay, self.botPWM*self.pi.get_PWM_range(BotRelay))
                 # Reflect new temps and pwm on UI
-                self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp)
+                self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp,
+                                    self.topPID.timeToTarget(),self.botPID.timeToTarget())
                 if self.dirty:
                     self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
                     self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
@@ -219,7 +226,8 @@ def getTemps():
     return jsonify(topTemp = server.topTemp,botTemp=server.botTemp,topTarget=server.topPID.targetTemp,
                    botTarget=server.botPID.targetTemp,ambientTemp=server.ambientTemp,onOff = _onOff(),
                    topPWM=round(server.topPWM,2),botPWM=round(server.botPWM,2),
-                   dataLen = len(server.tempHistT),time=time.ctime(time.time()))
+                   dataLen = len(server.tempHistT),time=time.ctime(time.time()),
+                   topTimeToTarget=server.topPID.timeToTarget(),botTimeToTarget=server.botPID.timeToTarget())
 
 @app.route("/getTempHist")
 def getTempHist():
