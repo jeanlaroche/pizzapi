@@ -40,8 +40,8 @@ class UI():
             [sg.Frame('Target temps',layout=[
             # [sg.Button('Top +',**paramsButs,key='TTU'),sg.Button('Top -',**paramsButs,key='TTD'),self.topTarget],
             # [sg.Button('Bot +',**paramsButs,key='BTU'), sg.Button('Bot -',**paramsButs,key='BTD'), self.botTarget]
-            [sg.Slider(**paramsSilders,key='TTS'),self.topTarget],
-            [sg.Slider(**paramsSilders,key='BTS'), self.botTarget]
+            [sg.Slider(**paramsSilders,default_value=self.server.topPID.targetTemp,key='TTS'),self.topTarget],
+            [sg.Slider(**paramsSilders,default_value=self.server.botPID.targetTemp,key='BTS'), self.botTarget]
             ],**fontParams)],
             [sg.Frame('Current temps',layout=[
             [self.topTemp, self.topPWM],
@@ -62,8 +62,8 @@ class UI():
                      [
                       # [sg.Button('Top +',**params,key='TUM'),sg.Button('Top -',**params,key='TDM'),self.topMaxPWM],
                       # [sg.Button('Bot +',**params,key='BUM'),sg.Button('Bot -',**params,key='BDM'),self.botMaxPWM]
-                      [sg.Slider(**paramsSilders,key='TMS'),self.topMaxPWM],
-                      [sg.Slider(**paramsSilders,key='BMS'),self.botMaxPWM]
+                      [sg.Slider(**paramsSilders,key='TMS',default_value  = self.server.topMaxPWM),self.topMaxPWM],
+                      [sg.Slider(**paramsSilders,key='BMS',default_value  = self.server.botMaxPWM),self.botMaxPWM]
                      ],**fontParams)
         paramsSilders['range'] = (0,10)
         B = sg.Frame('PID',
@@ -157,9 +157,12 @@ if __name__ == '__main__':
     class P:
         p=0
         d=1
+        targetTemp = 50
     class S:
         topPID = P()
         botPID = P()
+        topMaxPWM=1
+        botMaxPWM=.5
         pass
     ui = UI(S)
     ui.finishInit()
