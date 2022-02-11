@@ -59,8 +59,9 @@ class PID():
         lastTime = self.lastTimes[0]
         lastTemp = self.lastTemps[0]
         self.dTemp = (currentTemp - lastTemp) / (thisTime - lastTime)
+        # "normalizing" the temp diff and slope relative to 200 (C).
         if self.targetTemp:
-            outVal = self.p * (self.targetTemp - self.currentTemp)/self.targetTemp - self.d * self.dTemp / self.targetTemp
+            outVal = self.p * (self.targetTemp - self.currentTemp)/200. - self.d * self.dTemp / 200
         else:
             outVal = 0
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
@@ -192,6 +193,8 @@ class PizzaServer(Server):
                 # Get temps from the thermocouples
                 self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
                 self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
+
+                self.botTemp = self.topPID.dTemp*100
                 # Run the PID to compute the new pwm values
                 self.topPWM = self.topPID.getValue(self.topTemp)
                 self.botPWM = self.botPID.getValue(self.botTemp)
@@ -207,14 +210,14 @@ class PizzaServer(Server):
                     self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
                     self.saveJson()
                 # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
-                if time.time() - self.lastHistTime > 60 or round(self.topTemp) != self.tempHistTop[-1]\
-                        or round(self.botTemp) != self.tempHistBot[-1]:
+                if time.time() - self.lastHistTime > 60 or round(self.topTemp) != round(self.tempHistTop[-1])\
+                        or round(self.botTemp) != round(self.tempHistBot[-1]):
                     self.lastHistTime = time.time()
                     curTime = datetime.now()
                     self.tempHistT.append(curTime.isoformat())
-                    self.tempHistTop.append(round(self.topTemp))
-                    self.tempHistBot.append(round(self.botTemp))
-                self.UI.plotTemps(self.tempHistT,self.tempHistTop,self.tempHistBot)
+                    self.tempHistTop.append(self.topTemp)
+                    self.tempHistBot.append(self.botTemp)
+                self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Delta'])
                 curTime = time.localtime()
                 # Erase the temp history every night at 1am.
                 if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
@@ -243,7 +246,7 @@ def kg():
 
 @app.route("/")
 def Index():
-    return server.Index()
+    return server.Index(pageFile='index.html')
 
 def _onOff():
     return "OVEN IS ON" if server.isOn else "OVEN IS OFF"
@@ -254,7 +257,7 @@ def getTemps():
                    botTarget=server.botPID.targetTemp,ambientTemp=server.ambientTemp,onOff = _onOff(),
                    topPWM=round(server.topPWM,2),botPWM=round(server.botPWM,2),
                    dataLen = len(server.tempHistT),time=time.ctime(time.time()),
-                   topTimeToTarget=server.topPID.timeToTarget(),botTimeToTarget=server.botPID.timeToTarget())
+                   topTimeToTarget=server.topPID.timeToTarget,botTimeToTarget=server.botPID.timeToTarget)
 
 @app.route("/getTempHist")
 def getTempHist():

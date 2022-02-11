@@ -144,25 +144,23 @@ class UI():
         self.topTimeToTarget.update(value=topTimeToTarget)
         self.botTimeToTarget.update(value=botTimeToTarget)
 
-    def plotTemps(self,times,topTemps,botTemps):
+    def plotTemps(self,times,temps,legend):
         if len(times) == self.lastPlotLen: return
         self.lastPlotLen = len(times)
-        print("PLOT1",len(times))
         if len(times) < 4: return
         self.canDraw = 0
         pl.clf()
         X = mdates.datestr2num(times)
-        if not self.useC:
-            topTemps = [1.8*t+32 for t in topTemps]
-            botTemps = [1.8*t+32 for t in botTemps]
-        pl.plot(X, topTemps)
-        pl.plot(X, botTemps)
+        for ii in range(len(temps)):
+            if not self.useC:
+                temps[ii] = [1.8 * t + 32 for t in temps[ii]]
+            pl.plot(X, temps[ii])
         locator = mdates.MinuteLocator(interval=10)
         pl.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
         #pl.gca().xaxis.set_major_formatter(mdates.AutoDateFormatter(locator))
         pl.gca().xaxis.set_major_locator(locator)
         # pl.gca().xaxis.set_major_locator(mdates.DayLocator())
-        pl.legend(['Top','Bottom'])
+        pl.legend(legend)
         pl.grid()
         self.canDraw = 1
 
