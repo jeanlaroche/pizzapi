@@ -90,13 +90,36 @@ class UI():
         params.update(fontParams)
         paramsSilders = {'range':(0,10),'resolution':0.01,'orientation':'h','font':(fontName, 20),
                          'enable_events':1,'size':(20,30)}
-        A= [[sg.Frame('Top P',[[sg.Slider(default_value  = self.server.topPID.p, **paramsSilders, key='TP')]],**fontParams),
-                       sg.Frame('Top D',[[sg.Slider(default_value  = self.server.topPID.d, **paramsSilders, key='TD')]],**fontParams)
-                       ],
-                     [
-                       sg.Frame('Bot P',[[sg.Slider(default_value  = self.server.botPID.p, **paramsSilders, key='BP')]],**fontParams),
-                       sg.Frame('Bot D',[[sg.Slider(default_value  = self.server.botPID.d, **paramsSilders, key='BD')]],**fontParams)
-                     ]]
+        topKP = sg.Slider(default_value=self.server.topPID.kP, **paramsSilders, key='TP')
+        topKD = sg.Slider(default_value=self.server.topPID.kD, **paramsSilders, key='TD')
+        topKI = sg.Slider(default_value=self.server.topPID.kI, **paramsSilders, key='TI')
+        botKP = sg.Slider(default_value=self.server.botPID.kP, **paramsSilders, key='BP')
+        botKD = sg.Slider(default_value=self.server.botPID.kD, **paramsSilders, key='BD')
+        botKI = sg.Slider(default_value=self.server.botPID.kI, **paramsSilders, key='BI')
+        # A= [
+        #     [sg.Frame('Top kP',[[topKP]],**fontParams),
+        #     sg.Frame('Top kD',[[topKD]],**fontParams),
+        #     sg.Frame('Top kI',[[topKI]],**fontParams)
+        #     ],
+        #     [
+        #     sg.Frame('Bot kP',[[botKP]],**fontParams),
+        #     sg.Frame('Bot kD',[[botKD]],**fontParams),
+        #     sg.Frame('Bot kI',[[botKI]],**fontParams)
+        #      ]
+        # ]
+        A= [
+            [sg.Frame('Top kP',[[topKP]],**fontParams),
+            sg.Frame('Bot kP',[[botKP]],**fontParams),
+             ],
+            [
+            sg.Frame('Top kD',[[topKD]],**fontParams),
+            sg.Frame('Bot kD',[[botKD]],**fontParams),
+            ],
+            [
+            sg.Frame('Top kI',[[topKI]],**fontParams),
+            sg.Frame('Bot kI',[[botKI]],**fontParams),
+            ]
+        ]
         self.tabPID = A
         return self.tabPID
 
@@ -195,8 +218,8 @@ class UI():
             if event == "fah": self.useC = 0
             if event == "cel" or event == 'fah':
                 self.server.dirty = 1
-            if event in ['TP','TD','BP','BD']:
-                self.server.setPID((values[i] for i in ['TP','TD','BP','BD']))
+            if event in ['TP','TD','BP','BD','TI','BI']:
+                self.server.setPID((values[i] for i in ['TP','TD','TI','BP','BD','BI']))
             if event in ['TMS','BMS']:
                 self.server.setMaxPWM((values[i] for i in ['TMS','BMS']))
             if event in ['TTS','BTS']:

@@ -25,11 +25,15 @@ class PID():
     targetTemp = 20
     currentTemp = 0
     # PID Parameters.
-    p = 10              # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
-    d = 1               # Differential factor. 100 means that a 1% delta per second between target and current -> full PWM
+    kP = 10              # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
+    kD = 0               # Differential factor. 100 means that a 1% delta per second between target and current
+    kI = 0
+    # -> full PWM
     # Update parameters
     smoothPeriodS = 20  # The dynamics (slopes) are computed over this duration.
-    dTemp = 0
+    dTemp = 0           # Slope
+    iTemp = 0           # Integration
+    iForget = 0.9       # Leaky integration factor for iTemp
     outVal = 0
     lastTime = 0
     isOn = 0
@@ -58,10 +62,14 @@ class PID():
         if len(self.lastTimes) < self.lastTimes.maxlen : return self.outVal
         lastTime = self.lastTimes[0]
         lastTemp = self.lastTemps[0]
-        self.dTemp = (currentTemp - lastTemp) / (thisTime - lastTime)
         # "normalizing" the temp diff and slope relative to 200 (C).
+        normTemp = 200
+        self.dTemp = (currentTemp - lastTemp) / (thisTime - lastTime)
+        self.iTemp = self.iForget*self.iTemp + (currentTemp - lastTemp) * (thisTime - lastTime)
         if self.targetTemp:
-            outVal = self.p * (self.targetTemp - self.currentTemp)/200. - self.d * self.dTemp / 200
+            outVal = self.kP * (self.targetTemp - self.currentTemp)/normTemp
+            outVal += - self.kD * self.dTemp / normTemp
+            outVal += self.kI * self.iTemp / normTemp
         else:
             outVal = 0
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
@@ -176,7 +184,7 @@ class PizzaServer(Server):
         self.dirty = 1
 
     def setPID(self,vals):
-        self.topPID.p,self.topPID.d,self.botPID.p,self.botPID.d = vals
+        self.topPID.kP,self.topPID.kD,self.topPID.kI,self.botPID.kP,self.botPID.kD,self.botPID.kI = vals
         self.dirty = 1
 
     def setMaxPWM(self,vals):
