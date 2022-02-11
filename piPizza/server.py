@@ -214,6 +214,7 @@ class PizzaServer(Server):
                     self.tempHistT.append(curTime.isoformat())
                     self.tempHistTop.append(round(self.topTemp))
                     self.tempHistBot.append(round(self.botTemp))
+                self.UI.plotTemps(self.tempHistT,self.tempHistTop,self.tempHistBot)
                 curTime = time.localtime()
                 # Erase the temp history every night at 1am.
                 if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:

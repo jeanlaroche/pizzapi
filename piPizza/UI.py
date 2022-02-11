@@ -11,6 +11,7 @@ class UI():
         self.height,self.width = 480,800
         self.server = server
         self.useC = 1
+        self.lastPlotLen = 0
 
 
     def finishInit(self,no_titlebar=1):
@@ -23,8 +24,8 @@ class UI():
         self.tabPlot = self.initPanelPlot()
         self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('PLOT', self.tabPlot), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
-        self.window.set_cursor("none")
-        self.fig = pl.figure()
+        # self.window.set_cursor("none")
+        self.fig = pl.figure(dpi=100.,figsize=(6,3))
         self.tkcanvas = FigureCanvasTkAgg(self.fig, master=self.canvas.TKCanvas)
         self.tkcanvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         toolbar = NavigationToolbar2Tk(self.tkcanvas, self.canvas.TKCanvas)
@@ -143,12 +144,20 @@ class UI():
         self.botTimeToTarget.update(value=botTimeToTarget)
 
     def plotTemps(self,times,topTemps,botTemps):
+        if len(times) == self.lastPlotLen: return
+        self.lastPlotLen = len(times)
         pl.clf()
-        pl.plot(times, topTemps)
-        pl.plot(times, botTemps)
-        pl.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
-        pl.gca().xaxis.set_major_locator(mdates.DayLocator())
+        X = mdates.datestr2num(times)
+        pl.plot(X, topTemps)
+        pl.plot(X, botTemps)
+        locator = mdates.MinuteLocator(interval=10)
+        pl.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+
+        #pl.gca().xaxis.set_major_formatter(mdates.AutoDateFormatter(locator))
+        pl.gca().xaxis.set_major_locator(locator)
+        # pl.gca().xaxis.set_major_locator(mdates.DayLocator())
         pl.legend(['Top','Bottom'])
+        pl.grid()
         self.tkcanvas.draw()
 
     def mainLoop(self):
@@ -164,8 +173,8 @@ class UI():
             if event == "BUM": self.server.incMaxPWM(1,.05)
             if event == "BDM": self.server.incMaxPWM(1,-.05)
             if event == "Power":
-                #self.plotTemps([0,10],[0,20],[0,40])
-                self.server.onOff()
+                self.plotTemps(["2022-02-10T15:30:30.317823","2022-02-10T15:40:36.317823","2022-02-10T15:50:36.317823"],[20,21,22],[24,25,26])
+                #self.server.onOff()
             if event == "cel": self.useC = 1
             if event == "fah": self.useC = 0
             if event == "cel" or event == 'fah':
