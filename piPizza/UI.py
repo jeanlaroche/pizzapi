@@ -12,6 +12,7 @@ class UI():
         self.server = server
         self.useC = 1
         self.lastPlotLen = 0
+        self.canDraw = 0
 
 
     def finishInit(self,no_titlebar=1):
@@ -148,8 +149,12 @@ class UI():
         self.lastPlotLen = len(times)
         print("PLOT1",len(times))
         if len(times) < 4: return
+        self.canDraw = 0
         pl.clf()
         X = mdates.datestr2num(times)
+        if not self.useC:
+            topTemps = [1.8*t+32 for t in topTemps]
+            botTemps = [1.8*t+32 for t in botTemps]
         pl.plot(X, topTemps)
         pl.plot(X, botTemps)
         locator = mdates.MinuteLocator(interval=10)
@@ -159,10 +164,13 @@ class UI():
         # pl.gca().xaxis.set_major_locator(mdates.DayLocator())
         pl.legend(['Top','Bottom'])
         pl.grid()
+        self.canDraw = 1
 
     def draw(self):
+        if not self.canDraw: return
         try:
             self.tkcanvas.draw()
+            self.canDraw = 0
         except Exception as e:
             pass
 
