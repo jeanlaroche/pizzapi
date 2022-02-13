@@ -13,6 +13,7 @@ class UI():
         self.useC = 1
         self.lastPlotLen = 0
         self.canDraw = 0
+        self.processLoop = None
 
 
     def finishInit(self,no_titlebar=0):
@@ -178,7 +179,7 @@ class UI():
         self.times = times
         self.temps = temps
         self.legend = legend
-        self.canDraw = len(self.times) >= 2
+        if len(self.times) >= 2: self.draw()
 
     def draw(self):
         try:
@@ -190,24 +191,22 @@ class UI():
                     temps[ii] = [1.8 * t + 32 for t in temps[ii]]
                 pl.plot(X, temps[ii])
             #locator = mdates.MinuteLocator(interval=10)
-            locator = mdates.MinuteLocator()
+            locator = mdates.AutoDateLocator(interval_multiples=True,maxticks=5,minticks=2)
+            #locator = mdates.MinuteLocator()
             pl.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
-            #pl.gca().xaxis.set_major_formatter(mdates.AutoDateFormatter(locator))
             pl.gca().xaxis.set_major_locator(locator)
-            # pl.gca().xaxis.set_major_locator(mdates.DayLocator())
             pl.legend(self.legend)
             pl.grid()
             self.tkcanvas.draw()
-            self.canDraw = 0
         except Exception as e:
             print(e)
             pass
 
     def mainLoop(self):
         while True:
-            event, values = self.window.read(timeout = 2000,timeout_key=None)
+            event, values = self.window.read(timeout = 100,timeout_key=None)
             if event is None:
-                if self.canDraw: self.draw()
+                if self.processLoop is not None: self.processLoop()
                 continue
             print(event, values)
             if event == "TTU": self.server.incTemp(0,5)
@@ -219,8 +218,6 @@ class UI():
             if event == "BUM": self.server.incMaxPWM(1,.05)
             if event == "BDM": self.server.incMaxPWM(1,-.05)
             if event == "Power":
-                #self.tkcanvas.draw()
-                #self.plotTemps(["2022-02-10T15:30:30.317823","2022-02-10T15:40:36.317823","2022-02-10T15:50:36.317823"],[20,21,22],[24,25,26])
                 self.server.onOff()
             if event == "cel": self.useC = 1
             if event == "fah": self.useC = 0
@@ -233,10 +230,8 @@ class UI():
             if event in ['TTS','BTS']:
                 self.server.setTemps((values[i] for i in ['TTS','BTS']))
             if event == "maximize":
-                self.server.stopUI = 1
                 self.window.close()
                 self.finishInit(no_titlebar=1-self.no_titlebar)
-                self.server.stopUI = 0
             if event == "update":
                 ret = sg.popup_ok_cancel("Update software?",font=(fontName,30),keep_on_top=1)
                 if ret == "OK":

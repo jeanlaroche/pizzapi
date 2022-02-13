@@ -114,7 +114,6 @@ class PizzaServer(Server):
     topPWM             =    0                                     #
     botPWM             =    0                                     #
     dirty              =    1                                     # Flag indicating some values have changed.
-    stopUI             =    0                                     # Flag to prevent updaing the UI.
     version            =    __version__                           #
 
     def __init__(self):
@@ -138,10 +137,8 @@ class PizzaServer(Server):
         self.lastHistTime = 0
         self.isOn = 0
         self.dirty = 1
-        self.stopUI = 0
         self.lastOnTime = time.time()
         self.ip = ""
-        self.UI.canDraw = 0
 
         try:
             A=subprocess.check_output(['/sbin/ifconfig','wlan0']).decode()
@@ -149,7 +146,7 @@ class PizzaServer(Server):
         except:
             pass
         self.UI.finishInit()
-        runThreaded(self.processLoop)
+        self.UI.processLoop = self.processLoop
 
     def __delete__(self):
         self.pi.stop()
@@ -213,7 +210,7 @@ class PizzaServer(Server):
 
     def onTime(self):
         onT = time.time()-self.lastOnTime
-        return f"{onT:2.0f}s" if onT < 60 else f"{onT/60:2.0f}:{onT%60:2.0f}"
+        return f"{onT:2.0f}s" if onT < 60 else f"{onT/60:-02.0f}:{onT%60:2.0f}"
 
     def clearHist(self):
         self.lastHistTime = 0
@@ -222,51 +219,45 @@ class PizzaServer(Server):
         self.tempHistBot = []
 
     def processLoop(self):
-        while 1:
-            try:
-                # This can happen when the UI is doing something and it should not be interrupted.
-                if self.stopUI:
-                    time.sleep(.5)
-                    continue
-                # Get temps from the thermocouples
-                self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
-                self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
+        try:
+            # Get temps from the thermocouples
+            self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
+            self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
 
-                self.botTemp = self.topPID.dTemp*100
-                # Run the PID to compute the new pwm values
-                self.topPWM = self.topPID.getValue(self.topTemp)
-                #self.botPWM = self.botPID.getValue(self.botTemp)
-                self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
-                # Set the PWM duty cycle on the relays
-                self.pi.set_PWM_dutycycle(TopRelay, self.topPWM*self.pi.get_PWM_range(TopRelay))
-                self.pi.set_PWM_dutycycle(BotRelay, self.botPWM*self.pi.get_PWM_range(BotRelay))
-                # Reflect new temps and pwm on UI
-                self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp,
-                                    self.topPID.timeToTarget,self.botPID.timeToTarget,self.onTime())
-                self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
-                self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
-                if self.dirty:
-                    self.saveJson()
-                # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
-                if time.time() - self.lastHistTime > 60 or round(self.topTemp) != round(self.tempHistTop[-1])\
-                        or round(self.botTemp) != round(self.tempHistBot[-1]):
-                    self.lastHistTime = time.time()
-                    curTime = datetime.now()
-                    self.tempHistT.append(curTime.isoformat())
-                    self.tempHistTop.append(self.topTemp)
-                    self.tempHistBot.append(self.botTemp)
-                self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Delta'])
-                curTime = time.localtime()
-                # Erase the temp history every night at 1am.
-                if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
-                    self.tempHistTop,self.tempHistBot,self.tempHistT,self.lastHistTime = [],[],[],0
+            self.botTemp = self.topPID.dTemp*100
+            # Run the PID to compute the new pwm values
+            self.topPWM = self.topPID.getValue(self.topTemp)
+            #self.botPWM = self.botPID.getValue(self.botTemp)
+            self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
+            # Set the PWM duty cycle on the relays
+            self.pi.set_PWM_dutycycle(TopRelay, self.topPWM*self.pi.get_PWM_range(TopRelay))
+            self.pi.set_PWM_dutycycle(BotRelay, self.botPWM*self.pi.get_PWM_range(BotRelay))
+            # Reflect new temps and pwm on UI
+            self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp,
+                                self.topPID.timeToTarget,self.botPID.timeToTarget,self.onTime())
+            self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
+            self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
+            if self.dirty:
+                self.saveJson()
+            # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
+            if time.time() - self.lastHistTime > 60 or round(self.topTemp) != round(self.tempHistTop[-1])\
+                    or round(self.botTemp) != round(self.tempHistBot[-1]):
+                self.lastHistTime = time.time()
+                curTime = datetime.now()
+                self.tempHistT.append(curTime.isoformat())
+                self.tempHistTop.append(self.topTemp)
+                self.tempHistBot.append(self.botTemp)
+            self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Delta'])
+            curTime = time.localtime()
+            # Erase the temp history every night at 1am.
+            if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
+                self.tempHistTop,self.tempHistBot,self.tempHistT,self.lastHistTime = [],[],[],0
 
-                self.dirty = 0
-            except Exception as e:
-                import traceback
-                traceback.print_exc(limit=4)
-                print("Error in loop",e)
-            time.sleep(0.2)
+            self.dirty = 0
+        except Exception as e:
+            import traceback
+            traceback.print_exc(limit=4)
+            print("Error in loop",e)
 
 @app.route('/favicon.ico')
 def favicon():
