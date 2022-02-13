@@ -24,7 +24,8 @@ class UI():
         self.tabStatus = self.iniPanelStatus()
         self.tabPID = self.initPanelPID()
         self.tabPlot = self.initPanelPlot()
-        self.layout = [[sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('PLOT', self.tabPlot), sg.Tab('Status', self.tabStatus)]],**fontParams)]]
+        self.tabGroup = sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('PLOT', self.tabPlot), sg.Tab('Status', self.tabStatus)]],**fontParams)
+        self.layout = [[self.tabGroup]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         # self.window.set_cursor("none")
         self.fig = pl.figure(dpi=100.,figsize=(7,3.5))
@@ -92,7 +93,7 @@ class UI():
         fontParams = {'font':(fontName, 16)}
         params = {'size':(15,1)}
         params.update(fontParams)
-        paramsSilders = {'range':(0,10),'resolution':0.01,'orientation':'h','font':(fontName, 20),
+        paramsSilders = {'range':(0,4),'resolution':0.01,'orientation':'h','font':(fontName, 20),
                          'enable_events':1,'size':(20,30)}
         topKP = sg.Slider(default_value=self.server.topPID.kP, **paramsSilders, key='TP')
         topKD = sg.Slider(default_value=self.server.topPID.kD, **paramsSilders, key='TD')
@@ -152,14 +153,14 @@ class UI():
     def cvTemp(self,temp):
         return f" {temp:.0f} C" if self.useC else f" {temp*1.8+32:.0f} F"
 
-    def setTargetTemps(self,topTemp,botTemp):
+    def setTargetTemps(self,setSliders = 1):
+        topTemp = self.server.topPID.targetTemp
+        botTemp = self.server.botPID.targetTemp
         self.topTarget.update(value=self.cvTemp(topTemp))
         self.botTarget.update(value=self.cvTemp(botTemp))
-        self.topTargetSlider.update(value=topTemp)
-        self.botTargetSlider.update(value=botTemp)
-
-    def setMaxPWM(self,topMaxPWM,botMaxPWM):
-        pass
+        if setSliders:
+            self.topTargetSlider.update(value=topTemp)
+            self.botTargetSlider.update(value=botTemp)
 
     def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp,topTimeToTarget,botTimeToTarget,onTime):
         self.topTemp.update(value=f"TOP " + self.cvTemp(topTemp))
@@ -174,12 +175,14 @@ class UI():
         self.onTime.update(value=onTime)
 
     def plotTemps(self,times,temps,legend):
-        if len(times) == self.lastPlotLen: return
+        if len(times) == self.lastPlotLen or self.tabGroup.get() != "PLOT": return
+        print("PLOT",self.tabGroup.get())
         self.lastPlotLen = len(times)
         self.times = times
         self.temps = temps
         self.legend = legend
         if len(self.times) >= 2: self.draw()
+        print("PLOT DONE")
 
     def draw(self):
         try:
@@ -209,14 +212,6 @@ class UI():
                 if self.processLoop is not None: self.processLoop()
                 continue
             print(event, values)
-            if event == "TTU": self.server.incTemp(0,5)
-            if event == "TTD": self.server.incTemp(0,-5)
-            if event == "BTU": self.server.incTemp(1,5)
-            if event == "BTD": self.server.incTemp(1,-5)
-            if event == "TUM": self.server.incMaxPWM(0,.05)
-            if event == "TDM": self.server.incMaxPWM(0,-.05)
-            if event == "BUM": self.server.incMaxPWM(1,.05)
-            if event == "BDM": self.server.incMaxPWM(1,-.05)
             if event == "Power":
                 self.server.onOff()
             if event == "cel": self.useC = 1
@@ -229,6 +224,7 @@ class UI():
                 self.server.setMaxPWM((values[i] for i in ['TMS','BMS']))
             if event in ['TTS','BTS']:
                 self.server.setTemps((values[i] for i in ['TTS','BTS']))
+                self.setTargetTemps(setSliders=0)
             if event == "maximize":
                 self.window.close()
                 self.finishInit(no_titlebar=1-self.no_titlebar)

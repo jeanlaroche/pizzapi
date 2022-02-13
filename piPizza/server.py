@@ -71,10 +71,10 @@ class PID():
         # Clamp dTemp, units are C per seconds.
         self.dTemp = min(10,max(-10,self.dTemp))
         dTemp,iTemp = self.dTemp,self.iTemp
-        # No integration if PID is not on or we're above target. If in that range, no dTerm.
+        # No integration if PID is not on or we're above target or we're too far from it.
         if abs(self.targetTemp - self.currentTemp) > self.iTermBound * self.targetTemp:
             iTemp = 0
-        if self.currentTemp > self.targetTemp:
+        if self.currentTemp > self.targetTemp or not self.isOn:
             iTemp = 0
         if self.targetTemp:
             pTerm = self.kP * (self.targetTemp - self.currentTemp)/normTemp
@@ -210,7 +210,7 @@ class PizzaServer(Server):
 
     def onTime(self):
         onT = time.time()-self.lastOnTime
-        return f"{onT:2.0f}s" if onT < 60 else f"{onT/60:-02.0f}:{onT%60:2.0f}"
+        return f"{onT:2.0f}s" if onT < 60 else f"{onT/60:-02.0f}:{onT%60:-02.0f}"
 
     def clearHist(self):
         self.lastHistTime = 0
@@ -235,8 +235,6 @@ class PizzaServer(Server):
             # Reflect new temps and pwm on UI
             self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp,
                                 self.topPID.timeToTarget,self.botPID.timeToTarget,self.onTime())
-            self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
-            self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
             if self.dirty:
                 self.saveJson()
             # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
@@ -306,12 +304,14 @@ def onOff():
 def incTopTemp(param1):
     print("incTopTemp",param1)
     server.topPID.targetTemp += param1
+    server.UI.setTargetTemps()
     server.dirty = 1
     return jsonify(topTarget=server.topPID.targetTemp)
 
 @app.route("/incBotTemp/<int(signed=True):param1>")
 def incBotTemp(param1):
     server.botPID.targetTemp += param1
+    server.UI.setTargetTemps()
     server.dirty = 1
     return jsonify(botTarget=server.botPID.targetTemp)
 
