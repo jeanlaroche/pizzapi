@@ -15,7 +15,7 @@ class UI():
         self.canDraw = 0
 
 
-    def finishInit(self,no_titlebar=1):
+    def finishInit(self,no_titlebar=0):
         fontParams = {'font':(fontName, 14)}
         self.no_titlebar = no_titlebar
         self.tabMain = self.initPanelMain()
@@ -44,6 +44,7 @@ class UI():
         self.botTemp = sg.T("Temp",**params)
         self.topPWM = sg.T("PWM",**params)
         self.botPWM = sg.T("PWM",**params)
+        self.onTime = sg.T("OnTime",**params)
         self.topTimeToTarget = sg.T("Time to target Top",**params)
         self.botTimeToTarget = sg.T("Time to target Bot",**params)
         self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))#,image_filename="/home/pi/piPizza/power.png")
@@ -60,9 +61,11 @@ class UI():
             [self.botTemp, self.botPWM]],**fontParams,expand_x=1)
         C = sg.Frame('Time to target',layout=[
             [self.topTimeToTarget,self.botTimeToTarget]],**fontParams,expand_x=1)
+        D = sg.Frame('Time since last on',layout=[[self.onTime]],**fontParams,expand_x=1)
+
         Col = sg.Column([[B],[C]])
         #self.tabMain = [ [A], [B,self.power], [C]]
-        self.tabMain = [ [A], [Col,self.power]]
+        self.tabMain = [ [A], [Col,sg.Column([[self.power],[D]])]]
         return self.tabMain
 
     def initPanelPWM(self):
@@ -124,8 +127,9 @@ class UI():
         return self.tabPID
 
     def initPanelPlot(self):
+        params = {'size':(5,1),'font':(fontName, 16)}
         self.canvas = sg.Canvas()
-        self.tabPlot = [[self.canvas]]
+        self.tabPlot = [[self.canvas],[sg.Button("clear",**params)]]
         return self.tabPlot
 
     def iniPanelStatus(self):
@@ -156,7 +160,7 @@ class UI():
     def setMaxPWM(self,topMaxPWM,botMaxPWM):
         pass
 
-    def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp,topTimeToTarget,botTimeToTarget):
+    def setCurTemps(self,topTemp,botTemp,topPWM,botPWM,isOnOff,ambientTemp,topTimeToTarget,botTimeToTarget,onTime):
         self.topTemp.update(value=f"TOP " + self.cvTemp(topTemp))
         self.botTemp.update(value=f"BOT " + self.cvTemp(botTemp))
         self.topPWM.update(value=f"PWM {topPWM:.2f}")
@@ -166,40 +170,44 @@ class UI():
         self.ambientTemp.update(value = self.cvTemp(ambientTemp))
         self.topTimeToTarget.update(value=topTimeToTarget)
         self.botTimeToTarget.update(value=botTimeToTarget)
+        self.onTime.update(value=onTime)
 
     def plotTemps(self,times,temps,legend):
         if len(times) == self.lastPlotLen: return
         self.lastPlotLen = len(times)
-        if len(times) < 4: return
-        self.canDraw = 0
-        pl.clf()
-        X = mdates.datestr2num(times)
-        for ii in range(len(temps)):
-            if not self.useC:
-                temps[ii] = [1.8 * t + 32 for t in temps[ii]]
-            pl.plot(X, temps[ii])
-        locator = mdates.MinuteLocator(interval=10)
-        pl.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
-        #pl.gca().xaxis.set_major_formatter(mdates.AutoDateFormatter(locator))
-        pl.gca().xaxis.set_major_locator(locator)
-        # pl.gca().xaxis.set_major_locator(mdates.DayLocator())
-        pl.legend(legend)
-        pl.grid()
-        self.canDraw = 1
+        self.times = times
+        self.temps = temps
+        self.legend = legend
+        self.canDraw = len(self.times) >= 2
 
     def draw(self):
-        if not self.canDraw: return
         try:
+            pl.clf()
+            X = mdates.datestr2num(self.times)
+            for ii in range(len(self.temps)):
+                temps = self.temps
+                if not self.useC:
+                    temps[ii] = [1.8 * t + 32 for t in temps[ii]]
+                pl.plot(X, temps[ii])
+            #locator = mdates.MinuteLocator(interval=10)
+            locator = mdates.MinuteLocator()
+            pl.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+            #pl.gca().xaxis.set_major_formatter(mdates.AutoDateFormatter(locator))
+            pl.gca().xaxis.set_major_locator(locator)
+            # pl.gca().xaxis.set_major_locator(mdates.DayLocator())
+            pl.legend(self.legend)
+            pl.grid()
             self.tkcanvas.draw()
             self.canDraw = 0
         except Exception as e:
+            print(e)
             pass
 
     def mainLoop(self):
         while True:
-            event, values = self.window.read(timeout = 1000,timeout_key=None)
+            event, values = self.window.read(timeout = 2000,timeout_key=None)
             if event is None:
-                self.draw()
+                if self.canDraw: self.draw()
                 continue
             print(event, values)
             if event == "TTU": self.server.incTemp(0,5)
@@ -239,6 +247,11 @@ class UI():
                 ret = sg.popup_ok_cancel("Reboot now?",font=(fontName,30),keep_on_top=1)
                 if ret == "OK":
                     os.system('sudo reboot now')
+            if event == "clear":
+                self.server.clearHist()
+                self.canDraw = 0
+                pl.clf()
+                self.tkcanvas.draw()
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 

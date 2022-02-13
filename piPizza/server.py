@@ -24,16 +24,18 @@ class PID():
     # Class that implements the PID controller.
     targetTemp = 20
     currentTemp = 0
+    onTargetPercent = 0.10 # ratio (between 0 and 1) for calling the temp on target.
     # PID Parameters.
-    kP = 10              # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
-    kD = 0               # Differential factor. 100 means that a 1% delta per second between target and current
-    kI = 0
+    kP = 1.              # Proportional factor. 100 means that a 1% delta between target and current -> full PWM.
+    kD = 3.1               # Differential factor. 100 means that a 1% delta per second between target and current
+    kI = .1
     # -> full PWM
     # Update parameters
-    smoothPeriodS = 20  # The dynamics (slopes) are computed over this duration.
+    smoothPeriodS = 10  # The dynamics (slopes) are computed over this duration.
     dTemp = 0           # Slope
     iTemp = 0           # Integration
     iForget = 0.9       # Leaky integration factor for iTemp
+    iTermBound = 30./200.     # I zero the I term unless we're this close to the target.
     outVal = 0
     lastTime = 0
     isOn = 0
@@ -65,11 +67,21 @@ class PID():
         # "normalizing" the temp diff and slope relative to 200 (C).
         normTemp = 200
         self.dTemp = (currentTemp - lastTemp) / (thisTime - lastTime)
-        self.iTemp = self.iForget*self.iTemp + (currentTemp - lastTemp) * (thisTime - lastTime)
+        self.iTemp = self.iForget*self.iTemp + (self.targetTemp - self.currentTemp) * (thisTime - lastTime)
+        # Clamp dTemp, units are C per seconds.
+        self.dTemp = min(10,max(-10,self.dTemp))
+        dTemp,iTemp = self.dTemp,self.iTemp
+        # No integration if PID is not on or we're above target. If in that range, no dTerm.
+        if abs(self.targetTemp - self.currentTemp) > self.iTermBound * self.targetTemp:
+            iTemp = 0
+        if self.currentTemp > self.targetTemp:
+            iTemp = 0
         if self.targetTemp:
-            outVal = self.kP * (self.targetTemp - self.currentTemp)/normTemp
-            outVal += - self.kD * self.dTemp / normTemp
-            outVal += self.kI * self.iTemp / normTemp
+            pTerm = self.kP * (self.targetTemp - self.currentTemp)/normTemp
+            dTerm = - self.kD * dTemp / normTemp
+            iTerm = self.kI/10 * iTemp / normTemp
+            outVal = pTerm+dTerm+iTerm
+            print(f"PVAL {pTerm:.2f} DVAL {dTerm:.2f} IVAL {iTerm:.2f}")
         else:
             outVal = 0
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
@@ -77,7 +89,7 @@ class PID():
         return self.outVal
 
     def getTimeToTarget(self):
-        if abs(self.targetTemp-self.currentTemp) < 0.02*self.targetTemp: return "At temp"
+        if abs(self.targetTemp-self.currentTemp) < self.onTargetPercent*self.targetTemp: return "At temp"
         if self.dTemp == 0: return "Inf"
         ttt = (self.targetTemp - self.currentTemp)/self.dTemp
         if ttt < 0 : return "Inf"
@@ -88,7 +100,7 @@ class PID():
 
 
 class PizzaServer(Server):
-    pidCallPeriodS     =    2                                     # How often we call the PID to get new PWM values.
+    pidUpdatePeriodS   =    2                                     # How often we call the PID to get new PWM values.
     topTemp            =    0                                     #
     botTemp            =    0                                     #
     ambientTemp        =    0                                     #
@@ -108,8 +120,8 @@ class PizzaServer(Server):
     def __init__(self):
         super().__init__()
         self.Temps = Temps()
-        self.topPID = PID(self.pidCallPeriodS)
-        self.botPID = PID(self.pidCallPeriodS)
+        self.topPID = PID(self.pidUpdatePeriodS)
+        self.botPID = PID(self.pidUpdatePeriodS)
         self.UI = UI(self)
         self.pi = pigpio.pi()  # Connect to local Pi.
         self.pi.set_mode(TopRelay, pigpio.OUTPUT)
@@ -127,7 +139,9 @@ class PizzaServer(Server):
         self.isOn = 0
         self.dirty = 1
         self.stopUI = 0
+        self.lastOnTime = time.time()
         self.ip = ""
+        self.UI.canDraw = 0
 
         try:
             A=subprocess.check_output(['/sbin/ifconfig','wlan0']).decode()
@@ -165,6 +179,12 @@ class PizzaServer(Server):
     def onOff(self):
         self.isOn = 1-self.isOn
         self.dirty = 1
+        # Set pwm off immediately for safety
+        if self.isOn == 0:
+            self.pi.set_PWM_dutycycle(TopRelay, 0)
+            self.pi.set_PWM_dutycycle(BotRelay, 0)
+        else:
+            self.lastOnTime = time.time()
         print("ISON: ",self.isOn)
 
     def incTemp(self,p1,p2):
@@ -191,6 +211,16 @@ class PizzaServer(Server):
         self.topMaxPWM, self.botMaxPWM = vals
         self.dirty = 1
 
+    def onTime(self):
+        onT = time.time()-self.lastOnTime
+        return f"{onT:2.0f}s" if onT < 60 else f"{onT/60:2.0f}:{onT%60:2.0f}"
+
+    def clearHist(self):
+        self.lastHistTime = 0
+        self.tempHistTop = []
+        self.tempHistT = []
+        self.tempHistBot = []
+
     def processLoop(self):
         while 1:
             try:
@@ -205,17 +235,17 @@ class PizzaServer(Server):
                 self.botTemp = self.topPID.dTemp*100
                 # Run the PID to compute the new pwm values
                 self.topPWM = self.topPID.getValue(self.topTemp)
-                self.botPWM = self.botPID.getValue(self.botTemp)
+                #self.botPWM = self.botPID.getValue(self.botTemp)
                 self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
                 # Set the PWM duty cycle on the relays
-                self.pi.set_PWM_dutycycle(TopRelay, self.botPWM*self.pi.get_PWM_range(TopRelay))
+                self.pi.set_PWM_dutycycle(TopRelay, self.topPWM*self.pi.get_PWM_range(TopRelay))
                 self.pi.set_PWM_dutycycle(BotRelay, self.botPWM*self.pi.get_PWM_range(BotRelay))
                 # Reflect new temps and pwm on UI
                 self.UI.setCurTemps(self.topTemp, self.botTemp, self.topPWM, self.botPWM, self.isOn, self.ambientTemp,
-                                    self.topPID.timeToTarget,self.botPID.timeToTarget)
+                                    self.topPID.timeToTarget,self.botPID.timeToTarget,self.onTime())
+                self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
+                self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
                 if self.dirty:
-                    self.UI.setTargetTemps(self.topPID.targetTemp, self.botPID.targetTemp)
-                    self.UI.setMaxPWM(self.topMaxPWM,self.botMaxPWM)
                     self.saveJson()
                 # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
                 if time.time() - self.lastHistTime > 60 or round(self.topTemp) != round(self.tempHistTop[-1])\
@@ -233,6 +263,8 @@ class PizzaServer(Server):
 
                 self.dirty = 0
             except Exception as e:
+                import traceback
+                traceback.print_exc(limit=4)
                 print("Error in loop",e)
             time.sleep(0.2)
 
