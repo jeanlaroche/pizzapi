@@ -14,6 +14,7 @@ class UI():
         self.canDraw = 0
         self.processLoop = None
         self.lastPlotLen = 0
+        self.drawD = 0
 
 
     def finishInit(self,no_titlebar=0):
@@ -31,17 +32,21 @@ class UI():
         self.fig = pl.figure(dpi=100.,figsize=(7,3.5))
         self.tkcanvas = FigureCanvasTkAgg(self.fig, master=self.canvas.TKCanvas)
         self.tkcanvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-        toolbar = NavigationToolbar2Tk(self.tkcanvas, self.canvas.TKCanvas)
+
+        class NavigationToolbar(NavigationToolbar2Tk):
+            # only display the buttons we need
+            toolitems = [t for t in NavigationToolbar2Tk.toolitems if
+                         t[0] in ('Home', 'Pan', 'Zoom')]
+        #toolbar = NavigationToolbar2Tk(self.tkcanvas, self.canvas.TKCanvas)
+        toolbar = NavigationToolbar(self.tkcanvas, self.canvas.TKCanvas)
         toolbar.update()
         self.tkcanvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-        # Force an update from the server.
-        #self.server.dirty = 1
 
     def initPanelMain(self):
         fontParams = {'font':(fontName, 16)}
         params = {'size':(10,1),'font':(fontName, 28)}
-        self.topTarget = sg.T(self.cvTemp(self.server.topPID.targetTemp),**params)
-        self.botTarget = sg.T(self.cvTemp(self.server.botPID.targetTemp),**params)
+        self.topTarget = sg.T(self.cvTemp(self.server.topPID.targetTemp),font=(fontName,28),size=(4,1))
+        self.botTarget = sg.T(self.cvTemp(self.server.botPID.targetTemp),font=(fontName,28),size=(4,1))
         self.topTemp = sg.T("Temp",**params)
         self.botTemp = sg.T("Temp",**params)
         self.topPWM = sg.T("PWM",**params)
@@ -49,7 +54,7 @@ class UI():
         self.onTime = sg.T("OnTime",**params)
         self.topTimeToTarget = sg.T("Time to target Top",**params)
         self.botTimeToTarget = sg.T("Time to target Bot",**params)
-        self.power = sg.Button("Power",size=(10,3),font=(fontName, 25))#,image_filename="/home/pi/piPizza/power.png")
+        self.power = sg.Button("Power",size=(10,3),font=(fontName, 25),expand_y=1)#,image_filename="/home/pi/piPizza/power.png")
         paramsSilders = {'range':(20,400),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':(25,30)}
         paramsSilders.update(fontParams)
         self.topTargetSlider = sg.Slider(**paramsSilders, default_value=self.server.topPID.targetTemp, key='TTS')
@@ -65,9 +70,11 @@ class UI():
             [self.topTimeToTarget,self.botTimeToTarget]],**fontParams,expand_x=1)
         D = sg.Frame('Time since last on',layout=[[self.onTime]],**fontParams,expand_x=1)
 
-        Col = sg.Column([[B],[C]])
-        #self.tabMain = [ [A], [B,self.power], [C]]
-        self.tabMain = [ [A], [Col,sg.Column([[self.power],[D]])]]
+        #Col = sg.Column([[B,self.power],[C]])
+        Col = sg.Column([[A], [B]])
+        self.tabMain = [ [Col,self.power], [C,D]]
+        # self.tabMain = [ [A], [B,self.power], [C,D]]
+        #self.tabMain = [ [A], [Col,sg.Column([[self.power],[D]])]]
         return self.tabMain
 
     def initPanelPWM(self):
@@ -131,7 +138,8 @@ class UI():
     def initPanelPlot(self):
         params = {'size':(5,1),'font':(fontName, 16)}
         self.canvas = sg.Canvas()
-        self.tabPlot = [[self.canvas],[sg.Button("clear",**params)]]
+        self.drawDelta = sg.Checkbox("draw delta",self.drawD,**params,key='drawDelta',enable_events=1)
+        self.tabPlot = [[self.canvas],[sg.Button("redraw",**params,key='resetPlot'),sg.Button("clear",**params),self.drawDelta]]
         return self.tabPlot
 
     def iniPanelStatus(self):
@@ -140,10 +148,11 @@ class UI():
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
         self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
         self.ambientTemp = sg.T("Ambient",**params)
+        A = sg.Frame("Ambient Temp",[[self.ambientTemp]],expand_y=1)
         self.tabStatus = [
             [sg.Frame("IP address",[[ipAddress]]),sg.Frame("Version",[[sg.T(self.server.version,**params)]])],
-            [sg.Frame("Units",[[self.C],[self.F]])],
-            [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
+            [sg.Frame("Units",[[self.C],[self.F]],expand_y=1),A],
+#            [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
             [sg.Button("Show PI Desktop" if self.no_titlebar else "Hide PI Desktop",**params,key="maximize"),
              sg.Button("Update / Restart",**params,key="update")],
             [sg.Button("Reboot", **params, key="reboot")],
@@ -193,6 +202,8 @@ class UI():
             colors = ['b','g','c','m']
             for ii in range(len(self.temps)):
                 temps = self.temps
+                if self.drawDelta.get() and ii == 0:
+                    temps[ii] = [t - self.server.topPID.targetTemp for t in temps[ii]]
                 if not self.useC:
                     temps[ii] = [1.8 * t + 32 for t in temps[ii]]
                 pl.plot(X[plotFrom:], temps[ii][plotFrom:], colors[ii]+'-')
@@ -217,10 +228,11 @@ class UI():
             print(event, values)
             if event == "Power":
                 self.server.onOff()
-            if event == "cel": self.useC = 1
-            if event == "fah": self.useC = 0
-            if event == "cel" or event == 'fah':
+            if event in ["cel","fah"]:
+                self.useC = event == "cel"
+                self.lastPlotLen = 0
                 self.server.dirty = 1
+                self.setTargetTemps(setSliders=0)
             if event in ['TP','TD','BP','BD','TI','BI']:
                 self.server.setPID((values[i] for i in ['TP','TD','TI','BP','BD','BI']))
             if event in ['TMS','BMS']:
@@ -246,14 +258,21 @@ class UI():
                 self.canDraw = 0
                 pl.clf()
                 self.tkcanvas.draw()
+            if event == "resetPlot":
+                self.lastPlotLen = 0
+            if event == "drawDelta":
+                self.drawD = self.drawDelta.get()
+                self.lastPlotLen = 0
+                self.server.dirty = 1
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 
 
 if __name__ == '__main__':
     class P:
-        p=0
-        d=1
+        kP=0
+        kD=1
+        kI=0
         targetTemp = 50
     class S:
         topPID = P()
