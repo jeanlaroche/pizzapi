@@ -67,6 +67,7 @@ class PID():
         # "normalizing" the temp diff and slope relative to 200 (C).
         normTemp = 200
         self.dTemp = (currentTemp - lastTemp) / (thisTime - lastTime)
+        self.dTemp = self.computeSlope()
         self.iTemp = self.iForget*self.iTemp + (self.targetTemp - self.currentTemp) * (thisTime - lastTime)
         # Clamp dTemp, units are C per seconds.
         self.dTemp = min(10,max(-10,self.dTemp))
@@ -97,6 +98,19 @@ class PID():
         if ttt < 3600: return f"{ttt/60:.0f} min"
         if ttt < 3600*2: return "> 1 hour"
         return "Inf"
+
+    def computeSlope(self):
+        # This uses linear regression
+        if len(self.lastTimes) < self.lastTimes.maxlen : return self.outVal
+        N = self.lastTimes.maxlen
+        T = [self.lastTimes[ii]-self.lastTimes[0] for ii in range(N)]
+        sX = sum(T)
+        sX2 = sum([T[ii]*T[ii] for ii in range(N)])
+        sXY = sum([T[ii]*self.lastTemps[ii] for ii in range(N)])
+        sY = sum([self.lastTemps[ii] for ii in range(N)])
+        slope = (N*sXY-sX*sY)/(N*sX2 - sX*sX)
+        return slope
+        print(slope,self.dTemp)
 
 
 class PizzaServer(Server):

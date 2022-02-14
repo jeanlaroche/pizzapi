@@ -11,9 +11,9 @@ class UI():
         self.height,self.width = 480,800
         self.server = server
         self.useC = 1
-        self.lastPlotLen = 0
         self.canDraw = 0
         self.processLoop = None
+        self.lastPlotLen = 0
 
 
     def finishInit(self,no_titlebar=0):
@@ -176,30 +176,33 @@ class UI():
 
     def plotTemps(self,times,temps,legend):
         if len(times) == self.lastPlotLen or self.tabGroup.get() != "PLOT": return
-        print("PLOT",self.tabGroup.get())
-        self.lastPlotLen = len(times)
+        if self.lastPlotLen > len(times): self.lastPlotLen = 0
         self.times = times
         self.temps = temps
         self.legend = legend
-        if len(self.times) >= 2: self.draw()
-        print("PLOT DONE")
+        if len(self.times) >= 2:
+            self.draw()
+            self.lastPlotLen = len(times)
 
     def draw(self):
         try:
-            pl.clf()
+            if self.lastPlotLen == 0:
+                pl.clf()
             X = mdates.datestr2num(self.times)
+            plotFrom = max(0,self.lastPlotLen-1)
+            colors = ['b','g','c','m']
             for ii in range(len(self.temps)):
                 temps = self.temps
                 if not self.useC:
                     temps[ii] = [1.8 * t + 32 for t in temps[ii]]
-                pl.plot(X, temps[ii])
+                pl.plot(X[plotFrom:], temps[ii][plotFrom:], colors[ii]+'-')
             #locator = mdates.MinuteLocator(interval=10)
             locator = mdates.AutoDateLocator(interval_multiples=True,maxticks=5,minticks=2)
             #locator = mdates.MinuteLocator()
             pl.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
             pl.gca().xaxis.set_major_locator(locator)
             pl.legend(self.legend)
-            pl.grid()
+            pl.grid(1)
             self.tkcanvas.draw()
         except Exception as e:
             print(e)
