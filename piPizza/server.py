@@ -258,10 +258,11 @@ class PizzaServer(Server):
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != round(self.tempHistTop[-1])\
                     or round(self.botTemp) != round(self.tempHistBot[-1]):
                 if len(self.tempHistT) >= self.maxHistLen:
-                    # Avoid running enormous plots.
+                    # Avoid running enormous plots, shorten the history and force a redraw on the UI
                     self.tempHistT = self.tempHistT[::2]
                     self.tempHistTop = self.tempHistTop[::2]
                     self.tempHistBot = self.tempHistBot[::2]
+                    self.UI.lastPlotLen = 0
                 self.lastHistTime = time.time()
                 curTime = datetime.now()
                 self.tempHistT.append(curTime.isoformat())
