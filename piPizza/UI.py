@@ -194,12 +194,14 @@ class UI():
             self.lastPlotLen = len(times)
 
     def draw(self):
+        import time
         try:
             if self.lastPlotLen == 0:
                 pl.clf()
             X = mdates.datestr2num(self.times)
             plotFrom = max(0,self.lastPlotLen-1)
             colors = ['b','g','c','m']
+            t0=time.time()
             for ii in range(len(self.temps)):
                 temps = self.temps
                 if self.drawDelta.get() and ii == 0:
@@ -214,7 +216,10 @@ class UI():
             pl.gca().xaxis.set_major_locator(locator)
             pl.legend(self.legend)
             pl.grid(1)
+            print(f"Plot t0 {time.time()-t0}")
+            t0=time.time()
             self.tkcanvas.draw()
+            print(f"Plot t1 {time.time()-t0}")
         except Exception as e:
             print(e)
             pass

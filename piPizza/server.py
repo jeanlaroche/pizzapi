@@ -129,6 +129,7 @@ class PizzaServer(Server):
     botPWM             =    0                                     #
     dirty              =    1                                     # Flag indicating some values have changed.
     version            =    __version__                           #
+    isAlive            =     0                                    # Used to test that the process loop runs
 
     def __init__(self):
         super().__init__()
@@ -234,6 +235,7 @@ class PizzaServer(Server):
 
     def processLoop(self):
         try:
+            self.isAlive = 1
             # Get temps from the thermocouples
             self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
             self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
@@ -312,6 +314,15 @@ def onOff():
     server.onOff()
     server.dirty = 1
     return jsonify(onOff = _onOff())
+
+@app.route("/alive")
+def alive():
+    server.isAlive = 0
+    t0 = time.time()
+    while time.time() - t0 <= 2:
+        if server.isAlive:
+            return jsonify(isAlive=1)
+    return jsonify(isAlive=0)
 
 
 @app.route("/incTopTemp/<int(signed=True):param1>")
