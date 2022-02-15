@@ -130,6 +130,7 @@ class PizzaServer(Server):
     dirty              =    1                                     # Flag indicating some values have changed.
     version            =    __version__                           #
     isAlive            =     0                                    # Used to test that the process loop runs
+    maxHistLen         =    200
 
     def __init__(self):
         super().__init__()
@@ -256,6 +257,11 @@ class PizzaServer(Server):
             # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != round(self.tempHistTop[-1])\
                     or round(self.botTemp) != round(self.tempHistBot[-1]):
+                if len(self.tempHistT) >= self.maxHistLen:
+                    # Avoid running enormous plots.
+                    self.tempHistT = self.tempHistT[::2]
+                    self.tempHistTop = self.tempHistTop[::2]
+                    self.tempHistBot = self.tempHistBot[::2]
                 self.lastHistTime = time.time()
                 curTime = datetime.now()
                 self.tempHistT.append(curTime.isoformat())
