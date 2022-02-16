@@ -131,6 +131,7 @@ class PizzaServer(Server):
     version            =    __version__                           #
     isAlive            =     0                                    # Used to test that the process loop runs
     maxHistLen         =    600
+    lastHistTime       =    0
 
     def __init__(self):
         super().__init__()
@@ -186,10 +187,10 @@ class PizzaServer(Server):
             os.system(f'sh -c "kill -9 {os.getpid()} ; /usr/bin/python3 /home/pi/piPizza/server.py"')
 
     def saveJson(self):
-        saveVarsToJson(self.jsonFileName,self,"server")
-        saveVarsToJson(self.jsonFileName,self.topPID,"topPID")
-        saveVarsToJson(self.jsonFileName,self.botPID,"botPID")
-        saveVarsToJson(self.jsonFileName,self.UI,"UI")
+        saveVarsToJson(self.jsonFileName,self,"server",self.exclude)
+        saveVarsToJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
+        saveVarsToJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
+        saveVarsToJson(self.jsonFileName,self.UI,"UI",self.exclude)
 
     def onOff(self):
         self.isOn = 1-self.isOn
