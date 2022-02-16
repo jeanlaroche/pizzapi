@@ -449,7 +449,9 @@ def readJsonFile(fileName):
         data = {}
     return data
 
-def saveVarsToJson(fileName,obj,name):
+def saveVarsToJson(fileName,obj,name,excludeList=[]):
+    # Saves the int and float attributes of obj to fileName as json, under a dict of name "name"
+    # excludeList is a list of string which when found in attribute names prevent them from being saved.
     try:
         data0 = readJsonFile(fileName)
     except:
@@ -460,11 +462,15 @@ def saveVarsToJson(fileName,obj,name):
         for var in dir(obj):
             val = getattr(obj,var)
             if isinstance(val,int) or isinstance(val,float):
+                if any([e in var for e in excludeList]): continue
                 data[var] = val
         data0[name] = data
         json.dump(data0,f)
 
-def readVarsFromJson(fileName,obj,name):
+def readVarsFromJson(fileName,obj,name,excludeList=[]):
+    # Loads the json file fileName and sets the attributes of obj based on the dict "name" found
+    # in the json file (if any). attributes whose names include strings found in excludeList are not
+    # restored.
     try:
         with open(fileName,'r') as f:
             data = json.load(f)
@@ -473,6 +479,7 @@ def readVarsFromJson(fileName,obj,name):
                 return
             data = data[name]
             for key,val in data.items():
+                if any([e in key for e in excludeList]): continue
                 setattr(obj,key,val)
     except:
         pass
