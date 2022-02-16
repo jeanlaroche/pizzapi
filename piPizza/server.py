@@ -150,8 +150,9 @@ class PizzaServer(Server):
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID")
         readVarsFromJson(self.jsonFileName,self.botPID,"botPID")
         readVarsFromJson(self.jsonFileName,self.UI,"UI")
+        # We don't want these to be restored from the param json file.
         self.lastHistTime = 0
-        self.isOn = 0
+        self.isOn, self.topPID.outVal, self.botPID.outVal = 0,0,0
         self.dirty = 1
         self.lastOnTime = time.time()
         self.ip = ""
@@ -237,6 +238,7 @@ class PizzaServer(Server):
     def processLoop(self):
         try:
             self.isAlive = 1
+            #print("PID",self.topPID.outVal,self.topPID.isOn)
             # Get temps from the thermocouples
             self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
             self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
