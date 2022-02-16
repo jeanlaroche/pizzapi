@@ -130,7 +130,7 @@ class PizzaServer(Server):
     dirty              =    1                                     # Flag indicating some values have changed.
     version            =    __version__                           #
     isAlive            =     0                                    # Used to test that the process loop runs
-    maxHistLen         =    200
+    maxHistLen         =    600
 
     def __init__(self):
         super().__init__()
@@ -145,15 +145,16 @@ class PizzaServer(Server):
         self.pi.set_PWM_frequency(BotRelay, 0)
         self.pi.set_PWM_dutycycle(TopRelay, 0)
         self.pi.set_PWM_dutycycle(BotRelay, 0)
+        self.exclude = ['isOn','outVal','dirty','last']
 
-        readVarsFromJson(self.jsonFileName,self,"server")
-        readVarsFromJson(self.jsonFileName,self.topPID,"topPID")
-        readVarsFromJson(self.jsonFileName,self.botPID,"botPID")
-        readVarsFromJson(self.jsonFileName,self.UI,"UI")
+        readVarsFromJson(self.jsonFileName,self,"server",self.exclude)
+        readVarsFromJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
+        readVarsFromJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
+        readVarsFromJson(self.jsonFileName,self.UI,"UI",self.exclude)
         # We don't want these to be restored from the param json file.
-        self.lastHistTime = 0
-        self.isOn, self.topPID.outVal, self.botPID.outVal = 0,0,0
-        self.dirty = 1
+#        self.lastHistTime = 0
+#        self.isOn, self.topPID.outVal, self.botPID.outVal = 0,0,0
+#        self.dirty = 1
         self.lastOnTime = time.time()
         self.ip = ""
 
