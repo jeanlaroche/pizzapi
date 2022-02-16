@@ -152,10 +152,6 @@ class PizzaServer(Server):
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.UI,"UI",self.exclude)
-        # We don't want these to be restored from the param json file.
-#        self.lastHistTime = 0
-#        self.isOn, self.topPID.outVal, self.botPID.outVal = 0,0,0
-#        self.dirty = 1
         self.lastOnTime = time.time()
         self.ip = ""
 
@@ -261,12 +257,12 @@ class PizzaServer(Server):
             # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != round(self.tempHistTop[-1])\
                     or round(self.botTemp) != round(self.tempHistBot[-1]):
-                if len(self.tempHistT) >= self.maxHistLen:
-                    # Avoid running enormous plots, shorten the history and force a redraw on the UI
-                    self.tempHistT = self.tempHistT[::2]
-                    self.tempHistTop = self.tempHistTop[::2]
-                    self.tempHistBot = self.tempHistBot[::2]
-                    self.UI.lastPlotLen = 0
+                # if len(self.tempHistT) >= self.maxHistLen:
+                #     # Avoid running enormous plots, shorten the history and force a redraw on the UI
+                #     self.tempHistT = self.tempHistT[::2]
+                #     self.tempHistTop = self.tempHistTop[::2]
+                #     self.tempHistBot = self.tempHistBot[::2]
+                #     self.UI.lastPlotLen = 0
                 self.lastHistTime = time.time()
                 curTime = datetime.now()
                 self.tempHistT.append(curTime.isoformat())

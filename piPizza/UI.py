@@ -15,6 +15,7 @@ class UI():
         self.processLoop = None
         self.lastPlotLen = 0
         self.drawD = 0
+        self.maxPlotLength = 400
 
 
     def finishInit(self,no_titlebar=0):
@@ -202,8 +203,13 @@ class UI():
             plotFrom = max(0,self.lastPlotLen-1)
             colors = ['b','g','c','m']
             t0=time.time()
+            # Downsample the plot data, this is a round.
+            inc = max(1,int(len(X) / self.maxPlotLength + .5))
+            plotFrom = 0
+            temps = self.temps
             for ii in range(len(self.temps)):
-                temps = self.temps
+                if inc > 1:
+                    temps[ii] = temps[ii][0::inc]
                 if self.drawDelta.get() and ii == 0:
                     temps[ii] = [t - self.server.topPID.targetTemp for t in temps[ii]]
                 if not self.useC:
