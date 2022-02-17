@@ -152,6 +152,10 @@ class PizzaServer(Server):
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.UI,"UI",self.exclude)
+        # We don't want these to be restored from the param json file.
+#        self.lastHistTime = 0
+#        self.isOn, self.topPID.outVal, self.botPID.outVal = 0,0,0
+#        self.dirty = 1
         self.lastOnTime = time.time()
         self.ip = ""
 
@@ -268,6 +272,7 @@ class PizzaServer(Server):
                 self.tempHistT.append(curTime.isoformat())
                 self.tempHistTop.append(self.topTemp)
                 self.tempHistBot.append(self.botTemp)
+                print(f"Plot length {len(self.tempHistT)}")
             self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Delta'])
             curTime = time.localtime()
             # Erase the temp history every night at 1am.

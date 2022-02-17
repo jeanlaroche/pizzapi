@@ -6,12 +6,13 @@ import os, tkinter
 import matplotlib.pyplot as pl
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2Tk
 import matplotlib.dates as mdates
+import time
+
 class UI():
     def __init__(self,server):
         self.height,self.width = 480,800
         self.server = server
         self.useC = 1
-        self.canDraw = 0
         self.processLoop = None
         self.lastPlotLen = 0
         self.drawD = 0
@@ -140,7 +141,7 @@ class UI():
         params = {'size':(5,1),'font':(fontName, 16)}
         self.canvas = sg.Canvas()
         self.drawDelta = sg.Checkbox("draw delta",self.drawD,**params,key='drawDelta',enable_events=1)
-        self.tabPlot = [[self.canvas],[sg.Button("redraw",**params,key='resetPlot'),sg.Button("clear",**params),self.drawDelta]]
+        self.tabPlot = [[self.canvas],[sg.Button("clear",**params),self.drawDelta]]
         return self.tabPlot
 
     def iniPanelStatus(self):
@@ -195,17 +196,14 @@ class UI():
             self.lastPlotLen = len(times)
 
     def draw(self):
-        import time
         try:
-            if self.lastPlotLen == 0:
-                pl.clf()
+            pl.clf()
             X = mdates.datestr2num(self.times)
-            plotFrom = max(0,self.lastPlotLen-1)
-            colors = ['b','g','c','m']
             t0=time.time()
             # Downsample the plot data, this is a round.
             inc = max(1,int(len(X) / self.maxPlotLength + .5))
-            plotFrom = 0
+            if inc > 1:
+                X = X[0::inc]
             temps = self.temps
             for ii in range(len(self.temps)):
                 if inc > 1:
@@ -214,7 +212,7 @@ class UI():
                     temps[ii] = [t - self.server.topPID.targetTemp for t in temps[ii]]
                 if not self.useC:
                     temps[ii] = [1.8 * t + 32 for t in temps[ii]]
-                pl.plot(X[plotFrom:], temps[ii][plotFrom:], colors[ii]+'-')
+                pl.plot(X, temps[ii])
             #locator = mdates.MinuteLocator(interval=10)
             locator = mdates.AutoDateLocator(interval_multiples=True,maxticks=5,minticks=2)
             #locator = mdates.MinuteLocator()
@@ -222,7 +220,7 @@ class UI():
             pl.gca().xaxis.set_major_locator(locator)
             pl.legend(self.legend)
             pl.grid(1)
-            print(f"Plot t0 {time.time()-t0}")
+            print(f"Plot t0 {time.time()-t0}, inc: {inc}")
             t0=time.time()
             self.tkcanvas.draw()
             print(f"Plot t1 {time.time()-t0}")
@@ -241,7 +239,6 @@ class UI():
                 self.server.onOff()
             if event in ["cel","fah"]:
                 self.useC = event == "cel"
-                self.lastPlotLen = 0
                 self.server.dirty = 1
                 self.setTargetTemps(setSliders=0)
             if event in ['TP','TD','BP','BD','TI','BI']:
@@ -266,15 +263,12 @@ class UI():
                     os.system('sudo reboot now')
             if event == "clear":
                 self.server.clearHist()
-                self.canDraw = 0
                 pl.clf()
-                self.tkcanvas.draw()
-            if event == "resetPlot":
-                self.lastPlotLen = 0
+                self.draw()
             if event == "drawDelta":
                 self.drawD = self.drawDelta.get()
-                self.lastPlotLen = 0
                 self.server.dirty = 1
+                self.draw()
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 
