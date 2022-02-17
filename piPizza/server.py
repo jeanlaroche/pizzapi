@@ -129,7 +129,8 @@ class PizzaServer(Server):
     botPWM             =    0                                     #
     dirty              =    1                                     # Flag indicating some values have changed.
     version            =    __version__                           #
-    isAlive            =     0                                    # Used to test that the process loop runs
+    isAlive0            =     0                                    # Used to test that the process loop runs
+    isAlive1            =     0                                    # Used to test that the process loop runs
     maxHistLen         =    600
     lastHistTime       =    0
 
@@ -146,7 +147,7 @@ class PizzaServer(Server):
         self.pi.set_PWM_frequency(BotRelay, 0)
         self.pi.set_PWM_dutycycle(TopRelay, 0)
         self.pi.set_PWM_dutycycle(BotRelay, 0)
-        self.exclude = ['isOn','outVal','dirty','last']
+        self.exclude = ['isOn','outVal','dirty','last','Alive']
 
         readVarsFromJson(self.jsonFileName,self,"server",self.exclude)
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
@@ -166,6 +167,7 @@ class PizzaServer(Server):
             pass
         self.UI.finishInit()
         self.UI.processLoop = self.processLoop
+        runThreaded(self.safetyLoop)
 
     def __delete__(self):
         self.pi.stop()
@@ -237,9 +239,24 @@ class PizzaServer(Server):
         self.tempHistT = []
         self.tempHistBot = []
 
+    def safetyLoop(self):
+        # A safety loop that runs in another thread and checks that the process loop is alive.
+        while 1:
+            self.isAlive1 = 0
+            t0 = time.time()
+            while time.time() - t0 < 2:
+                if self.isAlive1: break
+                time.sleep(.1)
+            if self.isAlive1 == 0:
+                print("Loop is dead, turning relays off")
+                self.pi.set_PWM_dutycycle(TopRelay, 0)
+                self.pi.set_PWM_dutycycle(BotRelay, 0)
+            else:
+                time.sleep(2)
+
     def processLoop(self):
         try:
-            self.isAlive = 1
+            self.isAlive0,self.isAlive1 = 1,1
             #print("PID",self.topPID.outVal,self.topPID.isOn)
             # Get temps from the thermocouples
             self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
@@ -329,12 +346,12 @@ def onOff():
 
 @app.route("/alive")
 def alive():
-    server.isAlive = 0
+    server.isAlive0 = 0
     t0 = time.time()
     while time.time() - t0 <= 2:
-        if server.isAlive:
-            return jsonify(isAlive=1)
-    return jsonify(isAlive=0)
+        if server.isAlive0:
+            return jsonify(isAlive0=1)
+    return jsonify(isAlive0=0)
 
 
 @app.route("/incTopTemp/<int(signed=True):param1>")
