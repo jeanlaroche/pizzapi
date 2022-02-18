@@ -84,7 +84,8 @@ class PID():
             iTerm = self.kI/10 * iTemp / normTemp
             outVal = pTerm+dTerm+iTerm
             print(f"PVAL {pTerm:.2f} DVAL {dTerm:.2f} IVAL {iTerm:.2f}")
-            self.lastPIDs.append([pTerm, iTerm, dTerm, outVal])
+            error = (self.targetTemp-self.currentTemp)/100
+            self.lastPIDs.append([pTerm, iTerm, dTerm, outVal, error])
         else:
             outVal = 0
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
@@ -295,7 +296,7 @@ class PizzaServer(Server):
                 self.tempHistBot.append(self.botTemp)
                 print(f"Plot length {len(self.tempHistT)}")
             self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Delta'])
-            if newVal: self.UI.plotPIDs(self.topPID.lastPIDs,self.botPID.lastPIDs,['Pterm','Iterm','Dterm','OutValue'])
+            if newVal: self.UI.plotPIDs(self.topPID.lastPIDs,self.botPID.lastPIDs,['Pterm','Iterm','Dterm','OutValue','Error C/100'])
             curTime = time.localtime()
             # Erase the temp history every night at 1am.
             if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
