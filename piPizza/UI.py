@@ -156,14 +156,15 @@ class UI():
         return self.tabPID
 
     def initPanelPlotTemps(self):
-        params = {'size':(5,1),'font':(fontName, 16)}
+        params = {'size':(10,1),'font':(fontName, 16)}
         self.canvasTemps = sg.Canvas()
         self.drawDelta = sg.Checkbox("draw delta",self.drawD,**params,key='drawDelta',enable_events=1)
-        self.tabPlotTemp = [[self.canvasTemps],[sg.Button("clear",**params),self.drawDelta]]
+        self.zoomTemps = sg.Checkbox("zoom",self.drawD,**params,key='zoomTemps',enable_events=1)
+        self.tabPlotTemp = [[self.canvasTemps],[sg.Button("clear",**params),self.drawDelta,self.zoomTemps]]
         return self.tabPlotTemp
 
     def initPanelPlotPID(self):
-        params = {'size':(5,1),'font':(fontName, 16)}
+        params = {'size':(10,1),'font':(fontName, 16)}
         self.canvasPID = sg.Canvas()
         self.plotBot = sg.Checkbox("plot bottom",0,**params,key='plotBotPID',enable_events=1)
         self.tabPlotPID = [[self.canvasPID],[self.plotBot]]
@@ -251,10 +252,14 @@ class UI():
             t0=time.time()
             # Downsample the plot data, this is a round.
             inc = max(1,int(len(X) / self.maxPlotLength + .5))
+            if self.zoomTemps.get():
+                X=X[-100*inc:]
             if inc > 1:
                 X = X[0::inc]
             temps = self.temps
             for ii in range(len(self.temps)):
+                if self.zoomTemps.get():
+                    temps[ii] = temps[ii][-100*inc:]
                 if inc > 1:
                     temps[ii] = temps[ii][0::inc]
                 if self.drawDelta.get() and ii == 0:
@@ -314,7 +319,7 @@ class UI():
                 self.server.clearHist()
                 pl.clf()
                 self.drawTemps()
-            if event == "drawDelta":
+            if event in ["drawDelta","zoomTemps"]:
                 self.drawD = self.drawDelta.get()
                 self.server.dirty = 1
                 self.drawTemps()
