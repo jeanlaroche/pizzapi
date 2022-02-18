@@ -26,23 +26,30 @@ class UI():
         self.tabPWM = self.initPanelPWM()
         self.tabStatus = self.iniPanelStatus()
         self.tabPID = self.initPanelPID()
-        self.tabPlot = self.initPanelPlot()
-        self.tabGroup = sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('PLOT', self.tabPlot), sg.Tab('Status', self.tabStatus)]],**fontParams)
+        self.tabPlotTemp = self.initPanelPlotTemps()
+        self.tabPlotPID = self.initPanelPlotPID()
+        self.tabGroup = sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('PLOT Temps', self.tabPlotTemp), sg.Tab('PLOT PID', self.tabPlotPID), sg.Tab('Status', self.tabStatus)]],**fontParams)
         self.layout = [[self.tabGroup]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         # self.window.set_cursor("none")
-        self.fig = pl.figure(dpi=100.,figsize=(7,3.5))
-        self.tkcanvas = FigureCanvasTkAgg(self.fig, master=self.canvas.TKCanvas)
-        self.tkcanvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-
         class NavigationToolbar(NavigationToolbar2Tk):
             # only display the buttons we need
             toolitems = [t for t in NavigationToolbar2Tk.toolitems if
                          t[0] in ('Home', 'Pan', 'Zoom')]
-        #toolbar = NavigationToolbar2Tk(self.tkcanvas, self.canvas.TKCanvas)
-        toolbar = NavigationToolbar(self.tkcanvas, self.canvas.TKCanvas)
+
+        fig = pl.figure(dpi=100.,figsize=(7,3.5))
+        self.tkcanvasTemps = FigureCanvasTkAgg(fig, master=self.canvasTemps.TKCanvas)
+        self.tkcanvasTemps.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        toolbar = NavigationToolbar(self.tkcanvasTemps, self.canvasTemps.TKCanvas)
         toolbar.update()
-        self.tkcanvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        self.tkcanvasTemps.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+        fig = pl.figure(dpi=100.,figsize=(7,3.5))
+        self.tkcanvasPID = FigureCanvasTkAgg(fig, master=self.canvasPID.TKCanvas)
+        self.tkcanvasPID.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        toolbar = NavigationToolbar(self.tkcanvasPID, self.canvasPID.TKCanvas)
+        toolbar.update()
+        self.tkcanvasPID.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 
     def initPanelMain(self):
         fontParams = {'font':(fontName, 16)}
@@ -137,12 +144,19 @@ class UI():
         self.tabPID = A
         return self.tabPID
 
-    def initPanelPlot(self):
+    def initPanelPlotTemps(self):
         params = {'size':(5,1),'font':(fontName, 16)}
-        self.canvas = sg.Canvas()
+        self.canvasTemps = sg.Canvas()
         self.drawDelta = sg.Checkbox("draw delta",self.drawD,**params,key='drawDelta',enable_events=1)
-        self.tabPlot = [[self.canvas],[sg.Button("clear",**params),self.drawDelta]]
-        return self.tabPlot
+        self.tabPlotTemp = [[self.canvasTemps],[sg.Button("clear",**params),self.drawDelta]]
+        return self.tabPlotTemp
+
+    def initPanelPlotPID(self):
+        params = {'size':(5,1),'font':(fontName, 16)}
+        self.canvasPID = sg.Canvas()
+        self.plotBot = sg.Checkbox("plot bottom",0,**params,key='plotBotPID',enable_events=1)
+        self.tabPlotPID = [[self.canvasPID],[self.plotBot]]
+        return self.tabPlotPID
 
     def iniPanelStatus(self):
         params = {'size':(14,1),'font':(fontName, 28)}
@@ -222,7 +236,7 @@ class UI():
             pl.grid(1)
             print(f"Plot t0 {time.time()-t0}, inc: {inc}")
             t0=time.time()
-            self.tkcanvas.draw()
+            self.tkcanvasTemps.draw()
             print(f"Plot t1 {time.time()-t0}")
         except Exception as e:
             print(e)
