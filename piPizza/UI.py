@@ -29,7 +29,9 @@ class UI():
         self.tabPID = self.initPanelPID()
         self.tabPlotTemp = self.initPanelPlotTemps()
         self.tabPlotPID = self.initPanelPlotPID()
-        self.tabGroup = sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), sg.Tab('PLOT Temps', self.tabPlotTemp), sg.Tab('PLOT PID', self.tabPlotPID), sg.Tab('Status', self.tabStatus)]],**fontParams)
+        self.tabGroup = sg.TabGroup([[sg.Tab('Main', self.tabMain), sg.Tab('Max PWM', self.tabPWM), sg.Tab('PID', self.tabPID), 
+                                      sg.Tab('Temp Plot', self.tabPlotTemp), sg.Tab('PID Plot', self.tabPlotPID), 
+                                      sg.Tab('Status', self.tabStatus)]],**fontParams)
         self.layout = [[self.tabGroup]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         # self.window.set_cursor("none")
@@ -205,7 +207,7 @@ class UI():
         self.topPids = topPids
         self.botPids = botPids
         self.pidLegend = legend
-        if self.tabGroup.get() == "PLOT PID" and len(self.topPids) != self.lastPlotLenPIDs:
+        if self.tabGroup.get() == "PID Plot" and len(self.topPids) != self.lastPlotLenPIDs:
             self.lastPlotLenPIDs = len(self.topPids)
             self.drawPIDs()
 
@@ -229,7 +231,7 @@ class UI():
         self.times = times
         self.temps = temps
         self.legend = legend
-        if len(self.times) >= 2 and self.tabGroup.get() == "PLOT Temps" and self.lastPlotLenTemps != len(times):
+        if len(self.times) >= 2 and self.tabGroup.get() == "Temp Plot" and self.lastPlotLenTemps != len(times):
             self.drawTemps()
             self.lastPlotLenTemps = len(times)
 
