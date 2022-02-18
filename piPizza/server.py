@@ -48,7 +48,7 @@ class PID():
         self.updatePeriodS = updatePeriodS
         self.lastTimes = deque(maxlen=dqLen)
         self.lastTemps = deque(maxlen=dqLen)
-        self.lastPIDs = deque(maxlen=200)
+        self.lastPIDs = deque(maxlen=100)
         self.timeToTarget = "Wait..."
         pass
 
