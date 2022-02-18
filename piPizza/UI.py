@@ -116,9 +116,12 @@ class UI():
         topKP = sg.Slider(default_value=self.server.topPID.kP, **paramsSilders, key='TP')
         topKD = sg.Slider(default_value=self.server.topPID.kD, **paramsSilders, key='TD')
         topKI = sg.Slider(default_value=self.server.topPID.kI, **paramsSilders, key='TI')
+        topKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='TF')
         botKP = sg.Slider(default_value=self.server.botPID.kP, **paramsSilders, key='BP')
         botKD = sg.Slider(default_value=self.server.botPID.kD, **paramsSilders, key='BD')
         botKI = sg.Slider(default_value=self.server.botPID.kI, **paramsSilders, key='BI')
+        botKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='BF')
+
         # A= [
         #     [sg.Frame('Top kP',[[topKP]],**fontParams),
         #     sg.Frame('Top kD',[[topKD]],**fontParams),
@@ -141,6 +144,10 @@ class UI():
             [
             sg.Frame('Top kI',[[topKI]],**fontParams),
             sg.Frame('Bot kI',[[botKI]],**fontParams),
+            ],
+            [
+                sg.Frame('Top forget', [[topKF]], **fontParams),
+                sg.Frame('Bot forget', [[botKF]], **fontParams),
             ]
         ]
         self.tabPID = A
@@ -281,8 +288,8 @@ class UI():
                 self.useC = event == "cel"
                 self.server.dirty = 1
                 self.setTargetTemps(setSliders=0)
-            if event in ['TP','TD','BP','BD','TI','BI']:
-                self.server.setPID((values[i] for i in ['TP','TD','TI','BP','BD','BI']))
+            if event in ['TP','TD','BP','BD','TI','BI','TF','BF']:
+                self.server.setPID((values[i] for i in ['TP','TD','TI','BP','BD','BI','TF','BF']))
             if event in ['TMS','BMS']:
                 self.server.setMaxPWM((values[i] for i in ['TMS','BMS']))
             if event in ['TTS','BTS']:
@@ -318,6 +325,7 @@ if __name__ == '__main__':
         kP=0
         kD=1
         kI=0
+        iForget=.9
         targetTemp = 50
     class S:
         topPID = P()
