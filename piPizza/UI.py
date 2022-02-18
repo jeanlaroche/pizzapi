@@ -14,9 +14,10 @@ class UI():
         self.server = server
         self.useC = 1
         self.processLoop = None
-        self.lastPlotLen = 0
         self.drawD = 0
         self.maxPlotLength = 400
+        self.lastPlotLenTemps = 0
+        self.lastPlotLenPIDs = 0
 
 
     def finishInit(self,no_titlebar=0):
@@ -37,15 +38,15 @@ class UI():
             toolitems = [t for t in NavigationToolbar2Tk.toolitems if
                          t[0] in ('Home', 'Pan', 'Zoom')]
 
-        fig = pl.figure(dpi=100.,figsize=(7,3.5))
-        self.tkcanvasTemps = FigureCanvasTkAgg(fig, master=self.canvasTemps.TKCanvas)
+        self.figTemps = pl.figure('temps',dpi=100.,figsize=(7,3.5))
+        self.tkcanvasTemps = FigureCanvasTkAgg(self.figTemps, master=self.canvasTemps.TKCanvas)
         self.tkcanvasTemps.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         toolbar = NavigationToolbar(self.tkcanvasTemps, self.canvasTemps.TKCanvas)
         toolbar.update()
         self.tkcanvasTemps.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 
-        fig = pl.figure(dpi=100.,figsize=(7,3.5))
-        self.tkcanvasPID = FigureCanvasTkAgg(fig, master=self.canvasPID.TKCanvas)
+        self.figPIDs = pl.figure('pids',dpi=100.,figsize=(7,3.5))
+        self.tkcanvasPID = FigureCanvasTkAgg(self.figPIDs, master=self.canvasPID.TKCanvas)
         self.tkcanvasPID.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         toolbar = NavigationToolbar(self.tkcanvasPID, self.canvasPID.TKCanvas)
         toolbar.update()
@@ -199,18 +200,43 @@ class UI():
         self.botTimeToTarget.update(value=botTimeToTarget)
         self.onTime.update(value=onTime)
 
+
+    def plotPIDs(self,topPids,botPids,legend):
+        self.topPids = topPids
+        self.botPids = botPids
+        self.pidLegend = legend
+        if self.tabGroup.get() == "PLOT PID" and len(self.topPids) != self.lastPlotLenPIDs:
+            self.lastPlotLenPIDs = len(self.topPids)
+            self.drawPIDs()
+
+    def drawPIDs(self):
+        try:
+            print("DRAW PID")
+            pids = self.botPids if self.plotBot.get() else self.topPids
+            if not len(pids) >= 2 or not len(pids[0]): return
+            pl.figure("pids")
+            pl.clf()
+            for ii in range(0,len(pids[0])):
+                pl.plot([t[ii] for t in pids])
+            pl.legend(self.pidLegend)
+            pl.grid(1)
+            self.tkcanvasPID.draw()
+        except Exception as e:
+            print(e)
+            pass
+
     def plotTemps(self,times,temps,legend):
-        if len(times) == self.lastPlotLen or self.tabGroup.get() != "PLOT": return
-        if self.lastPlotLen > len(times): self.lastPlotLen = 0
         self.times = times
         self.temps = temps
         self.legend = legend
-        if len(self.times) >= 2:
-            self.draw()
-            self.lastPlotLen = len(times)
+        if len(self.times) >= 2 and self.tabGroup.get() == "PLOT Temps" and self.lastPlotLenTemps != len(times):
+            self.drawTemps()
+            self.lastPlotLenTemps = len(times)
 
-    def draw(self):
+    def drawTemps(self):
         try:
+            print("DRAW TEMPS")
+            pl.figure("temps")
             pl.clf()
             X = mdates.datestr2num(self.times)
             t0=time.time()
@@ -278,11 +304,11 @@ class UI():
             if event == "clear":
                 self.server.clearHist()
                 pl.clf()
-                self.draw()
+                self.drawTemps()
             if event == "drawDelta":
                 self.drawD = self.drawDelta.get()
                 self.server.dirty = 1
-                self.draw()
+                self.drawTemps()
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 

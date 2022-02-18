@@ -48,6 +48,7 @@ class PID():
         self.updatePeriodS = updatePeriodS
         self.lastTimes = deque(maxlen=dqLen)
         self.lastTemps = deque(maxlen=dqLen)
+        self.lastPIDs = deque(maxlen=200)
         self.timeToTarget = "Wait..."
         pass
 
@@ -83,6 +84,7 @@ class PID():
             iTerm = self.kI/10 * iTemp / normTemp
             outVal = pTerm+dTerm+iTerm
             print(f"PVAL {pTerm:.2f} DVAL {dTerm:.2f} IVAL {iTerm:.2f}")
+            self.lastPIDs.append([pTerm, iTerm, dTerm, outVal])
         else:
             outVal = 0
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
@@ -147,16 +149,13 @@ class PizzaServer(Server):
         self.pi.set_PWM_frequency(BotRelay, 0)
         self.pi.set_PWM_dutycycle(TopRelay, 0)
         self.pi.set_PWM_dutycycle(BotRelay, 0)
+        # Exclude these from the json parameter files.
         self.exclude = ['isOn','outVal','dirty','last','Alive']
 
         readVarsFromJson(self.jsonFileName,self,"server",self.exclude)
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.UI,"UI",self.exclude)
-        # We don't want these to be restored from the param json file.
-#        self.lastHistTime = 0
-#        self.isOn, self.topPID.outVal, self.botPID.outVal = 0,0,0
-#        self.dirty = 1
         self.lastOnTime = time.time()
         self.ip = ""
 
@@ -296,6 +295,7 @@ class PizzaServer(Server):
                 self.tempHistBot.append(self.botTemp)
                 print(f"Plot length {len(self.tempHistT)}")
             self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Delta'])
+            self.UI.plotPIDs(self.topPID.lastPIDs,self.botPID.lastPIDs,['Pterm','Iterm','Dterm','OutValue'])
             curTime = time.localtime()
             # Erase the temp history every night at 1am.
             if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:
