@@ -57,12 +57,12 @@ class PID():
         self.currentTemp = currentTemp
         thisTime = time.time()
         # Don't run unless updatePeriodS seconds have elapsed.
-        if len(self.lastTimes) and thisTime - self.lastTimes[-1] < self.updatePeriodS: return self.outVal
+        if len(self.lastTimes) and thisTime - self.lastTimes[-1] < self.updatePeriodS: return self.outVal,0
         # Append time and temperature to our deque, we append on the right ([-1]) and read on the left
         self.lastTimes.append(thisTime)
         self.lastTemps.append(currentTemp)
         # We need the deque to be full to compute the dynamics.
-        if len(self.lastTimes) < self.lastTimes.maxlen : return self.outVal
+        if len(self.lastTimes) < self.lastTimes.maxlen : return self.outVal,0
         lastTime = self.lastTimes[0]
         lastTemp = self.lastTemps[0]
         # "normalizing" the temp diff and slope relative to 200 (C).
@@ -89,7 +89,7 @@ class PID():
             outVal = 0
         self.outVal = max(0,min(1,outVal)) if self.isOn else 0
         self.timeToTarget = self.getTimeToTarget()
-        return self.outVal
+        return self.outVal,1
 
     def getTimeToTarget(self):
         if abs(self.targetTemp-self.currentTemp) < self.onTargetPercent*self.targetTemp: return "At temp"
@@ -268,8 +268,8 @@ class PizzaServer(Server):
 
             self.botTemp = self.topPID.dTemp*100
             # Run the PID to compute the new pwm values
-            self.topPWM = self.topPID.getValue(self.topTemp)
-            #self.botPWM = self.botPID.getValue(self.botTemp)
+            self.topPWM,newVal = self.topPID.getValue(self.topTemp)
+            #self.botPWM,newVal = self.botPID.getValue(self.botTemp)
             self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
             # Set the PWM duty cycle on the relays
             self.pi.set_PWM_dutycycle(TopRelay, self.topPWM*self.pi.get_PWM_range(TopRelay))
@@ -295,7 +295,7 @@ class PizzaServer(Server):
                 self.tempHistBot.append(self.botTemp)
                 print(f"Plot length {len(self.tempHistT)}")
             self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Delta'])
-            self.UI.plotPIDs(self.topPID.lastPIDs,self.botPID.lastPIDs,['Pterm','Iterm','Dterm','OutValue'])
+            if newVal: self.UI.plotPIDs(self.topPID.lastPIDs,self.botPID.lastPIDs,['Pterm','Iterm','Dterm','OutValue'])
             curTime = time.localtime()
             # Erase the temp history every night at 1am.
             if len(self.tempHistT) and curTime.tm_hour == 1 and curTime.tm_min == 0:

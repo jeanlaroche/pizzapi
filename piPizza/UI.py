@@ -17,7 +17,6 @@ class UI():
         self.drawD = 0
         self.maxPlotLength = 400
         self.lastPlotLenTemps = 0
-        self.lastPlotLenPIDs = 0
 
 
     def finishInit(self,no_titlebar=0):
@@ -207,8 +206,7 @@ class UI():
         self.topPids = topPids
         self.botPids = botPids
         self.pidLegend = legend
-        if self.tabGroup.get() == "PID Plot" and len(self.topPids) != self.lastPlotLenPIDs:
-            self.lastPlotLenPIDs = len(self.topPids)
+        if self.tabGroup.get() == "PID Plot":
             self.drawPIDs()
 
     def drawPIDs(self):
