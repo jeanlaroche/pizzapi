@@ -24,11 +24,13 @@ def runSafety():
     try:
         f = ur.urlopen(" http://localhost:8080/alive",timeout=2)
         data = json.loads(f.read())
-        if data['isAlive']: return
+        if data['isAlive0']: return
         turnOff()
     except:
         turnOff()
 
 
 if __name__ == '__main__':
-    runSafety()
+    while 1:
+        runSafety()
+        time.sleep(1)

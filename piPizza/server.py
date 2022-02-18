@@ -167,7 +167,12 @@ class PizzaServer(Server):
             pass
         self.UI.finishInit()
         self.UI.processLoop = self.processLoop
-        runThreaded(self.safetyLoop)
+        # Safety stuff
+        # This one runs in a separate thread and watches that we're alive. But if we die it dies with us.
+        #runThreaded(self.safetyLoop)
+        # import subprocess
+        # print("START WATCH")
+        # subprocess.Popen("watch -n 1 /usr/bin/python3 /home/pi/piPizza/safety.py".split())
 
     def __delete__(self):
         self.pi.stop()
