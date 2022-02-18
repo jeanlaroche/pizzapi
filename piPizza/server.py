@@ -228,7 +228,7 @@ class PizzaServer(Server):
 
     def setPID(self,vals):
         self.topPID.kP,self.topPID.kD,self.topPID.kI,self.botPID.kP,self.botPID.kD,self.botPID.kI = vals[0:6]
-        self.topPID.iForget,self.botPID.iForget = 1-vals[7]
+        self.topPID.iForget,self.botPID.iForget = 1-vals[6],1-vals[7]
         self.dirty = 1
 
     def setMaxPWM(self,vals):

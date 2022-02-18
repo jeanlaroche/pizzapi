@@ -108,10 +108,10 @@ class UI():
         return self.tabPWM
 
     def initPanelPID(self):
-        fontParams = {'font':(fontName, 16)}
+        fontParams = {'font':(fontName, 15)}
         params = {'size':(15,1)}
         params.update(fontParams)
-        paramsSilders = {'range':(0,4),'resolution':0.01,'orientation':'h','font':(fontName, 20),
+        paramsSilders = {'range':(0,4),'resolution':0.01,'orientation':'h','font':(fontName, 15),
                          'enable_events':1,'size':(20,30)}
         topKP = sg.Slider(default_value=self.server.topPID.kP, **paramsSilders, key='TP')
         topKD = sg.Slider(default_value=self.server.topPID.kD, **paramsSilders, key='TD')
@@ -133,21 +133,23 @@ class UI():
         #     sg.Frame('Bot kI',[[botKI]],**fontParams)
         #      ]
         # ]
+        tabParams=fontParams
+        tabParams['pad'] = (10,2)
         A= [
-            [sg.Frame('Top kP',[[topKP]],**fontParams),
-            sg.Frame('Bot kP',[[botKP]],**fontParams),
+            [sg.Frame('Top kP',[[topKP]],**tabParams),
+            sg.Frame('Bot kP',[[botKP]],**tabParams),
              ],
             [
-            sg.Frame('Top kD',[[topKD]],**fontParams),
-            sg.Frame('Bot kD',[[botKD]],**fontParams),
+            sg.Frame('Top kD',[[topKD]],**tabParams),
+            sg.Frame('Bot kD',[[botKD]],**tabParams),
             ],
             [
-            sg.Frame('Top kI',[[topKI]],**fontParams),
-            sg.Frame('Bot kI',[[botKI]],**fontParams),
+            sg.Frame('Top kI',[[topKI]],**tabParams),
+            sg.Frame('Bot kI',[[botKI]],**tabParams),
             ],
             [
-                sg.Frame('Top forget', [[topKF]], **fontParams),
-                sg.Frame('Bot forget', [[botKF]], **fontParams),
+                sg.Frame('Top forget', [[topKF]], **tabParams),
+                sg.Frame('Bot forget', [[botKF]], **tabParams),
             ]
         ]
         self.tabPID = A
@@ -289,7 +291,7 @@ class UI():
                 self.server.dirty = 1
                 self.setTargetTemps(setSliders=0)
             if event in ['TP','TD','BP','BD','TI','BI','TF','BF']:
-                self.server.setPID((values[i] for i in ['TP','TD','TI','BP','BD','BI','TF','BF']))
+                self.server.setPID([values[i] for i in ['TP','TD','TI','BP','BD','BI','TF','BF']])
             if event in ['TMS','BMS']:
                 self.server.setMaxPWM((values[i] for i in ['TMS','BMS']))
             if event in ['TTS','BTS']:
