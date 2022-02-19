@@ -9,6 +9,7 @@ import re
 from datetime import datetime
 import os
 from collections import deque
+import sys
 
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
@@ -138,7 +139,7 @@ class PizzaServer(Server):
     maxHistLen         =    600
     lastHistTime       =    0
 
-    def __init__(self):
+    def __init__(self,noTitleBar=1):
         super().__init__()
         self.Temps = Temps()
         self.topPID = PID(self.pidUpdatePeriodS)
@@ -166,7 +167,7 @@ class PizzaServer(Server):
             self.ip = re.search('inet\s+(\S*)',A).group(1)
         except:
             pass
-        self.UI.finishInit()
+        self.UI.finishInit(no_titlebar=noTitleBar)
         self.UI.processLoop = self.processLoop
         # Safety stuff
         # This one runs in a separate thread and watches that we're alive. But if we die it dies with us.
@@ -383,7 +384,12 @@ def incBotTemp(param1):
 #     return jsonify(param1=param1, param2=param2)
 
 if __name__ == "__main__":
-    server = PizzaServer()
+    import argparse
+    parser = argparse.ArgumentParser('server', description='Start the pizza controller.')
+    parser.add_argument('-tb', dest='titleBar', action='store_true', help='To start with the titlebar')
+    args = parser.parse_args()
+
+    server = PizzaServer(noTitleBar=not args.titleBar)
     print(f"Go to {server.ip}:8080")
 
     #app.run(host='127.0.0.1', port=8080, debug=True, threaded=False, use_reloader=False)

@@ -19,7 +19,7 @@ class UI():
         self.lastPlotLenTemps = 0
 
 
-    def finishInit(self,no_titlebar=0):
+    def finishInit(self,no_titlebar=1):
         fontParams = {'font':(fontName, 14)}
         self.no_titlebar = no_titlebar
         self.tabMain = self.initPanelMain()
@@ -33,7 +33,7 @@ class UI():
                                       sg.Tab('Status', self.tabStatus)]],**fontParams)
         self.layout = [[self.tabGroup]]
         self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
-        # self.window.set_cursor("none")
+        if no_titlebar: self.window.set_cursor("none")
         class NavigationToolbar(NavigationToolbar2Tk):
             # only display the buttons we need
             toolitems = [t for t in NavigationToolbar2Tk.toolitems if
