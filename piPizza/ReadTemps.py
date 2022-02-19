@@ -29,8 +29,8 @@ class Temps():
 if __name__ == "__main__":
     T = Temps()
     while 1:
-        t_1,t_2 = T.getTemps()
-        print(f"Top: {t_1} Bottom: {t_2}")
+        t_1,t_2,t_a = T.getTemps()
+        print(f"Top: {t_1} Bottom: {t_2} Ambient {t_a}")
         time.sleep(1)
 
 # top = mcp9600.MCP9600(0x67)
