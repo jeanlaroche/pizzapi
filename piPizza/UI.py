@@ -160,7 +160,7 @@ class UI():
         params = {'size':(10,1),'font':(fontName, 16)}
         self.canvasTemps = sg.Canvas()
         self.drawDelta = sg.Checkbox("draw delta",self.drawD,**params,key='drawDelta',enable_events=1)
-        self.zoomTemps = sg.Checkbox("zoom",self.drawD,**params,key='zoomTemps',enable_events=1)
+        self.zoomTemps = sg.Checkbox("zoom",1,**params,key='zoomTemps',enable_events=1)
         self.tabPlotTemp = [[self.canvasTemps],[sg.Button("clear",**params),self.drawDelta,self.zoomTemps]]
         return self.tabPlotTemp
 
