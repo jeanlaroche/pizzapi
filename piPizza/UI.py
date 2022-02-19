@@ -311,7 +311,7 @@ class UI():
                 ret = sg.popup_ok_cancel("Update software?",font=(fontName,50),keep_on_top=1)
                 if ret == "OK":
                     ret,code = self.server.runUpdate()
-                    sg.popup_ok(ret, font=(fontName, 50), keep_on_top=1)
+                    sg.popup_ok(ret, font=(fontName, 40), keep_on_top=1)
                     if code == 1: self.server.runUpdate(1)
             if event == "reboot":
                 ret = sg.popup_ok_cancel("Reboot now?",font=(fontName,50),keep_on_top=1)
