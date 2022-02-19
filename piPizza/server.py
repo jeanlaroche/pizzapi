@@ -13,7 +13,7 @@ from collections import deque
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
 
-__version__ = "1.1.0 (2/18/2022)"
+__version__ = "1.1.1 (2/18/2022)"
 
 app = Flask(__name__)
 
@@ -269,10 +269,10 @@ class PizzaServer(Server):
             self.topTemp,self.botTemp,self.ambientTemp = self.Temps.getTemps()
             self.topPID.isOn,self.botPID.isOn = self.isOn,self.isOn
 
-            self.botTemp = self.topPID.dTemp*100
+            # self.botTemp = self.topPID.dTemp*100
             # Run the PID to compute the new pwm values
             self.topPWM,newVal = self.topPID.getValue(self.topTemp)
-            #self.botPWM,newVal = self.botPID.getValue(self.botTemp)
+            self.botPWM,newVal = self.botPID.getValue(self.botTemp)
             self.topPWM,self.botPWM = min(self.topPWM,self.topMaxPWM),min(self.botPWM,self.botMaxPWM)
             # Set the PWM duty cycle on the relays
             self.pi.set_PWM_dutycycle(TopRelay, self.topPWM*self.pi.get_PWM_range(TopRelay))
@@ -297,7 +297,7 @@ class PizzaServer(Server):
                 self.tempHistTop.append(self.topTemp)
                 self.tempHistBot.append(self.botTemp)
                 print(f"Plot length {len(self.tempHistT)}")
-            self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Delta'])
+            self.UI.plotTemps(self.tempHistT,[self.tempHistTop,self.tempHistBot],['Top','Bottom'])
             if newVal: self.UI.plotPIDs(self.topPID.lastPIDs,self.botPID.lastPIDs,['Pterm','Iterm','Dterm','OutValue','Error C/100'])
             curTime = time.localtime()
             # Erase the temp history every night at 1am.

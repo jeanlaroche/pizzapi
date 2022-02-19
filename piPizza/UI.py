@@ -263,8 +263,9 @@ class UI():
                     temps[ii] = temps[ii][-100*inc:]
                 if inc > 1:
                     temps[ii] = temps[ii][0::inc]
-                if self.drawDelta.get() and ii == 0:
-                    temps[ii] = [t - self.server.topPID.targetTemp for t in temps[ii]]
+                if self.drawDelta.get():
+                    tTemp = self.server.topPID.targetTemp if ii == 0 else self.server.botPID.targetTemp
+                    temps[ii] = [t - tTemp for t in temps[ii]]
                 if not self.useC:
                     temps[ii] = [1.8 * t + 32 for t in temps[ii]]
                 pl.plot(X, temps[ii])
