@@ -34,7 +34,7 @@ class PID():
     smoothPeriodS = 10  # The dynamics (slopes) are computed over this duration.
     dTemp = 0           # Slope
     iTemp = 0           # Integration
-    iForget = 0.9       # Leaky integration factor for iTemp
+    iForget = 0.98      # Leaky integration factor for iTemp
     iTermBound = 30./200.     # I zero the I term unless we're this close to the target.
     outVal = 0
     lastTime = 0
@@ -75,9 +75,10 @@ class PID():
         dTemp,iTemp = self.dTemp,self.iTemp
         # No integration if PID is not on or we're above target or we're too far from it.
         if abs(self.targetTemp - self.currentTemp) > self.iTermBound * self.targetTemp:
-            iTemp = 0
-        if self.currentTemp > self.targetTemp or not self.isOn:
-            iTemp = 0
+            iTemp,self.iTemp = 0,0
+        #if self.currentTemp > self.targetTemp or not self.isOn:
+        if not self.isOn:
+            iTemp,self.iTemp = 0,0
         if self.targetTemp:
             pTerm = self.kP * (self.targetTemp - self.currentTemp)/normTemp
             dTerm = - self.kD * dTemp / normTemp

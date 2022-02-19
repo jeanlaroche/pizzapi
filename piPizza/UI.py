@@ -116,11 +116,11 @@ class UI():
         topKP = sg.Slider(default_value=self.server.topPID.kP, **paramsSilders, key='TP')
         topKD = sg.Slider(default_value=self.server.topPID.kD, **paramsSilders, key='TD')
         topKI = sg.Slider(default_value=self.server.topPID.kI, **paramsSilders, key='TI')
-        topKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='TF')
         botKP = sg.Slider(default_value=self.server.botPID.kP, **paramsSilders, key='BP')
         botKD = sg.Slider(default_value=self.server.botPID.kD, **paramsSilders, key='BD')
-        paramsSilders['range']=(0,0.2)
         botKI = sg.Slider(default_value=self.server.botPID.kI, **paramsSilders, key='BI')
+        paramsSilders['range']=(0,0.2)
+        topKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='TF')
         botKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='BF')
 
         # A= [
