@@ -184,7 +184,7 @@ class UI():
 #            [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
             [sg.Button("Show PI Desktop" if self.no_titlebar else "Hide PI Desktop",**params,key="maximize"),
              sg.Button("Update / Restart",**params,key="update")],
-            [sg.Button("Reboot", **params, key="reboot")],
+            [sg.Button("Shutdown", **params, key="shutdown")],
             ]
         return self.tabStatus
 
@@ -313,10 +313,10 @@ class UI():
                     ret,code = self.server.runUpdate()
                     sg.popup_ok(ret, font=(fontName, 40), keep_on_top=1)
                     if code == 1: self.server.runUpdate(1)
-            if event == "reboot":
-                ret = sg.popup_ok_cancel("Reboot now?",font=(fontName,50),keep_on_top=1)
+            if event == "shutdown":
+                ret = sg.popup_ok_cancel("Shutdown now?",font=(fontName,50),keep_on_top=1)
                 if ret == "OK":
-                    os.system('sudo reboot now')
+                    os.system('sudo shutdown -h now')
             if event == "clear":
                 self.server.clearHist()
                 pl.clf()
