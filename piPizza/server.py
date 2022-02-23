@@ -14,7 +14,7 @@ import sys
 from BaseClasses.utils import runThreaded, saveVarsToJson, readVarsFromJson
 from flask import Flask, jsonify
 
-__version__ = "1.1.1 (2/18/2022)"
+__version__ = "1.1.2 (2/23/2022)"
 
 app = Flask(__name__)
 
@@ -138,6 +138,7 @@ class PizzaServer(Server):
     isAlive1            =     0                                    # Used to test that the process loop runs
     maxHistLen         =    600
     lastHistTime       =    0
+    turnoffAfterH      =    1           # Turn power off after this many hours of inactivity.
 
     def __init__(self,noTitleBar=1):
         super().__init__()
@@ -153,13 +154,15 @@ class PizzaServer(Server):
         self.pi.set_PWM_dutycycle(TopRelay, 0)
         self.pi.set_PWM_dutycycle(BotRelay, 0)
         # Exclude these from the json parameter files.
-        self.exclude = ['isOn','outVal','dirty','last','Alive']
+        self.exclude = ['isOn','outVal','dirty','last','Alive','turnoffStartS']
 
         readVarsFromJson(self.jsonFileName,self,"server",self.exclude)
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.UI,"UI",self.exclude)
         self.lastOnTime = time.time()
+        self.turnoffStartS = time.time()
+
         self.ip = ""
 
         try:
@@ -169,6 +172,7 @@ class PizzaServer(Server):
             pass
         self.UI.finishInit(no_titlebar=noTitleBar)
         self.UI.processLoop = self.processLoop
+        #os.system('rm -rf /home/pi/Desktop/*.log.*')
         # Safety stuff
         # This one runs in a separate thread and watches that we're alive. But if we die it dies with us.
         #runThreaded(self.safetyLoop)
@@ -201,8 +205,8 @@ class PizzaServer(Server):
         saveVarsToJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
         saveVarsToJson(self.jsonFileName,self.UI,"UI",self.exclude)
 
-    def onOff(self):
-        self.isOn = 1-self.isOn
+    def onOff(self,force=-1):
+        self.isOn = 1-self.isOn if force==-1 else force
         self.dirty = 1
         # Set pwm off immediately for safety
         if self.isOn == 0:
@@ -264,6 +268,10 @@ class PizzaServer(Server):
 
     def processLoop(self):
         try:
+            # Turn power off if we've been idle for long enough.
+            if time.time() - self.turnoffStartS > self.turnoffAfterH*3600 and self.isOn:
+                print("Power off after idle")
+                self.onOff(force=0)
             self.isAlive0,self.isAlive1 = 1,1
             #print("PID",self.topPID.outVal,self.topPID.isOn)
             # Get temps from the thermocouples
@@ -283,6 +291,8 @@ class PizzaServer(Server):
                                 self.topPID.timeToTarget,self.botPID.timeToTarget,self.onTime())
             if self.dirty:
                 self.saveJson()
+                # Reset the counter for auto-turn off.
+                self.turnoffStartS = time.time()
             # Keep a memory of the temperature values. Update every 60s or more often if the temp changes.
             if time.time() - self.lastHistTime > 60 or round(self.topTemp) != round(self.tempHistTop[-1])\
                     or round(self.botTemp) != round(self.tempHistBot[-1]):

@@ -7,6 +7,7 @@ import matplotlib.pyplot as pl
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2Tk
 import matplotlib.dates as mdates
 import time
+import re
 
 class UI():
     def __init__(self,server):
@@ -177,10 +178,14 @@ class UI():
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
         self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)
         self.ambientTemp = sg.T("Ambient",**params)
+        self.turnoffTimer = sg.Combo([f"Off after {i}h" for i in range(1,6)],default_value=f"Off after {self.server.turnoffAfterH}h",**params,
+                                     key='turnoff',readonly=1,enable_events=1)
         A = sg.Frame("Ambient Temp",[[self.ambientTemp]],expand_y=1)
+        B = sg.Frame("Turnoff timer",[[self.turnoffTimer]],expand_y=1)
         self.tabStatus = [
             [sg.Frame("IP address",[[ipAddress]]),sg.Frame("Version",[[sg.T(self.server.version,**params)]])],
             [sg.Frame("Units",[[self.C],[self.F]],expand_y=1),A],
+            [B,],
 #            [sg.T("Ambient temp",font=(fontName, 28)),self.ambientTemp],
             [sg.Button("Show PI Desktop" if self.no_titlebar else "Hide PI Desktop",**params,key="maximize"),
              sg.Button("Update / Restart",**params,key="update")],
@@ -307,6 +312,11 @@ class UI():
             if event == "maximize":
                 self.window.close()
                 self.finishInit(no_titlebar=1-self.no_titlebar)
+            if event == "turnoff":
+                R = re.findall('(\d)h',values['turnoff'])
+                if R:
+                    self.server.turnoffAfterH = int(R[0])
+                    self.server.dirty = 1
             if event == "update":
                 ret = sg.popup_ok_cancel("Update software?",font=(fontName,50),keep_on_top=1)
                 if ret == "OK":
@@ -343,6 +353,7 @@ if __name__ == '__main__':
         botMaxPWM=.5
         ip='192.168.1.110'
         version='ah ah ah'
+        turnoffAfterH=1
         pass
     ui = UI(S)
     ui.finishInit()
