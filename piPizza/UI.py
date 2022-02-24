@@ -57,8 +57,8 @@ class UI():
     def initPanelMain(self):
         fontParams = {'font':(fontName, 16)}
         params = {'size':(10,1),'font':(fontName, 28)}
-        self.topTarget = sg.T(self.cvTemp(self.server.topPID.targetTemp),font=(fontName,28),size=(4,1))
-        self.botTarget = sg.T(self.cvTemp(self.server.botPID.targetTemp),font=(fontName,28),size=(4,1))
+        self.topTarget = sg.T(self.cvTemp(self.server.topPID.targetTemp),font=(fontName,28),size=(5,1))
+        self.botTarget = sg.T(self.cvTemp(self.server.botPID.targetTemp),font=(fontName,28),size=(5,1))
         self.topTemp = sg.T("Temp",**params)
         self.botTemp = sg.T("Temp",**params)
         self.topPWM = sg.T("PWM",**params)
@@ -67,7 +67,7 @@ class UI():
         self.topTimeToTarget = sg.T("Time to target Top",**params)
         self.botTimeToTarget = sg.T("Time to target Bot",**params)
         self.power = sg.Button("Power",size=(10,3),font=(fontName, 25),expand_y=1)#,image_filename="/home/pi/piPizza/power.png")
-        paramsSilders = {'range':(20,400),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':(25,30)}
+        paramsSilders = {'range':(20,600),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':(25,30)}
         paramsSilders.update(fontParams)
         self.topTargetSlider = sg.Slider(**paramsSilders, default_value=self.server.topPID.targetTemp, key='TTS')
         self.botTargetSlider = sg.Slider(**paramsSilders,default_value=self.server.botPID.targetTemp,key='BTS')
@@ -355,6 +355,15 @@ if __name__ == '__main__':
         version='ah ah ah'
         turnoffAfterH=1
         pass
-    ui = UI(S)
-    ui.finishInit()
-    ui.mainLoop()
+        def __init__(self):
+            self.ui = UI(self)
+            pass
+
+        def setTemps(self,a):
+            b=list(a)
+            self.topPID.targetTemp=b[0]
+            self.botPID.targetTemp=b[1]
+            pass
+    S0 = S()
+    S0.ui.finishInit()
+    S0.ui.mainLoop()
