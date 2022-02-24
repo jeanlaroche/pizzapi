@@ -10,11 +10,18 @@ import time
 class Temps():
     # Small wrapper around MCP9600
     def __init__(self):
-        self.top = mcp9600.MCP9600(0x67)
-        time.sleep(.1)
-        self.bottom = mcp9600.MCP9600(0x65)
-        self.top.set_thermocouple_type('K')
-        self.bottom.set_thermocouple_type('K')
+        pass
+    def initSensors(self):
+        try:
+            self.top = mcp9600.MCP9600(0x67)
+            time.sleep(.1)
+            self.bottom = mcp9600.MCP9600(0x65)
+            self.top.set_thermocouple_type('K')
+            self.bottom.set_thermocouple_type('K')
+            return 1,""
+        except Exception as e:
+            print(f"Failed to initialize sensors {e}")
+            return 0,str(e)
 
     def getTemps(self):
         try:

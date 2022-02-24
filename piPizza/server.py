@@ -143,6 +143,7 @@ class PizzaServer(Server):
     def __init__(self,noTitleBar=1):
         super().__init__()
         self.Temps = Temps()
+        ret, error = self.Temps.initSensors()
         self.topPID = PID(self.pidUpdatePeriodS)
         self.botPID = PID(self.pidUpdatePeriodS)
         self.UI = UI(self)
