@@ -1,6 +1,0 @@
-
-Test I2C:
-i2cdetect -y 1
-Should show address 48.
-
-
