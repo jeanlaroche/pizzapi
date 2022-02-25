@@ -117,6 +117,14 @@ class PID():
         return slope
         print(slope,self.dTemp)
 
+class Preset():
+    tkP,tkI,tkD,tkF=0,0,0,0
+    bkP,bkI,bkD,bkF=0,0,0,0
+    def __init__(self):
+        pass
+    def save(self,tkP,tkI,tkD,tkF,bkP,bkI,bkD,bkF):
+        self.tkP, self.tkI, self.tkD, self.tkF = tkP,tkI,tkD,tkF
+        self.bkP, self.bkI, self.bkD, self.bkF = bkP,bkI,bkD,bkF
 
 class PizzaServer(Server):
     pidUpdatePeriodS   =    2                                     # How often we call the PID to get new PWM values.
@@ -154,6 +162,10 @@ class PizzaServer(Server):
         self.pi.set_PWM_frequency(BotRelay, 0)
         self.pi.set_PWM_dutycycle(TopRelay, 0)
         self.pi.set_PWM_dutycycle(BotRelay, 0)
+        self.defaults = Preset()
+        self.preset1 = Preset()
+        self.preset2 = Preset()
+        self.savePreset(0)
         # Exclude these from the json parameter files.
         self.exclude = ['isOn','outVal','dirty','last','Alive','turnoffStartS']
 
@@ -161,6 +173,8 @@ class PizzaServer(Server):
         readVarsFromJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
         readVarsFromJson(self.jsonFileName,self.UI,"UI",self.exclude)
+        readVarsFromJson(self.jsonFileName,self.preset1,"preset1",self.exclude)
+        readVarsFromJson(self.jsonFileName,self.preset2,"preset2",self.exclude)
         self.lastOnTime = time.time()
         self.turnoffStartS = time.time()
 
@@ -205,6 +219,8 @@ class PizzaServer(Server):
         saveVarsToJson(self.jsonFileName,self.topPID,"topPID",self.exclude)
         saveVarsToJson(self.jsonFileName,self.botPID,"botPID",self.exclude)
         saveVarsToJson(self.jsonFileName,self.UI,"UI",self.exclude)
+        saveVarsToJson(self.jsonFileName,self.preset1,"preset1",self.exclude)
+        saveVarsToJson(self.jsonFileName,self.preset2,"preset2",self.exclude)
 
     def onOff(self,force=-1):
         self.isOn = 1-self.isOn if force==-1 else force
@@ -251,6 +267,19 @@ class PizzaServer(Server):
         self.tempHistTop = []
         self.tempHistT = []
         self.tempHistBot = []
+        
+    def savePreset(self,pNum):
+        preset = [self.defaults,self.preset1,self.preset2][pNum]
+        preset.save(self.topPID.kP,self.topPID.kI,self.topPID.kD,self.topPID.iForget,
+                    self.botPID.kP,self.botPID.kI,self.botPID.kD,self.botPID.iForget)
+        self.dirty = 1
+
+    def loadPreset(self,pNum):
+        preset = [self.defaults,self.preset1,self.preset2][pNum]
+        self.topPID.kP, self.topPID.kI, self.topPID.kD, self.topPID.iForget = preset.tkP,preset.tkI,preset.tkD,preset.tkF
+        self.botPID.kP,self.botPID.kI,self.botPID.kD,self.botPID.iForget = preset.bkP,preset.bkI,preset.bkD,preset.bkF
+        self.UI.setPID()
+        self.dirty = 1
 
     def safetyLoop(self):
         # A safety loop that runs in another thread and checks that the process loop is alive.

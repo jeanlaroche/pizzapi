@@ -114,48 +114,53 @@ class UI():
         params.update(fontParams)
         paramsSilders = {'range':(0,4),'resolution':0.01,'orientation':'h','font':(fontName, 15),
                          'enable_events':1,'size':(20,30)}
-        topKP = sg.Slider(default_value=self.server.topPID.kP, **paramsSilders, key='TP')
-        topKD = sg.Slider(default_value=self.server.topPID.kD, **paramsSilders, key='TD')
-        topKI = sg.Slider(default_value=self.server.topPID.kI, **paramsSilders, key='TI')
-        botKP = sg.Slider(default_value=self.server.botPID.kP, **paramsSilders, key='BP')
-        botKD = sg.Slider(default_value=self.server.botPID.kD, **paramsSilders, key='BD')
-        botKI = sg.Slider(default_value=self.server.botPID.kI, **paramsSilders, key='BI')
+        self.topKP = sg.Slider(default_value=self.server.topPID.kP, **paramsSilders, key='TP')
+        self.topKD = sg.Slider(default_value=self.server.topPID.kD, **paramsSilders, key='TD')
+        self.topKI = sg.Slider(default_value=self.server.topPID.kI, **paramsSilders, key='TI')
+        self.botKP = sg.Slider(default_value=self.server.botPID.kP, **paramsSilders, key='BP')
+        self.botKD = sg.Slider(default_value=self.server.botPID.kD, **paramsSilders, key='BD')
+        self.botKI = sg.Slider(default_value=self.server.botPID.kI, **paramsSilders, key='BI')
         paramsSilders['range']=(0,0.2)
-        topKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='TF')
-        botKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='BF')
+        self.topKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='TF')
+        self.botKF = sg.Slider(default_value=1-self.server.topPID.iForget, **paramsSilders, key='BF')
 
-        # A= [
-        #     [sg.Frame('Top kP',[[topKP]],**fontParams),
-        #     sg.Frame('Top kD',[[topKD]],**fontParams),
-        #     sg.Frame('Top kI',[[topKI]],**fontParams)
-        #     ],
-        #     [
-        #     sg.Frame('Bot kP',[[botKP]],**fontParams),
-        #     sg.Frame('Bot kD',[[botKD]],**fontParams),
-        #     sg.Frame('Bot kI',[[botKI]],**fontParams)
-        #      ]
-        # ]
         tabParams=fontParams
         tabParams['pad'] = (10,2)
-        A= [
-            [sg.Frame('Top kP',[[topKP]],**tabParams),
-            sg.Frame('Bot kP',[[botKP]],**tabParams),
-             ],
-            [
-            sg.Frame('Top kD',[[topKD]],**tabParams),
-            sg.Frame('Bot kD',[[botKD]],**tabParams),
+        butParams={'size':(18,1),'font':(fontName, 21),'pad':(5,10)}
+        stp = [sg.Button(f'Save preset {i}',key=f'save{i}',**butParams) for i in [1,2]]
+        rfp = [sg.Button(f'Load preset {i}',key=f'load{i}',**butParams) for i in [1,2]]
+        S = [[stp[0]],[rfp[0]],[stp[1]],[rfp[1]]]
+        C1 = sg.Column([[sg.Button('Reset to default',key='resetPID',**butParams)]] + S,expand_y=1)
+        A= sg.Column([
+            [sg.Frame('Top kP',[[self.topKP]],**tabParams),
+            sg.Frame('Bot kP',[[self.botKP]],**tabParams),
             ],
             [
-            sg.Frame('Top kI',[[topKI]],**tabParams),
-            sg.Frame('Bot kI',[[botKI]],**tabParams),
+            sg.Frame('Top kD',[[self.topKD]],**tabParams),
+            sg.Frame('Bot kD',[[self.botKD]],**tabParams),
             ],
             [
-                sg.Frame('Top forget', [[topKF]], **tabParams),
-                sg.Frame('Bot forget', [[botKF]], **tabParams),
+            sg.Frame('Top kI',[[self.topKI]],**tabParams),
+            sg.Frame('Bot kI',[[self.botKI]],**tabParams),
+            ],
+            [
+            sg.Frame('Top forget', [[self.topKF]], **tabParams),
+            sg.Frame('Bot forget', [[self.botKF]], **tabParams),
             ]
-        ]
-        self.tabPID = A
+        ])
+        self.tabPID = [[A,C1]]
         return self.tabPID
+
+    def setPID(self):
+        self.topKP.update(value=self.server.topPID.kP)
+        self.topKI.update(value=self.server.topPID.kI)
+        self.topKD.update(value=self.server.topPID.kD)
+        self.topKF.update(value=1-self.server.topPID.iForget)
+
+        self.botKP.update(value=self.server.botPID.kP)
+        self.botKI.update(value=self.server.botPID.kI)
+        self.botKD.update(value=self.server.botPID.kD)
+        self.botKF.update(value=1-self.server.botPID.iForget)
 
     def initPanelPlotTemps(self):
         params = {'size':(10,1),'font':(fontName, 16)}
@@ -335,6 +340,14 @@ class UI():
                 self.drawD = self.drawDelta.get()
                 self.server.dirty = 1
                 self.drawTemps()
+            if event in ["save1","save2"]:
+                ret = sg.popup_ok_cancel("You sure?",font=(fontName,50),keep_on_top=1)
+                if ret == "OK":
+                    self.server.savePreset(1 if event == "save1" else 2)
+            if event in ["load1","load2"]:
+                self.server.loadPreset(1 if event == "load1" else 2)
+            if event == "resetPID":
+                self.server.loadPreset(0)
             if event == sg.WIN_CLOSED:  # always,  always give a way out!
                 break
 
