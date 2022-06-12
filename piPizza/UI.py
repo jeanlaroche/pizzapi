@@ -9,9 +9,14 @@ import matplotlib.dates as mdates
 import time
 import re
 
+def scaleSize(a,b):
+    factorW = 1.1
+    factorH = 1.8
+    return (int(a*factorW),int(b*factorH))
+
 class UI():
     def __init__(self,server):
-        self.height,self.width = 480,800
+        self.height,self.width = 600,1024
         self.server = server
         self.useC = 1
         self.processLoop = None
@@ -21,7 +26,7 @@ class UI():
 
 
     def finishInit(self,no_titlebar=1):
-        fontParams = {'font':(fontName, 14)}
+        fontParams = {'font':(fontName, 32)}
         self.no_titlebar = no_titlebar
         self.tabMain = self.initPanelMain()
         self.tabPWM = self.initPanelPWM()
@@ -33,21 +38,22 @@ class UI():
                                       sg.Tab('Temp Plot', self.tabPlotTemp), sg.Tab('PID Plot', self.tabPlotPID), 
                                       sg.Tab('Status', self.tabStatus)]],**fontParams)
         self.layout = [[self.tabGroup]]
-        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=(44, 10),default_button_element_size=(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
+        self.window = sg.Window('PIZZA CONTROL', self.layout, default_element_size=scaleSize(44, 10),default_button_element_size=scaleSize(60,3),element_padding=5,finalize=1,size=(self.width,self.height),no_titlebar = no_titlebar,disable_close=1)
         if no_titlebar: self.window.set_cursor("none")
         class NavigationToolbar(NavigationToolbar2Tk):
             # only display the buttons we need
             toolitems = [t for t in NavigationToolbar2Tk.toolitems if
                          t[0] in ('Home', 'Pan', 'Zoom')]
 
-        self.figTemps = pl.figure('temps',dpi=100.,figsize=(7,3.5))
+        plotSize = (11,4.2)
+        self.figTemps = pl.figure('temps',dpi=100.,figsize=plotSize)
         self.tkcanvasTemps = FigureCanvasTkAgg(self.figTemps, master=self.canvasTemps.TKCanvas)
         self.tkcanvasTemps.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         toolbar = NavigationToolbar(self.tkcanvasTemps, self.canvasTemps.TKCanvas)
         toolbar.update()
         self.tkcanvasTemps.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 
-        self.figPIDs = pl.figure('pids',dpi=100.,figsize=(7,3.5))
+        self.figPIDs = pl.figure('pids',dpi=100.,figsize=plotSize)
         self.tkcanvasPID = FigureCanvasTkAgg(self.figPIDs, master=self.canvasPID.TKCanvas)
         self.tkcanvasPID.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
         toolbar = NavigationToolbar(self.tkcanvasPID, self.canvasPID.TKCanvas)
@@ -56,9 +62,9 @@ class UI():
 
     def initPanelMain(self):
         fontParams = {'font':(fontName, 16)}
-        params = {'size':(10,1),'font':(fontName, 28)}
-        self.topTarget = sg.T(self.cvTemp(self.server.topPID.targetTemp),font=(fontName,28),size=(5,1))
-        self.botTarget = sg.T(self.cvTemp(self.server.botPID.targetTemp),font=(fontName,28),size=(5,1))
+        params = {'size':scaleSize(10,1),'font':(fontName, 28)}
+        self.topTarget = sg.T(self.cvTemp(self.server.topPID.targetTemp),font=(fontName,28),size=scaleSize(5,1))
+        self.botTarget = sg.T(self.cvTemp(self.server.botPID.targetTemp),font=(fontName,28),size=scaleSize(5,1))
         self.topTemp = sg.T("Temp",**params)
         self.botTemp = sg.T("Temp",**params)
         self.topPWM = sg.T("PWM",**params)
@@ -66,8 +72,8 @@ class UI():
         self.onTime = sg.T("OnTime",**params)
         self.topTimeToTarget = sg.T("Time to target Top",**params)
         self.botTimeToTarget = sg.T("Time to target Bot",**params)
-        self.power = sg.Button("Power",size=(10,3),font=(fontName, 25),expand_y=1)#,image_filename="/home/pi/piPizza/power.png")
-        paramsSilders = {'range':(20,600),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':(25,30)}
+        self.power = sg.Button("Power",size=scaleSize(10,3),font=(fontName, 25),expand_y=1)#,image_filename="/home/pi/piPizza/power.png")
+        paramsSilders = {'range':(20,600),'orientation':'h','enable_events':1,'resolution':5,'disable_number_display':1,'size':scaleSize(25,30)}
         paramsSilders.update(fontParams)
         self.topTargetSlider = sg.Slider(**paramsSilders, default_value=self.server.topPID.targetTemp, key='TTS')
         self.botTargetSlider = sg.Slider(**paramsSilders,default_value=self.server.botPID.targetTemp,key='BTS')
@@ -91,10 +97,10 @@ class UI():
 
     def initPanelPWM(self):
         fontParams = {'font':(fontName, 16)}
-        params = {'size':(15,1)}
+        params = {'size':scaleSize(15,1)}
         params.update(fontParams)
         paramsSilders = {'range':(0,1),'resolution':0.05,'orientation':'h','font':(fontName, 20),
-                         'enable_events':1,'size':(30,30)}
+                         'enable_events':1,'size':scaleSize(30,30)}
         self.topMaxPWM = sg.T("Top Max PWM",**params)
         self.botMaxPWM = sg.T("Top Max PWM",**params)
         A = sg.Frame('Top Max PWM',
@@ -110,10 +116,10 @@ class UI():
 
     def initPanelPID(self):
         fontParams = {'font':(fontName, 15)}
-        params = {'size':(15,1)}
+        params = {'size':scaleSize(15,1)}
         params.update(fontParams)
         paramsSilders = {'range':(0,4),'resolution':0.01,'orientation':'h','font':(fontName, 15),
-                         'enable_events':1,'size':(20,30)}
+                         'enable_events':1,'size':scaleSize(20,30)}
         self.topKP = sg.Slider(default_value=self.server.topPID.kP, **paramsSilders, key='TP')
         self.topKD = sg.Slider(default_value=self.server.topPID.kD, **paramsSilders, key='TD')
         self.topKI = sg.Slider(default_value=self.server.topPID.kI, **paramsSilders, key='TI')
@@ -126,7 +132,7 @@ class UI():
 
         tabParams=fontParams
         tabParams['pad'] = (10,2)
-        butParams={'size':(18,1),'font':(fontName, 21),'pad':(5,10)}
+        butParams={'size':scaleSize(18,1),'font':(fontName, 21),'pad':(5,10)}
         stp = [sg.Button(f'Save preset {i}',key=f'save{i}',**butParams) for i in [1,2]]
         rfp = [sg.Button(f'Load preset {i}',key=f'load{i}',**butParams) for i in [1,2]]
         S = [[stp[0]],[rfp[0]],[stp[1]],[rfp[1]]]
@@ -163,7 +169,7 @@ class UI():
         self.botKF.update(value=1-self.server.botPID.iForget)
 
     def initPanelPlotTemps(self):
-        params = {'size':(10,1),'font':(fontName, 16)}
+        params = {'size':scaleSize(10,1),'font':(fontName, 16)}
         self.canvasTemps = sg.Canvas()
         self.drawDelta = sg.Checkbox("draw delta",self.drawD,**params,key='drawDelta',enable_events=1)
         self.zoomTemps = sg.Checkbox("zoom",1,**params,key='zoomTemps',enable_events=1)
@@ -171,14 +177,14 @@ class UI():
         return self.tabPlotTemp
 
     def initPanelPlotPID(self):
-        params = {'size':(10,1),'font':(fontName, 16)}
+        params = {'size':scaleSize(10,1),'font':(fontName, 16)}
         self.canvasPID = sg.Canvas()
         self.plotBot = sg.Checkbox("plot bottom",0,**params,key='plotBotPID',enable_events=1)
         self.tabPlotPID = [[self.canvasPID],[self.plotBot]]
         return self.tabPlotPID
 
     def iniPanelStatus(self):
-        params = {'size':(14,1),'font':(fontName, 28)}
+        params = {'size':scaleSize(14,1),'font':(fontName, 28)}
         ipAddress = sg.T(self.server.ip,**params)
         self.C = sg.Radio("Celcius",0,default=self.useC,enable_events=1,key='cel',**params)
         self.F = sg.Radio("Fahrenheit",0,default=not self.useC,enable_events=1,key='fah',**params)

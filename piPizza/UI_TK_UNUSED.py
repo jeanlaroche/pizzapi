@@ -6,7 +6,8 @@ class UI():
     def __init__(self,server):
         self.win = Tk()
         self.win.title("")
-        self.height,self.width = 480,800
+        fact = .5
+        self.height,self.width = int(fact*600),int(fact*1024)
         self.win.minsize(self.width,self.height)
         self.server = server
         self.frame = ttk.Notebook(self.win)
