@@ -26,7 +26,7 @@ class UI():
 
 
     def finishInit(self,no_titlebar=1):
-        fontParams = {'font':(fontName, 32)}
+        fontParams = {'font':(fontName, 34)}
         self.no_titlebar = no_titlebar
         self.tabMain = self.initPanelMain()
         self.tabPWM = self.initPanelPWM()
